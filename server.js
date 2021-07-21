@@ -29,9 +29,18 @@ app.get("/", (req, res) => {
 //get all MoralEntities
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    connection.query('SELECT * FROM moralentities_new', (err,rows) => {
+    connection.query('SELECT * FROM moralentities_new', (err,data) => {
       if(err) throw err;
-      response.json({rows})
+      response.json({data})
     
     });
 });
+
+//TODO : 
+//-création MoralEntities
+//-modification MoralEntities (code Inovex + Prix)
+//-création catégories
+//-création products
+//-saisie fin de mois
+//-saisie tonnage (measures)
+//-création formualaire de saisie (comment stocker cela en BDD ???)
