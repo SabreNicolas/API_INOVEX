@@ -38,7 +38,7 @@ app.get("/moralEntities", (request, response) => {
 
 //create MoralEntities
 //?Name=c&Address=d&Code=f&UnitPrice=g
-// ATTENION Unit Price doit contenir un . pour les décimales
+//ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie", (request, response) => {
     const req=request.query
     const query="INSERT INTO moralentities_new SET ?";
@@ -70,6 +70,16 @@ app.get("/Categories", (request, response) => {
     });
 });
 
+//get ONE Categorie
+app.get("/Categorie/:Id", (request, response) => {
+    const req=request.query
+    connection.query('SELECT * FROM categories_new WHERE Id = '+ request.params.Id, (err,data) => {
+      if(err) throw err;
+      response.json({data})
+    
+    });
+});
+
 //Get Catégories filles d'une catégorie mère
 app.get("/Categories/:ParentId", (request, response) => {
     const req=request.query
@@ -84,6 +94,16 @@ app.get("/Categories/:ParentId", (request, response) => {
 app.get("/Products", (request, response) => {
     const req=request.query
     connection.query('SELECT * FROM products_new', (err,data) => {
+      if(err) throw err;
+      response.json({data})
+    
+    });
+});
+
+//get ONE Product
+app.get("/Product/:Id", (request, response) => {
+    const req=request.query
+    connection.query('SELECT * FROM products_new WHERE Id = ' + request.params.Id, (err,data) => {
       if(err) throw err;
       response.json({data})
     
