@@ -5,6 +5,11 @@ https://ichi.pro/fr/creer-une-api-rest-a-l-aide-de-nodejs-et-mysql-a-partir-de-z
 
 # TODO FIRST : 
 npm install express mysql body-parser --save
+### Attention !
+Il faudra surement utiliser CORS pour permettre au requêtes de passer :
+    var cors = require('cors');
+    app.use(cors());
++ npm install cors --save
 
 # Lancer l'API : 
 node server.js

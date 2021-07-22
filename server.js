@@ -115,6 +115,10 @@ app.get("/Product/:Id", (request, response) => {
 //-modification MoralEntities (code Inovex + Prix)
 //-création catégories
 //-création products
-//-saisie fin de mois
-//-saisie tonnage (measures)
-//-création formualaire de saisie (comment stocker cela en BDD ??? ===> création d'une table tampon pour stocker les champs a mettre dans le formulaire)
+//-saisie fin de mois (add measures)
+//-saisie tonnage (add measures)
+//-insert ProductCategorie
+//-création formualaire de saisie 
+//(comment stocker cela en BDD ??? ===> création table formulaire + table liaison entre formulaire et products)
+//insert dans formulaire + update
+//insert dans ProductsFormulaire + update de la même table
