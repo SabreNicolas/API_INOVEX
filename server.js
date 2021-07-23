@@ -26,6 +26,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to INOVEX's API REST" });
 });
 
+
 /* MORAL ENTITIES*/
 //get all MoralEntities
 app.get("/moralEntities", (request, response) => {
@@ -74,7 +75,7 @@ app.get("/Categories", (request, response) => {
 
 //create Categorie
 //?Name=c&Code=f&ParentId=g
-app.put("/Categorie", (request, response) => {
+app.put("/Category", (request, response) => {
   const req=request.query
   const query="INSERT INTO categories_new SET ?";
   var CURRENT_TIMESTAMP = mysql.raw('now()');
@@ -86,7 +87,7 @@ app.put("/Categorie", (request, response) => {
 });
 
 //get ONE Categorie
-app.get("/Categorie/:Id", (request, response) => {
+app.get("/Category/:Id", (request, response) => {
     const req=request.query
     connection.query('SELECT * FROM categories_new WHERE Id = '+ request.params.Id, (err,data) => {
       if(err) throw err;
@@ -139,15 +140,61 @@ app.get("/Product/:Id", (request, response) => {
     });
 });
 
+/*FORMULAIRE*/
+//create Formulaire
+//?Name=j
+app.put("/Formulaire", (request, response) => {
+  const req=request.query
+  const query="INSERT INTO Formulaire SET ?";
+  const params={Name:req.Name}
+  connection.query(query,params,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création du Formulaire OK");
+  });
+});
+
+//create ProductFormulaire
+//?ProductId=J&FormulaireId=K
+app.put("/ProductFormulaire", (request, response) => {
+  const req=request.query
+  const query="INSERT INTO ProductsFormulaire SET ?";
+  const params={ProductId:req.ProductId,FormulaireId:req.FormulaireId}
+  connection.query(query,params,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création du ProductFormulaire OK");
+  });
+});
+
+
+/*MEASURES*/
+
+
 //TODO : 
-//-création MoralEntities ==> OK
+  //-création MoralEntities ==> OK
 //-modification MoralEntities (code Inovex + Prix)
-//-création catégories
-//-création products
+//-delete MoralEntities
+
+  //-création catégories ==> OK
+//-modification cat
+//-delete catégories
+
+  //-création products ==> OK
+//-modification product
+//-delete product
+
 //-saisie fin de mois (add measures)
 //-saisie tonnage (add measures)
+//-modification measure
+//-delete measure
+
 //-insert ProductCategorie
-//-création formualaire de saisie 
-//(comment stocker cela en BDD ??? ===> création table formulaire + table liaison entre formulaire et products)
-//insert dans formulaire + update
-//insert dans ProductsFormulaire + update de la même table
+//-modification ProductCattegorie
+//-delete ProductCattegorie
+
+  //-création formualaire de saisie ==> OK
+//-modification formulaire
+//-delete formulaire
+
+//-prevoir arret
+//-prevoir productCategorie
+//-prevoir productPreferred
