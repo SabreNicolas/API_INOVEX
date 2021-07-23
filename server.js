@@ -26,6 +26,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to INOVEX's API REST" });
 });
 
+/* MORAL ENTITIES*/
 //get all MoralEntities
 app.get("/moralEntities", (request, response) => {
     const req=request.query
@@ -36,7 +37,7 @@ app.get("/moralEntities", (request, response) => {
     });
 });
 
-//create MoralEntities
+//create MoralEntitie
 //?Name=c&Address=d&Code=f&UnitPrice=g
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie", (request, response) => {
@@ -60,6 +61,7 @@ app.get("/moralEntitie/:id", (request, response) => {
     });
 });
 
+/*CATEGORIES*/
 //get ALL Categories
 app.get("/Categories", (request, response) => {
     const req=request.query
@@ -68,6 +70,19 @@ app.get("/Categories", (request, response) => {
       response.json({data})
     
     });
+});
+
+//create Categorie
+//?Name=c&Code=f&ParentId=g
+app.put("/Categorie", (request, response) => {
+  const req=request.query
+  const query="INSERT INTO categories_new SET ?";
+  var CURRENT_TIMESTAMP = mysql.raw('now()');
+  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Enabled:1,Code:req.Code,ParentId:req.ParentId}
+  connection.query(query,params,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création de la catégorie OK");
+  });
 });
 
 //get ONE Categorie
@@ -90,6 +105,7 @@ app.get("/Categories/:ParentId", (request, response) => {
     });
 });
 
+/*PRODUCTS*/
 //get ALL Products
 app.get("/Products", (request, response) => {
     const req=request.query
@@ -98,6 +114,19 @@ app.get("/Products", (request, response) => {
       response.json({data})
     
     });
+});
+
+//create Product
+//?Name=c&Code=f&typeId=g&Unit=j
+app.put("/Product", (request, response) => {
+  const req=request.query
+  const query="INSERT INTO products_new SET ?";
+  var CURRENT_TIMESTAMP = mysql.raw('now()');
+  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Enabled:1,Code:req.Code,typeId:req.typeId,Unit:req.Unit}
+  connection.query(query,params,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création du produit OK");
+  });
 });
 
 //get ONE Product
