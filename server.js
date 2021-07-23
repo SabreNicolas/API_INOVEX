@@ -167,7 +167,19 @@ app.put("/ProductFormulaire", (request, response) => {
 
 
 /*MEASURES*/
-
+//create Measure
+//?EntryDate=1&Value=1&ProductId=1&ProducerId=1
+//ATTENION Value doit contenir un . pour les décimales
+app.put("/Measure", (request, response) => {
+  const req=request.query
+  const query="INSERT INTO measures_new SET ?";
+  var CURRENT_TIMESTAMP = mysql.raw('now()');
+  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,EntryDate:req.EntryDate,Value:req.Value,ProductId:req.ProductId,ProducerId:req.ProducerId}
+  connection.query(query,params,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création du Measures OK");
+  });
+});
 
 //TODO : 
   //-création MoralEntities ==> OK
@@ -182,16 +194,16 @@ app.put("/ProductFormulaire", (request, response) => {
 //-modification product
 //-delete product
 
-//-saisie fin de mois (add measures)
-//-saisie tonnage (add measures)
+  //-saisie fin de mois (add measures) ==> OK
+  //-saisie tonnage (add measures) ==> OK
 //-modification measure
 //-delete measure
 
-//-insert ProductCategorie
+  //-insert ProductCategorie ==> OK
 //-modification ProductCattegorie
 //-delete ProductCattegorie
 
-  //-création formualaire de saisie ==> OK
+  //-création formulaire de saisie ==> OK
 //-modification formulaire
 //-delete formulaire
 
