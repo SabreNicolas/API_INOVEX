@@ -1,11 +1,14 @@
 const express = require("express");
 const bodyParser = require("body-parser");
+var cors = require('cors');
 const port = 3000;
 const app = express();
 // parse requests of content-type: application/json
 app.use(bodyParser.json());
 // parse requests of content-type: application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
+//permet les requêtes cros domain
+app.use(cors());
 
 //create mysql connection
 const mysql = require('mysql');
@@ -58,8 +61,27 @@ app.get("/moralEntitie/:id", (request, response) => {
     connection.query('SELECT * FROM moralentities_new WHERE Id = '+request.params.id, (err,data) => {
       if(err) throw err;
       response.json({data})
-    
     });
+});
+
+//UPDATE MoralEntitie, set UnitPrice & Code
+//?UnitPrice=2.3&Code=1234
+//ATTENION Unit Price doit contenir un . pour les décimales
+app.put("/moralEntitie/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE moralentities_new SET UnitPrice = ' + req.UnitPrice + ', Code = ' + req.Code + ' WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du prix unitaire et code INOVEX OK")
+  });
+});
+
+//DELETE MoralEntitie
+app.delete("/moralEntitie/:id", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM moralentities_new WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du client OK")
+  });
 });
 
 /*CATEGORIES*/
