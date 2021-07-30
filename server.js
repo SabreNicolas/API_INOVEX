@@ -34,7 +34,7 @@ app.get("/", (req, res) => {
 //get all MoralEntities
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    connection.query('SELECT * FROM moralentities_new', (err,data) => {
+    connection.query('SELECT * FROM moralentities_new ORDER BY Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
     
@@ -51,6 +51,7 @@ app.put("/moralEntitie", (request, response) => {
     const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Address:req.Address,Enabled:1,Code:req.Code,UnitPrice:req.UnitPrice}
     connection.query(query,params,(err,result,fields) => {
         if(err) throw err;
+        console.log("Création du client OK");
         response.json("Création du client OK");
     });
 });
@@ -72,6 +73,27 @@ app.put("/moralEntitie/:id", (request, response) => {
   connection.query('UPDATE moralentities_new SET UnitPrice = ' + req.UnitPrice + ', Code = ' + req.Code + ' WHERE Id = '+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du prix unitaire et code INOVEX OK")
+  });
+});
+
+//UPDATE MoralEntitie, set UnitPrice
+//?UnitPrice=2.3
+//ATTENION Unit Price doit contenir un . pour les décimales
+app.put("/moralEntitieUnitPrice/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE moralentities_new SET UnitPrice = ' + req.UnitPrice + ', LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du prix unitaire OK")
+  });
+});
+
+//UPDATE MoralEntitie, set Code
+//?Code=123
+app.put("/moralEntitieCode/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE moralentities_new SET Code = ' + req.Code + ', LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du code OK")
   });
 });
 
@@ -205,8 +227,8 @@ app.put("/Measure", (request, response) => {
 
 //TODO : 
   //-création MoralEntities ==> OK
-//-modification MoralEntities (code Inovex + Prix)
-//-delete MoralEntities
+  //-modification MoralEntities (code Inovex + Prix)
+  //-delete MoralEntities
 
   //-création catégories ==> OK
 //-modification cat
