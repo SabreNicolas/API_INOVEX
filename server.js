@@ -32,9 +32,10 @@ app.get("/", (req, res) => {
 
 /* MORAL ENTITIES*/
 //get all MoralEntities
+//?Code=34343
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    connection.query('SELECT * FROM moralentities_new ORDER BY Name ASC', (err,data) => {
+    connection.query("SELECT * FROM moralentities_new WHERE Enabled=1 AND CODE LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       response.json({data})
     
@@ -54,6 +55,16 @@ app.put("/moralEntitie", (request, response) => {
         console.log("Création du client OK");
         response.json("Création du client OK");
     });
+});
+
+//get Last Code INOVEX
+//?Code=29292
+app.get("/moralEntitieLastCode", (request, response) => {
+  const req=request.query
+  connection.query("SELECT Code FROM moralentities_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC LIMIT 1", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
 });
 
 //get One MoralEntitie
@@ -94,6 +105,15 @@ app.put("/moralEntitieCode/:id", (request, response) => {
   connection.query('UPDATE moralentities_new SET Code = ' + req.Code + ', LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du code OK")
+  });
+});
+
+//UPDATE MoralEntitie, set Enabled=0
+app.put("/moralEntitieEnabled/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE moralentities_new SET Enabled = 0, LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Désactivation du client OK")
   });
 });
 
