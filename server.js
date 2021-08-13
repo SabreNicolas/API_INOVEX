@@ -35,10 +35,13 @@ app.get("/", (req, res) => {
 //?Code=34343
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    connection.query("SELECT * FROM moralentities_new WHERE Enabled=1 AND CODE LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+    connection.query('SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IF(LEFT(mr.Code,3) = "201","OM",IF(LEFT(mr.Code,3) = "202","DIB/DEA",IF(LEFT(mr.Code,3) = "203","DASRI",IF(LEFT(mr.Code,3) = "204","DAOM","Refus de tri")))) as produit,'+ 
+    'IF(SUBSTR(mr.Code, 4, 2)="01","INOVA",IF(SUBSTR(mr.Code, 4, 2)="02","VEOLIA",IF(SUBSTR(mr.Code, 4, 2)="03","PAPREC",IF(SUBSTR(mr.Code, 4, 2)="04","NICOLLIN",IF(SUBSTR(mr.Code, 4, 2)="05","BGV",IF(SUBSTR(mr.Code, 4, 2)="06",'+
+    '"SITOMAP",IF(SUBSTR(mr.Code, 4, 2)="07","SIRTOMRA OM",IF(SUBSTR(mr.Code, 4, 2)="08","COMMUNES",IF(SUBSTR(mr.Code, 4, 2)="09","SMICTOM","SMETOM"))))))))) as collecteur FROM moralentities_new as mr '+ 
+    'INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code '+
+    'WHERE mr.Enabled=1 AND mr.Code LIKE "' + req.Code + '%" ORDER BY Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
-    
     });
 });
 
@@ -130,10 +133,11 @@ app.delete("/moralEntitie/:id", (request, response) => {
 //get ALL Categories
 app.get("/Categories", (request, response) => {
     const req=request.query
-    connection.query('SELECT * FROM categories_new', (err,data) => {
+    connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
+    'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
+    'WHERE cat.Enabled = 1 ORDER BY cat.Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
-    
     });
 });
 
@@ -236,12 +240,20 @@ app.put("/ProductFormulaire", (request, response) => {
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", (request, response) => {
   const req=request.query
-  const query="INSERT INTO measures_new SET ?";
-  var CURRENT_TIMESTAMP = mysql.raw('now()');
-  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,EntryDate:req.EntryDate,Value:req.Value,ProductId:req.ProductId,ProducerId:req.ProducerId}
-  connection.query(query,params,(err,result,fields) => {
+  connection.query("INSERT INTO dolibarr.measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId) VALUES (NOW(), NOW(),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
+  "ON DUPLICATE KEY UPDATE "+
+  "Value = "+req.Value+", LastModifiedDate ="+req.EntryDate,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du Measures OK");
+  });
+});
+
+//get Entry
+app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
+  const req=request.query
+  connection.query('SELECT Value FROM `measures_new` WHERE ProductId = ' + request.params.ProductId + ' AND ProducerId = ' + request.params.ProducerId + ' AND EntryDate LIKE "'+request.params.Date+'%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
   });
 });
 
