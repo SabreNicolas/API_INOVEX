@@ -130,15 +130,26 @@ app.delete("/moralEntitie/:id", (request, response) => {
 });
 
 /*CATEGORIES*/
-//get ALL Categories
-app.get("/Categories", (request, response) => {
+//get ALL Categories for compteurs
+app.get("/CategoriesCompteurs", (request, response) => {
     const req=request.query
     connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
     'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
-    'WHERE cat.Enabled = 1 ORDER BY cat.Name ASC', (err,data) => {
+    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
     });
+});
+
+//get ALL Categories for analyses
+app.get("/CategoriesAnalyses", (request, response) => {
+  const req=request.query
+  connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
+  'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
+  'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
 });
 
 //create Categorie
@@ -174,6 +185,16 @@ app.get("/Categories/:ParentId", (request, response) => {
     });
 });
 
+//get Last Code INOVEX
+//?Code=29292
+app.get("/productLastCode", (request, response) => {
+  const req=request.query
+  connection.query("SELECT Code FROM products_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC LIMIT 1", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 /*PRODUCTS*/
 //get ALL Products
 app.get("/Products", (request, response) => {
@@ -183,6 +204,17 @@ app.get("/Products", (request, response) => {
       response.json({data})
     
     });
+});
+
+//get ALL Compteurs
+//?Code=ddhdhhd
+app.get("/Compteurs", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
 });
 
 //create Product
@@ -242,7 +274,7 @@ app.put("/Measure", (request, response) => {
   const req=request.query
   connection.query("INSERT INTO dolibarr.measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId) VALUES (NOW(), NOW(),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
   "ON DUPLICATE KEY UPDATE "+
-  "Value = "+req.Value+", LastModifiedDate ="+req.EntryDate,(err,result,fields) => {
+  "Value = "+req.Value+", LastModifiedDate =NOW()",(err,result,fields) => {
       if(err) throw err;
       response.json("Création du Measures OK");
   });
@@ -254,6 +286,29 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
   connection.query('SELECT Value FROM `measures_new` WHERE ProductId = ' + request.params.ProductId + ' AND ProducerId = ' + request.params.ProducerId + ' AND EntryDate LIKE "'+request.params.Date+'%"', (err,data) => {
     if(err) throw err;
     response.json({data})
+  });
+});
+
+/* SAISIE MENSUELLE */
+//get value compteurs
+app.get("/Compteurs/:Code/:Date", (request, response) => {
+  const req=request.query
+  connection.query('SELECT Value FROM `saisiemensuelle` WHERE Code = ' + request.params.Code + ' AND Date LIKE "'+request.params.Date+'%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//create saisie compteurs
+//?Date=1&Value=1&Code=aaa
+//ATTENION Value doit contenir un . pour les décimales
+app.put("/SaisieMensuelle", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO saisiemensuelle (Date, Code, Value) VALUES ('"+req.Date+"', "+req.Code+", "+req.Value+") "+
+  "ON DUPLICATE KEY UPDATE "+
+  "Value = "+req.Value,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création du saisiemensuelle OK");
   });
 });
 
