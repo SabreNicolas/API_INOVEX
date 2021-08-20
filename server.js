@@ -217,6 +217,17 @@ app.get("/Compteurs", (request, response) => {
   });
 });
 
+//get ALL Analyses
+//?Code=ddhdhhd
+app.get("/Analyses", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
 //create Product
 //?Name=c&Code=f&typeId=g&Unit=j
 app.put("/Product", (request, response) => {
@@ -288,6 +299,16 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
     response.json({data})
   });
 });
+
+//get value products
+app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
+  const req=request.query
+  connection.query('SELECT Value FROM `measures_new` WHERE ProductId = ' + request.params.ProductId + ' AND EntryDate LIKE "'+request.params.Date+'%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 
 /* SAISIE MENSUELLE */
 //get value compteurs
