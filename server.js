@@ -152,6 +152,17 @@ app.get("/CategoriesAnalyses", (request, response) => {
   });
 });
 
+//get ALL Categories for sortants
+app.get("/CategoriesSortants", (request, response) => {
+  const req=request.query
+  connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
+  'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
+  'WHERE cat.Code LIKE "50%" ORDER BY cat.Name ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //create Categorie
 //?Name=c&Code=f&ParentId=g
 app.put("/Category", (request, response) => {
@@ -222,6 +233,17 @@ app.get("/Compteurs", (request, response) => {
 app.get("/Analyses", (request, response) => {
   const req=request.query
   connection.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//get ALL Sortants
+//?Code=ddhdhhd
+app.get("/Sortants", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 5 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     response.json({data})
   
