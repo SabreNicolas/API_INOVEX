@@ -364,33 +364,3 @@ app.put("/SaisieMensuelle", (request, response) => {
       response.json("Création du saisiemensuelle OK");
   });
 });
-
-//TODO : 
-  //-création MoralEntities ==> OK
-  //-modification MoralEntities (code Inovex + Prix)
-  //-delete MoralEntities
-
-  //-création catégories ==> OK
-//-modification cat
-//-delete catégories
-
-  //-création products ==> OK
-//-modification product
-//-delete product
-
-  //-saisie fin de mois (add measures) ==> OK
-  //-saisie tonnage (add measures) ==> OK
-//-modification measure
-//-delete measure
-
-  //-insert ProductCategorie ==> OK
-//-modification ProductCattegorie
-//-delete ProductCattegorie
-
-  //-création formulaire de saisie ==> OK
-//-modification formulaire
-//-delete formulaire
-
-//-prevoir arret
-//-prevoir productCategorie
-//-prevoir productPreferred
