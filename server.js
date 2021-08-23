@@ -250,6 +250,16 @@ app.get("/Sortants", (request, response) => {
   });
 });
 
+//get ALL conso & others
+app.get("/Consos", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
 //create Product
 //?Name=c&Code=f&typeId=g&Unit=j
 app.put("/Product", (request, response) => {
