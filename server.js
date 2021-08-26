@@ -135,7 +135,7 @@ app.get("/CategoriesCompteurs", (request, response) => {
     const req=request.query
     connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
     'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
-    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
+    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Cendres%" AND cat.Name NOT LIKE "Mâchefers%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
     });
@@ -362,5 +362,17 @@ app.put("/SaisieMensuelle", (request, response) => {
   "Value = "+req.Value,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du saisiemensuelle OK");
+  });
+});
+
+
+/*ARRETS*/
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/Arrets", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, user, date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
+  ,(err,result,fields) => {
+      if(err) throw err;
+      response.json("Création de l'arret OK");
   });
 });
