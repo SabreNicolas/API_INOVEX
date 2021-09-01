@@ -1,6 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 var cors = require('cors');
+const nodemailer = require("nodemailer");
+var smtpTransport = require('nodemailer-smtp-transport');
 const port = 3000;
 const app = express();
 // parse requests of content-type: application/json
@@ -8,10 +10,12 @@ app.use(bodyParser.json());
 // parse requests of content-type: application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: true }));
 //permet les requêtes cros domain
-app.use(cors());
+app.use(cors({origin: "*" }));
+
 
 //create mysql connection
 const mysql = require('mysql');
+const { response } = require("express");
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'dolibarrmysql',
@@ -27,6 +31,36 @@ app.listen(port, () => {
 // simple route
 app.get("/", (req, res) => {
   res.json({ message: "Welcome to INOVEX's API REST" });
+});
+
+
+/*EMAIL*/
+var transporter = nodemailer.createTransport(smtpTransport({
+  service: 'gmail',
+  host: 'smtp.gmail.com',
+  auth: {
+    user: 'arret.inova@gmail.com',
+    pass: 'AD*201903*'
+  }
+}));
+
+// define a sendmail endpoint, which will send emails and response with the corresponding status
+app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret', function(req, res) {
+  const message = {
+    from: 'arret.inova@gmail.com', // Sender address
+    to: 'nsabre@kerlan-info.fr',         // TODO : A CHANGER
+    subject: 'Nouvel Arrêt Intempestif !!!', // Subject line
+    text: 'ATTENTION, un arrêt intempestif vient d\'être signalé : '+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb // Plain text body
+  };
+  transporter.sendMail(message, function(err, info) {
+    if (err) {
+      console.log(err);
+      throw err;
+    } else {
+      console.log('Email sent: ' + info.response);
+      res.json("mail OK");
+    }
+  });
 });
 
 
@@ -135,7 +169,7 @@ app.get("/CategoriesCompteurs", (request, response) => {
     const req=request.query
     connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
     'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
-    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Cendres%" AND cat.Name NOT LIKE "Mâchefers%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
+    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Cendres%" AND cat.Name NOT LIKE "Mâchefers%" AND cat.Name NOT LIKE "Arrêts%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
     });
@@ -221,7 +255,18 @@ app.get("/Products", (request, response) => {
 //?Code=ddhdhhd
 app.get("/Compteurs", (request, response) => {
   const req=request.query
-  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//get ALL Compteurs for arrêts
+//?Code=ddhdhhd
+app.get("/CompteursArrets", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     response.json({data})
   
@@ -374,5 +419,34 @@ app.put("/Arrets", (request, response) => {
   ,(err,result,fields) => {
       if(err) throw err;
       response.json("Création de l'arret OK");
+  });
+});
+
+//Récupérer l'historique des arrêts pour un mois
+app.get("/Arrets/:mois", (request, response) => {
+  const req=request.query
+  connection.query('SELECT p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE date_heure_debut LIKE "'+request.params.mois+'%" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+
+//Récupérer le total des arrêts par groupe
+app.get("/ArretsSumGroup/:mois", (request, response) => {
+  const req=request.query
+  connection.query('SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE date_heure_debut LIKE "'+request.params.mois+'%" GROUP BY p.Name', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+
+//Récupérer le total des arrêts
+app.get("/ArretsSum/:mois", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total" as Name, SUM(a.duree) as Duree FROM arrets a WHERE date_heure_debut LIKE "'+request.params.mois+'%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
   });
 });
