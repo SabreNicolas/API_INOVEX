@@ -447,7 +447,25 @@ app.get("/ArretsSumGroup/:mois", (request, response) => {
 //Récupérer le total des arrêts
 app.get("/ArretsSum/:mois", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total" as Name, SUM(a.duree) as Duree FROM arrets a WHERE date_heure_debut LIKE "'+request.params.mois+'%"', (err,data) => {
+  connection.query('SELECT "Total" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a WHERE date_heure_debut LIKE "'+request.params.mois+'%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer le total des arrêts pour four 1
+app.get("/ArretsSum1/:mois", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total Four 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE a.date_heure_debut LIKE "'+request.params.mois+'%" AND p.Name LIKE "%1%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer le total des arrêts pour four 2
+app.get("/ArretsSum2/:mois", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total Four 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE a.date_heure_debut LIKE "'+request.params.mois+'%" AND p.Name LIKE "%2%"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
