@@ -253,6 +253,35 @@ app.get("/Products", (request, response) => {
     });
 });
 
+//get ALL Products with type param
+app.get("/Products/:TypeId", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM products_new WHERE typeId = '+request.params.TypeId +' ORDER BY Name ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//UPDATE Product, change Enabled
+app.put("/productEnabled/:id/:enabled", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE products_new SET Enabled = '+request.params.enabled +' , LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Changement de visibilité du client OK")
+  });
+});
+
+//UPDATE Product, set Unit
+//?Unit=123
+app.put("/productUnit/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE products_new SET Unit = "' + req.Unit + '", LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de l'unité OK")
+  });
+});
+
 //get ALL Compteurs
 //?Code=ddhdhhd
 app.get("/Compteurs", (request, response) => {
