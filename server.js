@@ -273,6 +273,15 @@ app.put("/productEnabled/:id/:enabled", (request, response) => {
   });
 });
 
+//UPDATE Product, change TypeId
+app.put("/productType/:id/:type", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE products_new SET TypeId = '+request.params.type +' , LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Changement de catégorie du produit OK")
+  });
+});
+
 //UPDATE Product, set Unit
 //?Unit=123
 app.put("/productUnit/:id", (request, response) => {
