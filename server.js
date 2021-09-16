@@ -478,9 +478,9 @@ app.put("/Arrets", (request, response) => {
 });
 
 //Récupérer l'historique des arrêts pour un mois
-app.get("/Arrets/:mois", (request, response) => {
+app.get("/Arrets/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE date_heure_debut LIKE "'+request.params.mois+'%" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
+  connection.query('SELECT p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -488,9 +488,9 @@ app.get("/Arrets/:mois", (request, response) => {
 
 
 //Récupérer le total des arrêts par groupe
-app.get("/ArretsSumGroup/:mois", (request, response) => {
+app.get("/ArretsSumGroup/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE date_heure_debut LIKE "'+request.params.mois+'%" GROUP BY p.Name', (err,data) => {
+  connection.query('SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" GROUP BY p.Name', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -498,27 +498,27 @@ app.get("/ArretsSumGroup/:mois", (request, response) => {
 
 
 //Récupérer le total des arrêts
-app.get("/ArretsSum/:mois", (request, response) => {
+app.get("/ArretsSum/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a WHERE date_heure_debut LIKE "'+request.params.mois+'%"', (err,data) => {
+  connection.query('SELECT "Total" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
 //Récupérer le total des arrêts pour four 1
-app.get("/ArretsSum1/:mois", (request, response) => {
+app.get("/ArretsSum1/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total Four 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE a.date_heure_debut LIKE "'+request.params.mois+'%" AND p.Name LIKE "%1%"', (err,data) => {
+  connection.query('SELECT "Total Four 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%1%"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
 //Récupérer le total des arrêts pour four 2
-app.get("/ArretsSum2/:mois", (request, response) => {
+app.get("/ArretsSum2/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total Four 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE a.date_heure_debut LIKE "'+request.params.mois+'%" AND p.Name LIKE "%2%"', (err,data) => {
+  connection.query('SELECT "Total Four 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%2%"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
