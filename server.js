@@ -170,6 +170,16 @@ app.put("/moralEntitieEnabled/:id/:enabled", (request, response) => {
   });
 });
 
+//UPDATE MoralEntitie, set Name
+//?Name=tetet
+app.put("/moralEntitieName/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE moralentities_new SET Name = "'+req.Name+'", LastModifiedDate = NOW() WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Changement de nom du client OK")
+  });
+});
+
 //DELETE MoralEntitie
 app.delete("/moralEntitie/:id", (request, response) => {
   const req=request.query
