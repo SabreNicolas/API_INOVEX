@@ -288,6 +288,15 @@ app.get("/Products/:TypeId", (request, response) => {
   });
 });
 
+//get Container DASRI
+app.get("/Container", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE Code LIKE '301010201' ", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", (request, response) => {
   const req=request.query
