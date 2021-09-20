@@ -463,7 +463,7 @@ app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
 //get Total by day and Type
 app.get("/TotalMeasures/:Dechet/:Date", (request, response) => {
   const req=request.query
-  connection.query('SELECT SUM(m.Value) as Total FROM measures_new as m INNER JOIN products_new as p ON m.ProductId = p.Id WHERE m.EntryDate LIKE "'+request.params.Date+'%" AND m.ProducerId >1 AND p.Code LIKE "'+request.params.Dechet+'%"', (err,data) => {
+  connection.query('SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new as m INNER JOIN products_new as p ON m.ProductId = p.Id WHERE m.EntryDate LIKE "'+request.params.Date+'%" AND m.ProducerId >1 AND p.Code LIKE "'+request.params.Dechet+'%"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
