@@ -509,9 +509,18 @@ app.put("/Arrets", (request, response) => {
 //Récupérer l'historique des arrêts pour un mois
 app.get("/Arrets/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
+  connection.query('SELECT a.Id, p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
+  });
+});
+
+//Supprimer Arret
+app.delete("/DeleteArret/:id", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM arrets WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de l'arrêt OK");
   });
 });
 
