@@ -501,8 +501,8 @@ app.put("/Arrets", (request, response) => {
   const req=request.query
   connection.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, user, date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
   ,(err,result,fields) => {
-      if(err) throw err;
-      response.json("Création de l'arret OK");
+      if(err) response.json("Création de l'arret KO");
+      else response.json("Création de l'arret OK");
   });
 });
 
