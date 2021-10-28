@@ -18,8 +18,8 @@ const mysql = require('mysql');
 const { response } = require("express");
 const connection = mysql.createConnection({
     host: 'localhost',
-    user: 'dolibarrmysql',
-    password: 'AD*201903*',
+    user: 'root',
+    password: '',
     database: 'dolibarr'
 });
 
@@ -195,7 +195,7 @@ app.get("/CategoriesCompteurs", (request, response) => {
     const req=request.query
     connection.query('SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName '+
     'FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id '+
-    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Cendres%" AND cat.Name NOT LIKE "Mâchefers%" AND cat.Name NOT LIKE "Arrêts%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
+    'WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE "Tonnage%" AND cat.Name NOT LIKE "Cendres%" AND cat.Code NOT LIKE "701%" AND cat.Name NOT LIKE "Mâchefers%" AND cat.Name NOT LIKE "Arrêts%" AND cat.Name NOT LIKE "Autres%" AND cat.Name NOT LIKE "Analyses%" ORDER BY cat.Name ASC', (err,data) => {
       if(err) throw err;
       response.json({data})
     });
@@ -329,7 +329,17 @@ app.put("/productUnit/:id", (request, response) => {
 //?Code=ddhdhhd
 app.get("/Compteurs", (request, response) => {
   const req=request.query
-  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  connection.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//get ALL QSE
+app.get("/QSE", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE Code LIKE '701%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     response.json({data})
   
