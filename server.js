@@ -18,8 +18,8 @@ const mysql = require('mysql');
 const { response } = require("express");
 const connection = mysql.createConnection({
     host: 'localhost',
-    user: 'root',
-    password: '',
+    user: 'dolibarrmysql',
+    password: 'AD*201903*',
     database: 'dolibarr'
 });
 
