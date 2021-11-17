@@ -361,7 +361,17 @@ app.get("/CompteursArrets", (request, response) => {
 //?Code=ddhdhhd
 app.get("/Analyses", (request, response) => {
   const req=request.query
-  connection.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  connection.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//get Analyses/ Dépassements 1/2 heures
+app.get("/AnalysesDep", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     response.json({data})
   
@@ -503,6 +513,65 @@ app.put("/SaisieMensuelle", (request, response) => {
       response.json("Création du saisiemensuelle OK");
   });
 });
+
+
+/*DEPASSEMENT*/
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/Depassement", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, user, date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
+  ,(err,result,fields) => {
+      if(err) response.json("Création du DEP KO");
+      else response.json("Création du DEP OK");
+  });
+});
+
+
+//Récupérer l'historique des dépassements pour un mois
+app.get("/Depassements/:dateDeb/:dateFin", (request, response) => {
+  const req=request.query
+  connection.query('SELECT a.Id, p.Name, DATE_FORMAT(a.date_heure_debut, "%d/%m/%Y")as dateDebut, DATE_FORMAT(a.date_heure_debut, "%H:%i")as heureDebut, DATE_FORMAT(a.date_heure_fin, "%d/%m/%Y")as dateFin, DATE_FORMAT(a.date_heure_fin, "%H:%i")as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" GROUP BY a.date_heure_debut, p.Name ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Supprimer Dépassement
+app.delete("/DeleteDepassement/:id", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM depassements WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du DEP OK");
+  });
+});
+
+//Récupérer le total des dépassements pour ligne 1
+app.get("/DepassementsSum1/:dateDeb/:dateFin", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total Ligne 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%Ligne 1%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer le total des dépassements pour ligne 2
+app.get("/DepassementsSum2/:dateDeb/:dateFin", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total Ligne 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%Ligne 2%"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer le total des dépassements
+app.get("/DepassementsSum/:dateDeb/:dateFin", (request, response) => {
+  const req=request.query
+  connection.query('SELECT "Total" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 
 
 /*ARRETS*/
