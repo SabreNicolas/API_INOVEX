@@ -640,3 +640,51 @@ app.get("/ArretsSum2/:dateDeb/:dateFin", (request, response) => {
     response.json({data})
   });
 });
+
+/*USERS*/
+//?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isAdmin=0
+app.put("/User", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isAdmin) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isAdmin+") "
+  ,(err,result,fields) => {
+      if(err) response.json("Création de l'utilisateur KO");
+      else response.json("Création de l'utilisateur OK");
+  });
+});
+
+//Récupérer l'ensemble des utilisateurs
+app.get("/Users", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM users', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer l'utilisateur qui est connecté
+app.get("/User/:login/:pwd", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM users WHERE login = "'+request.params.login+'" AND pwd = "'+request.params.pwd+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Permet de verifier si l'identifiant est déjà utilisé
+app.get("/User/:login", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM users WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+
+//Update du mdp utilisateur
+app.put("/User/:login/:pwd", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET pwd = "' + request.params.pwd + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du mot de passe OK")
+  });
+});
