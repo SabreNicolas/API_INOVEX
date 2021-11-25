@@ -653,9 +653,10 @@ app.put("/User", (request, response) => {
 });
 
 //Récupérer l'ensemble des utilisateurs
+//?login=aaaa
 app.get("/Users", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM users', (err,data) => {
+  connection.query('SELECT * FROM users WHERE login LIKE "%'+req.login+'%" ORDER BY Nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -686,5 +687,50 @@ app.put("/User/:login/:pwd", (request, response) => {
   connection.query('UPDATE users SET pwd = "' + request.params.pwd + '" WHERE login = "'+request.params.login+'"', (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du mot de passe OK")
+  });
+});
+
+//Update droit rondier
+app.put("/UserRondier/:login/:droit", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET isRondier = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update droit saisie
+app.put("/UserSaisie/:login/:droit", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET isSaisie = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update droit QSE
+app.put("/UserQSE/:login/:droit", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET isQSE = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update droit rapport
+app.put("/UserRapport/:login/:droit", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET isRapport = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update droit admin
+app.put("/UserAdmin/:login/:droit", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE users SET isAdmin = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
   });
 });
