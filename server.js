@@ -734,3 +734,12 @@ app.put("/UserAdmin/:login/:droit", (request, response) => {
     response.json("Mise à jour du droit OK")
   });
 });
+
+//DELETE User
+app.delete("/user/:id", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM users WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du user OK")
+  });
+});
