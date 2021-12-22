@@ -44,14 +44,14 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = 'Laurent.Saintive@inova-groupe.com, raymond.gorak@inova-groupe.com, maintenance.noyelles@inova-groupe.com';
+var maillist = 'Laurent.Saintive@inova-groupe.com, raymond.gorak@inova-groupe.com, maintenance.noyelles@inova-groupe.com, Jean-loic.SOUBIGOU@inova-groupe.com';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
   const message = {
     from: 'arret.inova@gmail.com', // Sender address
     to: maillist,
-    subject: 'Nouvel Arrêt Intempestif !!!', // Subject line
+    subject: '[NSL] Nouvel Arrêt Intempestif !!!', // Subject line
     html: 'ATTENTION, un arrêt intempestif vient d\'être signalé : '+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'. <br> Voici le commentaire : '+req.params.commentaire // Plain text body
   };
   transporter.sendMail(message, function(err, info) {
