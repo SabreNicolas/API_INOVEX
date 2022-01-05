@@ -392,7 +392,17 @@ app.get("/Sortants", (request, response) => {
 //get ALL conso & others
 app.get("/Consos", (request, response) => {
   const req=request.query
-  connection.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 ORDER BY Name", (err,data) => {
+  connection.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  
+  });
+});
+
+//get ALL pci
+app.get("/pci", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     response.json({data})
   
