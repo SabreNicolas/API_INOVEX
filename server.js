@@ -558,7 +558,7 @@ app.delete("/DeleteDepassement/:id", (request, response) => {
 //Récupérer le total des dépassements pour ligne 1
 app.get("/DepassementsSum1/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total Ligne 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%Ligne 1%"', (err,data) => {
+  connection.query('SELECT "Total Ligne 1" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Code LIKE "'+601040101+'"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -567,7 +567,7 @@ app.get("/DepassementsSum1/:dateDeb/:dateFin", (request, response) => {
 //Récupérer le total des dépassements pour ligne 2
 app.get("/DepassementsSum2/:dateDeb/:dateFin", (request, response) => {
   const req=request.query
-  connection.query('SELECT "Total Ligne 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Name LIKE "%Ligne 2%"', (err,data) => {
+  connection.query('SELECT "Total Ligne 2" as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN "'+request.params.dateDeb+'" AND "'+request.params.dateFin+'" AND p.Code LIKE "'+601040201+'"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
