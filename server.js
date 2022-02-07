@@ -753,3 +753,132 @@ app.delete("/user/:id", (request, response) => {
     response.json("Suppression du user OK")
   });
 });
+
+
+/*******RONDIER*******/
+
+/*Badge*/
+//?uid=AD:123:D23
+app.put("/Badge", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO badge (uid) VALUES ('"+req.uid+"') "
+  ,(err,result,fields) => {
+      if(err) response.json("Création du badge KO");
+      else response.json("Création du badge OK");
+  });
+});
+
+//Récupérer l'ensemble des badges affecté à un User
+app.get("/BadgesUser", (request, response) => {
+  const req=request.query
+  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.Nom, u.Prenom, u.login FROM badge b INNER JOIN users u ON u.Id = b.userId', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer l'ensemble des badges affecté à une zone
+app.get("/BadgesZone", (request, response) => {
+  const req=request.query
+  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as nomZone FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer l'ensemble des badges activé et non affecté
+app.get("/BadgesLibre", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM badge WHERE isEnabled = 1 AND userId IS NULL AND zoneId IS NULL', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Update enabled
+app.put("/BadgeEnabled/:id/:enabled", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE badge SET isEnabled = "' + request.params.enabled + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de l'activation OK")
+  });
+});
+
+//Update affectation
+app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE badge SET ' + request.params.typeAffectation+' = "' + request.params.idAffectation + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de l'affectation OK")
+  });
+});
+
+/*Zone de controle*/
+//?nom=dggd
+app.put("/zone", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO zonecontrole (nom) VALUES ('"+req.nom+"')"
+  ,(err,result,fields) => {
+      if(err) response.json("Création de la zone KO");
+      else response.json("Création de la zone OK");
+  });
+});
+
+//Récupérer l'ensemble des zones de controle
+app.get("/zones", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM zonecontrole', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Update commentaire
+app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE zonecontrole SET commentaire = "' + request.params.commentaire + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du commentaire OK")
+  });
+});
+
+/*Element de controle*/
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&isFour=0&isGlobal=1&unit=tonnes&defaultValue=1.7&isRegulateur=0
+app.put("/element", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, isFour, isGlobal, unit, defaultValue, isRegulateur) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", "+req.isFour+", "+req.isGlobal+", '"+req.unit+"', "+req.defaultValue+", "+req.isRegulateur+")"
+  ,(err,result,fields) => {
+      if(err) response.json("Création de l'élément KO");
+      else response.json("Création de l'élément OK");
+  });
+});
+
+//Récupérer l'ensemble des élements d'une zone
+app.get("/elementsOfZone/:zoneId", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId, (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
+//?date=07/02/2022
+app.get("/elementsOfRonde/:quart", (request, response) => {
+  const req=request.query
+  connection.query("SELECT Id FROM elementcontrole WHERE Id NOT IN (SELECT elementId FROM mesuresrondier WHERE dateHeure LIKE '"+req.date+"%' AND quart = "+request.params.quart+")", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+/*Mesures Rondier*/
+//?elementId=1&dateHeure=07/02/2022 08:00&quart=1&isFour1=1&isFour2=0&modeRegulateur=AP
+app.put("/mesureRondier", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO mesuresrondier (elementId, dateHeure, quart, isFour1, isFour2, modeRegulateur) VALUES ("+req.elementId+", '"+req.dateHeure+"', "+req.quart+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"')"
+  ,(err,result,fields) => {
+      if(err) response.json("Création de la mesure KO");
+      else response.json("Création de la mesure OK");
+  });
+});
