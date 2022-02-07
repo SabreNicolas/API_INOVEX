@@ -873,12 +873,32 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 });
 
 /*Mesures Rondier*/
-//?elementId=1&dateHeure=07/02/2022 08:00&quart=1&isFour1=1&isFour2=0&modeRegulateur=AP
+//?elementId=1&dateHeure=07/02/2022 08:00&quart=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&userId=1
 app.put("/mesureRondier", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO mesuresrondier (elementId, dateHeure, quart, isFour1, isFour2, modeRegulateur) VALUES ("+req.elementId+", '"+req.dateHeure+"', "+req.quart+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"')"
+  connection.query("INSERT INTO mesuresrondier (elementId, dateHeure, quart, isFour1, isFour2, modeRegulateur, value, userId) VALUES ("+req.elementId+", '"+req.dateHeure+"', "+req.quart+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', "+req.value+", "+req.userId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
+  });
+});
+
+//Récupérer l'ensemble des mesures pour une date/quart donné
+//?date=07/02/2022
+app.get("/reportingRonde/:quart", (request, response) => {
+  const req=request.query
+  connection.query("SELECT m.value, e.nom FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id WHERE m.dateHeure LIKE '"+req.date+"%' AND m.quart = "+request.params.quart, (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer l'auteur d'une ronde
+//?date=07/02/2022
+app.get("/AuteurRonde/:quart", (request, response) => {
+  const req=request.query
+  connection.query("SELECT DISTINCT u.nom, u.prenom FROM mesuresrondier m INNER JOIN users u ON m.userId = u.Id WHERE m.dateHeure LIKE '"+req.date+"%' AND m.quart = "+request.params.quart, (err,data) => {
+    if(err) throw err;
+    response.json({data})
   });
 });
