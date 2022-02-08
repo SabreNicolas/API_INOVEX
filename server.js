@@ -754,6 +754,15 @@ app.delete("/user/:id", (request, response) => {
   });
 });
 
+//Récupérer l'ensemble des users non affecté à un badge
+app.get("/UsersLibre", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM users WHERE Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL)', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 
 /*******RONDIER*******/
 
@@ -786,10 +795,10 @@ app.get("/BadgesZone", (request, response) => {
   });
 });
 
-//Récupérer l'ensemble des badges activé et non affecté
+//Récupérer l'ensemble des badges non affecté
 app.get("/BadgesLibre", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM badge WHERE isEnabled = 1 AND userId IS NULL AND zoneId IS NULL', (err,data) => {
+  connection.query('SELECT * FROM badge WHERE userId IS NULL AND zoneId IS NULL', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -808,6 +817,15 @@ app.put("/BadgeEnabled/:id/:enabled", (request, response) => {
 app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", (request, response) => {
   const req=request.query
   connection.query('UPDATE badge SET ' + request.params.typeAffectation+' = "' + request.params.idAffectation + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de l'affectation OK")
+  });
+});
+
+//Update affectation => retirer les affectations
+app.put("/BadgeDeleteAffectation/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE badge SET userId = NULL, zoneId = NULL WHERE Id = "'+request.params.id+'"', (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'affectation OK")
   });
@@ -839,6 +857,15 @@ app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
   connection.query('UPDATE zonecontrole SET commentaire = "' + request.params.commentaire + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du commentaire OK")
+  });
+});
+
+//Récupérer l'ensemble des zones non affecté à un badge
+app.get("/ZonesLibre", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL)', (err,data) => {
+    if(err) throw err;
+    response.json({data})
   });
 });
 
