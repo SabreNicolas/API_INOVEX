@@ -780,7 +780,7 @@ app.put("/Badge", (request, response) => {
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser", (request, response) => {
   const req=request.query
-  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.Nom, u.Prenom, u.login FROM badge b INNER JOIN users u ON u.Id = b.userId', (err,data) => {
+  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -789,7 +789,7 @@ app.get("/BadgesUser", (request, response) => {
 //Récupérer l'ensemble des badges affecté à une zone
 app.get("/BadgesZone", (request, response) => {
   const req=request.query
-  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as nomZone FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId', (err,data) => {
+  connection.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -832,10 +832,10 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 });
 
 /*Zone de controle*/
-//?nom=dggd
+//?nom=dggd&commentaire=fff
 app.put("/zone", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO zonecontrole (nom) VALUES ('"+req.nom+"')"
+  connection.query("INSERT INTO zonecontrole (nom, commentaire) VALUES ('"+req.nom+"', '"+req.commentaire+"')"
   ,(err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
@@ -845,7 +845,7 @@ app.put("/zone", (request, response) => {
 //Récupérer l'ensemble des zones de controle
 app.get("/zones", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM zonecontrole', (err,data) => {
+  connection.query('SELECT * FROM zonecontrole ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -883,7 +883,7 @@ app.put("/element", (request, response) => {
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId, (err,data) => {
+  connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId +' ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
