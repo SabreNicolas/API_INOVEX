@@ -757,7 +757,7 @@ app.delete("/user/:id", (request, response) => {
 //Récupérer l'ensemble des users non affecté à un badge
 app.get("/UsersLibre", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM users WHERE Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL)', (err,data) => {
+  connection.query('SELECT * FROM users WHERE Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
