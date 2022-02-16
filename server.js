@@ -777,6 +777,15 @@ app.put("/Badge", (request, response) => {
   });
 });
 
+//Récupérer le dernier ID de badge inséré
+app.get("/BadgeLastId", (request, response) => {
+  const req=request.query
+  connection.query('SELECT DISTINCT LAST_INSERT_ID() as Id FROM badge', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser", (request, response) => {
   const req=request.query
@@ -835,7 +844,7 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 //?nom=dggd&commentaire=fff
 app.put("/zone", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO zonecontrole (nom, commentaire) VALUES ('"+req.nom+"', '"+req.commentaire+"')"
+  connection.query('INSERT INTO zonecontrole (nom, commentaire) VALUES ("'+req.nom+'", "'+req.commentaire+'")'
   ,(err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
