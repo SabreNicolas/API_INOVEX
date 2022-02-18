@@ -807,7 +807,7 @@ app.get("/BadgesZone", (request, response) => {
 //Récupérer l'ensemble des badges non affecté
 app.get("/BadgesLibre", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM badge WHERE userId IS NULL AND zoneId IS NULL', (err,data) => {
+  connection.query('SELECT * FROM badge b WHERE b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW())', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -934,6 +934,26 @@ app.get("/reportingRonde/:quart", (request, response) => {
 app.get("/AuteurRonde/:quart", (request, response) => {
   const req=request.query
   connection.query("SELECT DISTINCT u.nom, u.prenom FROM mesuresrondier m INNER JOIN users u ON m.userId = u.Id WHERE m.dateHeure LIKE '"+req.date+"%' AND m.quart = "+request.params.quart, (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+/*Permis de feu*/
+//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1
+app.put("/PermisFeu", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Création du permis de feu KO");
+      else response.json("Création du permis de feu OK");
+  });
+})
+
+//Récupérer les permis de feu en cours
+app.get("/PermisFeu", (request, response) => {
+  const req=request.query
+  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
