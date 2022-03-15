@@ -786,6 +786,15 @@ app.get("/BadgeLastId", (request, response) => {
   });
 });
 
+//Récupérer l'utilisateur lié au badge
+app.get("/UserOfBadge/:uid", (request, response) => {
+  const req=request.query
+  connection.query('SELECT u.Id, u.Nom, u.Prenom, u.login, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser", (request, response) => {
   const req=request.query
