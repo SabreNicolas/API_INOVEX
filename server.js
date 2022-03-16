@@ -44,7 +44,7 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = 'Laurent.Saintive@inova-groupe.com, raymond.gorak@inova-groupe.com, maintenance.noyelles@inova-groupe.com, Jean-loic.SOUBIGOU@inova-groupe.com';
+var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
@@ -795,6 +795,15 @@ app.get("/UserOfBadge/:uid", (request, response) => {
   });
 });
 
+//Récupérer les elements de controle lié à la zone qui est lié au badge
+app.get("/ElementsOfBadge/:uid", (request, response) => {
+  const req=request.query
+  connection.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser", (request, response) => {
   const req=request.query
@@ -881,7 +890,7 @@ app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
 //Récupérer l'ensemble des zones non affecté à un badge
 app.get("/ZonesLibre", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL)', (err,data) => {
+  connection.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
