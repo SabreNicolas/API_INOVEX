@@ -12,6 +12,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //permet les requêtes cros domain
 app.use(cors({origin: "*" }));
 
+//Tableau pour le mode hors ligne de la ronde
+let BadgeAndElementsOfZone = [];
+
 
 //create mysql connection
 const mysql = require('mysql');
@@ -22,6 +25,8 @@ const connection = mysql.createConnection({
     password: 'AD*201903*',
     database: 'dolibarr'
 });
+
+
 
 // set port, listen for requests
 app.listen(port, () => {
@@ -44,7 +49,7 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = 'Laurent.Saintive@inova-groupe.com, raymond.gorak@inova-groupe.com, maintenance.noyelles@inova-groupe.com, Jean-loic.SOUBIGOU@inova-groupe.com';
+var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
@@ -786,6 +791,24 @@ app.get("/BadgeLastId", (request, response) => {
   });
 });
 
+//Récupérer l'utilisateur lié au badge
+app.get("/UserOfBadge/:uid", (request, response) => {
+  const req=request.query
+  connection.query('SELECT u.Id, u.Nom, u.Prenom, u.login, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer les elements de controle lié à la zone qui est lié au badge
+app.get("/ElementsOfBadge/:uid", (request, response) => {
+  const req=request.query
+  connection.query('SELECT e.Id, e.zoneId, z.nom as "NomZone", z.commentaire, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser", (request, response) => {
   const req=request.query
@@ -860,6 +883,40 @@ app.get("/zones", (request, response) => {
   });
 });
 
+//POUR MODE HORS LIGNE
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
+app.get("/BadgeAndElementsOfZone", (request, response) => {
+  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
+    if(err) throw err;
+    else {
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const element of data) {
+        await getElementsHorsLigne(element);
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
+  });
+});
+
+function getElementsHorsLigne(element) {
+  return new Promise((resolve) => {
+    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+element.zoneId +' ORDER BY nom ASC', (err,data) => {
+      if(err) throw err;
+      else{
+        let OneBadgeAndElementsOfZone = {
+          zoneId : element.zoneId,
+          zone : element.nomZone,
+          commentaire : element.commentaire,
+          badge : element.uidBadge,
+          elements : data
+        };
+        resolve();
+        BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+      }
+    });
+  });
+}
+
 //Update commentaire
 app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
   const req=request.query
@@ -872,7 +929,7 @@ app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
 //Récupérer l'ensemble des zones non affecté à un badge
 app.get("/ZonesLibre", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL)', (err,data) => {
+  connection.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
