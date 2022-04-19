@@ -19,7 +19,7 @@ let BadgeAndElementsOfZone = [];
 //create mysql connection
 const mysql = require('mysql');
 const { response } = require("express");
-connection = mysql.createConnection({
+const connection = mysql.createConnection({
     host: 'localhost',
     user: 'dolibarrmysql',
     password: 'AD*201903*',
