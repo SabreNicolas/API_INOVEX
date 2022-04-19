@@ -12,16 +12,21 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //permet les requêtes cros domain
 app.use(cors({origin: "*" }));
 
+//Tableau pour le mode hors ligne de la ronde
+let BadgeAndElementsOfZone = [];
+
 
 //create mysql connection
 const mysql = require('mysql');
 const { response } = require("express");
-const connection = mysql.createConnection({
+connection = mysql.createConnection({
     host: 'localhost',
     user: 'dolibarrmysql',
     password: 'AD*201903*',
     database: 'dolibarr'
 });
+
+
 
 // set port, listen for requests
 app.listen(port, () => {
@@ -877,6 +882,40 @@ app.get("/zones", (request, response) => {
     response.json({data})
   });
 });
+
+//POUR MODE HORS LIGNE
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
+app.get("/BadgeAndElementsOfZone", (request, response) => {
+  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
+    if(err) throw err;
+    else {
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const element of data) {
+        await getElementsHorsLigne(element);
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
+  });
+});
+
+function getElementsHorsLigne(element) {
+  return new Promise((resolve) => {
+    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+element.zoneId +' ORDER BY nom ASC', (err,data) => {
+      if(err) throw err;
+      else{
+        let OneBadgeAndElementsOfZone = {
+          zoneId : element.zoneId,
+          zone : element.nomZone,
+          commentaire : element.commentaire,
+          badge : element.uidBadge,
+          elements : data
+        };
+        resolve();
+        BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+      }
+    });
+  });
+}
 
 //Update commentaire
 app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
