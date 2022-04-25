@@ -886,28 +886,29 @@ app.get("/zones", (request, response) => {
 //POUR MODE HORS LIGNE
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
 app.get("/BadgeAndElementsOfZone", (request, response) => {
+  BadgeAndElementsOfZone = [];
   connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
     if(err) throw err;
     else {
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
-      for await (const element of data) {
-        await getElementsHorsLigne(element);
+      for await (const zone of data) {
+        await getElementsHorsLigne(zone);
       };
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
 
-function getElementsHorsLigne(element) {
+function getElementsHorsLigne(zone) {
   return new Promise((resolve) => {
-    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+element.zoneId +' ORDER BY nom ASC', (err,data) => {
+    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+zone.zoneId +' ORDER BY nom ASC', (err,data) => {
       if(err) throw err;
       else{
         let OneBadgeAndElementsOfZone = {
-          zoneId : element.zoneId,
-          zone : element.nomZone,
-          commentaire : element.commentaire,
-          badge : element.uidBadge,
+          zoneId : zone.zoneId,
+          zone : zone.nomZone,
+          commentaire : zone.commentaire,
+          badge : zone.uidBadge,
           elements : data
         };
         resolve();
@@ -959,59 +960,113 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
 //?date=07/02/2022
 app.get("/elementsOfRonde/:quart", (request, response) => {
   const req=request.query
-  connection.query("SELECT Id FROM elementcontrole WHERE Id NOT IN (SELECT elementId FROM mesuresrondier WHERE dateHeure LIKE '"+req.date+"%' AND quart = "+request.params.quart+")", (err,data) => {
+  connection.query("SELECT Id FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+
+/*Ronde*/
+//?dateHeure=07/02/2022 08:00&quart=1&userId=1
+app.put("/ronde", (request, response) => {
+  const req=request.query
+  connection.query("INSERT INTO ronde (dateHeure, quart, userId) VALUES ("+req.dateHeure+", "+req.quart+", "+req.userId+")"
+  ,(err,result,fields) => {
+      if(err) response.json("Création de la ronde KO");
+      else response.json("Création de la ronde OK");
+  });
+});
+
+//Cloture de la ronde avec ou sans commentaire/anomalie
+//?commentaire=ejejejeje&image=imageAnomalie
+app.put("/closeRonde", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE ronde SET commentaire = ' + req.commentaire +', image = ' + req.image + ' WHERE isFinished = 0', (err,data) => {
+    if(err) throw err;
+    response.json("Cloture de la ronde OK")
+  });
+});
+
+
+//Récupérer l'auteur d'une ronde
+//?date=07/02/2022
+app.get("/AuteurRonde/:quart", (request, response) => {
+  const req=request.query
+  connection.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
 /*Mesures Rondier*/
-//?elementId=1&dateHeure=07/02/2022 08:00&quart=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&userId=1
+//?elementId=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO mesuresrondier (elementId, dateHeure, quart, isFour1, isFour2, modeRegulateur, value, userId) VALUES ("+req.elementId+", '"+req.dateHeure+"', "+req.quart+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', "+req.value+", "+req.userId+")"
+  connection.query("INSERT INTO mesuresrondier (elementId, isFour1, isFour2, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', "+req.value+", "+req.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
   });
 });
 
-//Récupérer l'ensemble des mesures pour une date/quart donné
+//Récupérer l'ensemble des mesures pour une date/quart donné => reporting
 //?date=07/02/2022
 app.get("/reportingRonde/:quart", (request, response) => {
   const req=request.query
-  connection.query("SELECT m.value, e.nom FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id WHERE m.dateHeure LIKE '"+req.date+"%' AND m.quart = "+request.params.quart, (err,data) => {
+  connection.query("SELECT m.value, e.nom FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
-//Récupérer l'auteur d'une ronde
-//?date=07/02/2022
-app.get("/AuteurRonde/:quart", (request, response) => {
-  const req=request.query
-  connection.query("SELECT DISTINCT u.nom, u.prenom FROM mesuresrondier m INNER JOIN users u ON m.userId = u.Id WHERE m.dateHeure LIKE '"+req.date+"%' AND m.quart = "+request.params.quart, (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
-/*Permis de feu*/
-//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1
+/*Permis de feu et zone de consignation*/
+//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1
 app.put("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+')'
+  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+'", '+req.zone+'", '+req.isPermisFeu+')'
   ,(err,result,fields) => {
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
   });
 })
 
-//Récupérer les permis de feu en cours
-app.get("/PermisFeu", (request, response) => {
+//Récupérer les permis de feu en cours ou les zones de consignation
+app.get("/PermisFeu/:isPermisFeu", (request, response) => {
   const req=request.query
-  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
+  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW() AND p.isPermisFeu='+request.params.isPermisFeu, (err,data) => {
     if(err) throw err;
     response.json({data})
+  });
+});
+
+
+/*Mode opératoire*/
+//?nom=dggd&fichier=fff&zoneId=1
+app.put("/modeOP", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ("'+req.nom+'", "'+req.fichier+'", '+req.zoneId+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Création du modeOP KO");
+      else response.json("Création du modeOP OK");
+  });
+})
+
+//Récupérer les modeOP associé à une zone
+app.get("/modeOPofZone/:zoneId", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM modeoperatoire WHERE zoneId='+request.params.zoneId, (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Update du fichier du modeOP
+//?fichier=modeOP1
+app.put("/modeOP/:id", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE modeoperatoire SET fichier = ' + req.fichier + ' WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du modeOP OK")
   });
 });
