@@ -1050,7 +1050,16 @@ app.put("/modeOP", (request, response) => {
       if(err) response.json("Création du modeOP KO");
       else response.json("Création du modeOP OK");
   });
-})
+});
+
+//Récupérer l'ensemble des modeOp
+app.get("/modeOPs", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM modeoperatoire', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
 
 //Récupérer les modeOP associé à une zone
 app.get("/modeOPofZone/:zoneId", (request, response) => {
