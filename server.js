@@ -971,7 +971,7 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1
 app.put("/ronde", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO ronde (dateHeure, quart, userId) VALUES ("+req.dateHeure+", "+req.quart+", "+req.userId+")"
+  connection.query("INSERT INTO ronde (dateHeure, quart, userId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -999,6 +999,25 @@ app.get("/AuteurRonde/:quart", (request, response) => {
   });
 });
 
+//Récupérer l'id de la dernière ronde inséré
+app.get("/LastRonde", (request, response) => {
+  const req=request.query
+  connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+//Récupérer les rondes et leurs infos pour une date donnée
+//?date=07/02/2022
+app.get("/Rondes", (request, response) => {
+  const req=request.query
+  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, u.Nom, u.Prenom FROM ronde r INNER JOIN users u ON u.Id = r .userId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 /*Mesures Rondier*/
 //?elementId=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
@@ -1010,11 +1029,10 @@ app.put("/mesureRondier", (request, response) => {
   });
 });
 
-//Récupérer l'ensemble des mesures pour une date/quart donné => reporting
-//?date=07/02/2022
-app.get("/reportingRonde/:quart", (request, response) => {
+//Récupérer l'ensemble des mesures pour une ronde => reporting
+app.get("/reportingRonde/:idRonde", (request, response) => {
   const req=request.query
-  connection.query("SELECT m.value, e.nom FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
+  connection.query("SELECT e.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1024,7 +1042,7 @@ app.get("/reportingRonde/:quart", (request, response) => {
 //?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1
 app.put("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+'", '+req.zone+'", '+req.isPermisFeu+')'
+  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+', "'+req.zone+'", '+req.isPermisFeu+')'
   ,(err,result,fields) => {
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
@@ -1032,9 +1050,9 @@ app.put("/PermisFeu", (request, response) => {
 })
 
 //Récupérer les permis de feu en cours ou les zones de consignation
-app.get("/PermisFeu/:isPermisFeu", (request, response) => {
+app.get("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW() AND p.isPermisFeu='+request.params.isPermisFeu, (err,data) => {
+  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId, isPermisFeu, zone FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1052,10 +1070,19 @@ app.put("/modeOP", (request, response) => {
   });
 });
 
-//Récupérer l'ensemble des modeOp
+//DELETE modeOP
+app.delete("/modeOP/:id", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM modeoperatoire WHERE Id = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du modeOP OK")
+  });
+});
+
+//Récupérer l'ensemble des modeOP
 app.get("/modeOPs", (request, response) => {
   const req=request.query
-  connection.query('SELECT * FROM modeoperatoire', (err,data) => {
+  connection.query('SELECT m.Id, m.nom, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
