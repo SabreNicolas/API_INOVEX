@@ -940,7 +940,7 @@ app.get("/ZonesLibre", (request, response) => {
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&isFour=0&isGlobal=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1;2;3
 app.put("/element", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, isFour, isGlobal, unit, defaultValue, isRegulateur, listValues) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", "+req.isFour+", "+req.isGlobal+", '"+req.unit+"', "+req.defaultValue+", "+req.isRegulateur+", '"+req.listValues+"')"
+  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, isFour, isGlobal, unit, defaultValue, isRegulateur, listValues) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", "+req.isFour+", "+req.isGlobal+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"')"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'élément KO");
       else response.json("Création de l'élément OK");
@@ -979,10 +979,10 @@ app.put("/ronde", (request, response) => {
 });
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
-//?commentaire=ejejejeje&image=imageAnomalie
+//?commentaire=ejejejeje&image=imageAnomalie&id=1
 app.put("/closeRonde", (request, response) => {
   const req=request.query
-  connection.query('UPDATE ronde SET commentaire = ' + req.commentaire +', image = ' + req.image + ' WHERE isFinished = 0', (err,data) => {
+  connection.query('UPDATE ronde SET commentaire = "' + req.commentaire +'", image = "' + req.image + '" , isFinished = 1 WHERE id = '+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1004,7 +1004,7 @@ app.get("/LastRonde", (request, response) => {
   const req=request.query
   connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
     if(err) throw err;
-    response.json({data})
+    response.json(data[0].Id)
   });
 });
 
@@ -1022,7 +1022,7 @@ app.get("/Rondes", (request, response) => {
 //?elementId=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO mesuresrondier (elementId, isFour1, isFour2, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', "+req.value+", "+req.rondeId+")"
+  connection.query("INSERT INTO mesuresrondier (elementId, isFour1, isFour2, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
