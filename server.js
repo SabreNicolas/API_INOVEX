@@ -864,10 +864,10 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 });
 
 /*Zone de controle*/
-//?nom=dggd&commentaire=fff
+//?nom=dggd&commentaire=fff&four1=1&four2=0
 app.put("/zone", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO zonecontrole (nom, commentaire) VALUES ("'+req.nom+'", "'+req.commentaire+'")'
+  connection.query('INSERT INTO zonecontrole (nom, commentaire, four1, four2) VALUES ("'+req.nom+'", "'+req.commentaire+'", '+req.four1+', '+req.four2+')'
   ,(err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
@@ -887,7 +887,7 @@ app.get("/zones", (request, response) => {
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
 app.get("/BadgeAndElementsOfZone", (request, response) => {
   BadgeAndElementsOfZone = [];
-  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
+  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four1, z.four2, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
     if(err) throw err;
     else {
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
@@ -909,6 +909,8 @@ function getElementsHorsLigne(zone) {
           zone : zone.nomZone,
           commentaire : zone.commentaire,
           badge : zone.uidBadge,
+          four1 : zone.four1,
+          four2 : zone.four2,
           elements : data
         };
         resolve();
@@ -937,10 +939,10 @@ app.get("/ZonesLibre", (request, response) => {
 });
 
 /*Element de controle*/
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&isFour=0&isGlobal=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1;2;3
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1;2;3
 app.put("/element", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, isFour, isGlobal, unit, defaultValue, isRegulateur, listValues) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", "+req.isFour+", "+req.isGlobal+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"')"
+  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"')"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'élément KO");
       else response.json("Création de l'élément OK");
@@ -960,7 +962,7 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
 //?date=07/02/2022
 app.get("/elementsOfRonde/:quart", (request, response) => {
   const req=request.query
-  connection.query("SELECT Id FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
+  connection.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -979,10 +981,20 @@ app.put("/ronde", (request, response) => {
 });
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
-//?commentaire=ejejejeje&image=imageAnomalie&id=1
+//?commentaire=ejejejeje&image=imageAnomalie&id=1&four1=0&four2=1
 app.put("/closeRonde", (request, response) => {
   const req=request.query
-  connection.query('UPDATE ronde SET commentaire = "' + req.commentaire +'", image = "' + req.image + '" , isFinished = 1 WHERE id = '+ req.id, (err,data) => {
+  connection.query('UPDATE ronde SET commentaire = "' + req.commentaire +'", image = "' + req.image +'", fonctFour1 = ' + req.four1 +', fonctFour2 = ' + req.four2 + ' , isFinished = 1 WHERE id = '+ req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Cloture de la ronde OK")
+  });
+});
+
+//Cloture de la ronde encore en cours
+//?id=12
+app.put("/closeRondeEnCours", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1 WHERE id = '+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1012,27 +1024,47 @@ app.get("/LastRonde", (request, response) => {
 //?date=07/02/2022
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, u.Nom, u.Prenom FROM ronde r INNER JOIN users u ON u.Id = r .userId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom FROM ronde r INNER JOIN users u ON u.Id = r .userId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
+//Suppression ronde
+//?id=12
+app.delete("/deleteRonde", (request, response) => {
+  const req=request.query
+  connection.query('DELETE FROM ronde WHERE id = '+ req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de la ronde OK")
+  });
+});
+
 /*Mesures Rondier*/
-//?elementId=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&rondeId=1
+//?elementId=1&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO mesuresrondier (elementId, isFour1, isFour2, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
+  connection.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
   });
 });
 
+//Update valeur de l'élement de contrôle
+//?id=12&value=dhdhhd
+app.put("/updateMesureRonde", (request, response) => {
+  const req=request.query
+  connection.query('UPDATE mesuresrondier SET value = "'+req.value+'" WHERE id = '+ req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de la valeur OK")
+  });
+});
+
 //Récupérer l'ensemble des mesures pour une ronde => reporting
 app.get("/reportingRonde/:idRonde", (request, response) => {
   const req=request.query
-  connection.query("SELECT e.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
+  connection.query("SELECT e.Id as elementId, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
