@@ -768,8 +768,9 @@ app.get("/UsersLibre", (request, response) => {
   });
 });
 
-
+//*********************
 /*******RONDIER*******/
+//*********************
 
 /*Badge*/
 //?uid=AD:123:D23
@@ -884,24 +885,30 @@ app.get("/zones", (request, response) => {
 });
 
 //POUR MODE HORS LIGNE
-//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/BadgeAndElementsOfZone", (request, response) => {
   BadgeAndElementsOfZone = [];
+  let previousId = 0;
   connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four1, z.four2, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
     if(err) throw err;
     else {
+      //On récupère l'Id de la ronde précedente
+      connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
+        if(err) throw err;
+        else previousId = data[1].Id;
+      });
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsHorsLigne(zone);
+        await getElementsHorsLigne(zone,previousId);
       };
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
 
-function getElementsHorsLigne(zone) {
+function getElementsHorsLigne(zone,previousId) {
   return new Promise((resolve) => {
-    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+zone.zoneId +' ORDER BY nom ASC', (err,data) => {
+    connection.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId +' ORDER BY e.nom ASC', (err,data) => {
       if(err) throw err;
       else{
         let OneBadgeAndElementsOfZone = {
@@ -1011,7 +1018,7 @@ app.get("/AuteurRonde/:quart", (request, response) => {
   });
 });
 
-//Récupérer l'id de la dernière ronde inséré
+//Récupérer l'id de la dernière ronde inséré (ronde en cours)
 app.get("/LastRonde", (request, response) => {
   const req=request.query
   connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
@@ -1136,5 +1143,47 @@ app.put("/modeOP/:id", (request, response) => {
   connection.query('UPDATE modeoperatoire SET fichier = ' + req.fichier + ' WHERE Id = '+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du modeOP OK")
+  });
+});
+
+
+/*Consignes*/
+//?commentaire=dggd&dateFin=fff&type=1
+app.put("/consigne", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO consigne (commentaire, date_heure_fin, type) VALUES ("'+req.commentaire+'", "'+req.dateFin+'", '+req.type+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Création de la consigne KO");
+      else response.json("Création de la consigne OK");
+  });
+});
+
+//Récupérer les consignes en cours
+app.get("/consignes", (request, response) => {
+  const req=request.query
+  connection.query('SELECT DATE_FORMAT(date_heure_fin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= NOW()', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+/*Anomalie*/
+//?rondeId=1&zoneId=2&commentaire=dggd&photo=fff
+app.put("/anomalie", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ('+req.rondeId+', '+req.zoneId+', "'+req.commentaire+'", "'+req.photo+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Création de l'anomalie KO");
+      else response.json("Création de l'anomalie OK");
+  });
+});
+
+//TODO : inner join avec Ronde ??? Zone ??? + param idRonde
+//Récupérer les anomalies d'une ronde
+app.get("/anomalies/:id", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM anomalie WHERE rondeId = '+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json({data})
   });
 });
