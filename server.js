@@ -41,15 +41,16 @@ app.get("/", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
+  service: 'outbound',
+  host: 'outbound.mailhop.org',
   auth: {
-    user: 'arret.inova@gmail.com',
-    pass: 'AD*201903*'
+    user: 'infotec-lens',
+    pass: 'cast0r'
   }
 }));
 
 var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com';
+//var maillist = 'nsabre@kerlan-info.fr';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
