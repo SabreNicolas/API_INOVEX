@@ -990,6 +990,15 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
   });
 });
 
+//Récupérer l'ensemble des élements de type compteur
+app.get("/elementsCompteur", (request, response) => {
+  const req=request.query
+  connection.query('SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY nom ASC', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 //Récupérer un element 
 app.get("/element/:elementId", (request, response) => {
   const req=request.query
@@ -1058,6 +1067,15 @@ app.get("/LastRonde", (request, response) => {
   connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
     if(err) throw err;
     response.json(data[0].Id)
+  });
+});
+
+//Récupérer la ronde encore en cours => permettre au rondier de la reprendre
+app.get("/LastRondeOpen", (request, response) => {
+  const req=request.query
+  connection.query("SELECT * from ronde WHERE isFinished = 0 ORDER BY Id DESC LIMIT 1", (err,data) => {
+    if(err) throw err;
+    response.json(data)
   });
 });
 
