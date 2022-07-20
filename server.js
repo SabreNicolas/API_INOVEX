@@ -49,7 +49,7 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com';
+var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com, herve.bea@paprec.com';
 //var maillist = 'nsabre@kerlan-info.fr';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
@@ -913,7 +913,16 @@ app.get("/BadgeAndElementsOfZone", (request, response) => {
 
 function getElementsHorsLigne(zone,previousId) {
   return new Promise((resolve) => {
-    connection.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId +' ORDER BY e.nom ASC', (err,data) => {
+    let modesOp;
+    //Récupération des modesOP
+    connection.query('SELECT m.fichier FROM modeoperatoire m WHERE zoneId = '+zone.zoneId, (err,data) => {
+      if(err) throw err;
+      else{
+        modesOp = data;
+      }
+    });
+
+    connection.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId, (err,data) => {
       if(err) throw err;
       else{
         let OneBadgeAndElementsOfZone = {
@@ -923,6 +932,7 @@ function getElementsHorsLigne(zone,previousId) {
           badge : zone.uidBadge,
           four1 : zone.four1,
           four2 : zone.four2,
+          modeOP : modesOp,
           elements : data
         };
         resolve();
@@ -1075,7 +1085,7 @@ app.get("/LastRondeOpen", (request, response) => {
   const req=request.query
   connection.query("SELECT * from ronde WHERE isFinished = 0 ORDER BY Id DESC LIMIT 1", (err,data) => {
     if(err) throw err;
-    response.json(data)
+    response.json(data[0])
   });
 });
 
@@ -1129,11 +1139,21 @@ app.get("/reportingRonde/:idRonde", (request, response) => {
   });
 });
 
+//Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
+//?id=111&date=dhdhdh
+app.get("/valueElementDay", (request, response) => {
+  const req=request.query
+  connection.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
 /*Permis de feu et zone de consignation*/
-//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1
+//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
 app.put("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+', "'+req.zone+'", '+req.isPermisFeu+')'
+  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+', "'+req.zone+'", '+req.isPermisFeu+', "'+req.numero+'")'
   ,(err,result,fields) => {
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
@@ -1143,7 +1163,29 @@ app.put("/PermisFeu", (request, response) => {
 //Récupérer les permis de feu en cours ou les zones de consignation
 app.get("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
+  connection.query('SELECT p.Id, DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
+    if(err) throw err;
+    response.json({data})
+  });
+});
+
+
+//Enregistrer une validation de permis de feu
+//?dateHeure=dggd&permisFeuId=1&userId=1&quart=1&rondeId=1
+app.put("/VerifPermisFeu", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO permisfeuvalidation (permisFeuId, userId, dateHeure, quart, rondeId) VALUES ('+req.permisFeuId+', '+req.userId+', "'+req.dateHeure+'", '+req.quart+', '+req.rondeId+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Validation du permis de feu KO");
+      else response.json("Validation du permis de feu OK");
+  });
+})
+
+//Récupérer les validation pour une date donnée
+//?dateHeure=22/06/2022
+app.get("/PermisFeuVerification", (request, response) => {
+  const req=request.query
+  connection.query('SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId WHERE p.dateHeure LIKE "%'+req.dateHeure+'%"', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
