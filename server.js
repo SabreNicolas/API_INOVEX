@@ -1030,10 +1030,10 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 
 
 /*Ronde*/
-//?dateHeure=07/02/2022 08:00&quart=1&userId=1
+//?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1
 app.put("/ronde", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO ronde (dateHeure, quart, userId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+")"
+  connection.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1093,7 +1093,7 @@ app.get("/LastRondeOpen", (request, response) => {
 //?date=07/02/2022
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom FROM ronde r INNER JOIN users u ON u.Id = r .userId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
