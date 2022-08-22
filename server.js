@@ -1080,6 +1080,18 @@ app.get("/LastRonde", (request, response) => {
   });
 });
 
+//Récupérer l'id de la ronde précédente (0 si première ronde de la BDD)
+app.get("/RondePrecedente", (request, response) => {
+  const req=request.query
+  connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
+    if(err) throw err;
+    if(data.length>1){
+      response.json(data[1].Id)
+    }
+    response.json(0)
+  });
+});
+
 //Récupérer la ronde encore en cours => permettre au rondier de la reprendre
 app.get("/LastRondeOpen", (request, response) => {
   const req=request.query
