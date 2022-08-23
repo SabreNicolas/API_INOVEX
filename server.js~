@@ -1,17 +1,14 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-//pour reécupérer les fichiers envoyés via formData
-const multer = require('multer');
-const upload = multer();
 var cors = require('cors');
 const nodemailer = require("nodemailer");
 var smtpTransport = require('nodemailer-smtp-transport');
 const port = 3000;
 const app = express();
 // parse requests of content-type: application/json
-app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.json());
 // parse requests of content-type: application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb'}));
+app.use(bodyParser.urlencoded({ extended: true }));
 //permet les requêtes cros domain
 app.use(cors({origin: "*" }));
 
@@ -44,16 +41,15 @@ app.get("/", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: 'outbound',
-  host: 'outbound.mailhop.org',
+  service: 'gmail',
+  host: 'smtp.gmail.com',
   auth: {
-    user: 'infotec-lens',
-    pass: 'cast0r'
+    user: 'arret.inova@gmail.com',
+    pass: 'AD*201903*'
   }
 }));
 
-var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com, herve.bea@paprec.com';
-//var maillist = 'nsabre@kerlan-info.fr';
+var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
@@ -772,9 +768,8 @@ app.get("/UsersLibre", (request, response) => {
   });
 });
 
-//*********************
+
 /*******RONDIER*******/
-//*********************
 
 /*Badge*/
 //?uid=AD:123:D23
@@ -869,10 +864,10 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 });
 
 /*Zone de controle*/
-//?nom=dggd&commentaire=fff&four1=1&four2=0
+//?nom=dggd&commentaire=fff
 app.put("/zone", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO zonecontrole (nom, commentaire, four1, four2) VALUES ("'+req.nom+'", "'+req.commentaire+'", '+req.four1+', '+req.four2+')'
+  connection.query('INSERT INTO zonecontrole (nom, commentaire) VALUES ("'+req.nom+'", "'+req.commentaire+'")'
   ,(err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
@@ -889,43 +884,24 @@ app.get("/zones", (request, response) => {
 });
 
 //POUR MODE HORS LIGNE
-//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé
 app.get("/BadgeAndElementsOfZone", (request, response) => {
   BadgeAndElementsOfZone = [];
-  let previousId = 0;
-  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four1, z.four2, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id ORDER BY z.nom ASC', async (err,data) => {
+  connection.query('SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id', async (err,data) => {
     if(err) throw err;
     else {
-      //On récupère l'Id de la ronde précedente
-      connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
-        if(err) throw err;
-        else {
-          if(data.length > 1){
-            previousId = data[1].Id;
-          } else previousId = 0;
-        }
-      });
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsHorsLigne(zone,previousId);
+        await getElementsHorsLigne(zone);
       };
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
 
-function getElementsHorsLigne(zone,previousId) {
+function getElementsHorsLigne(zone) {
   return new Promise((resolve) => {
-    let modesOp;
-    //Récupération des modesOP
-    connection.query('SELECT m.fichier FROM modeoperatoire m WHERE zoneId = '+zone.zoneId, (err,data) => {
-      if(err) throw err;
-      else{
-        modesOp = data;
-      }
-    });
-
-    connection.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId, (err,data) => {
+    connection.query('SELECT * FROM elementcontrole WHERE zoneId = '+zone.zoneId +' ORDER BY nom ASC', (err,data) => {
       if(err) throw err;
       else{
         let OneBadgeAndElementsOfZone = {
@@ -933,9 +909,6 @@ function getElementsHorsLigne(zone,previousId) {
           zone : zone.nomZone,
           commentaire : zone.commentaire,
           badge : zone.uidBadge,
-          four1 : zone.four1,
-          four2 : zone.four2,
-          modeOP : modesOp,
           elements : data
         };
         resolve();
@@ -964,33 +937,13 @@ app.get("/ZonesLibre", (request, response) => {
 });
 
 /*Element de controle*/
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&isFour=0&isGlobal=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1;2;3
 app.put("/element", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+")"
+  connection.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, isFour, isGlobal, unit, defaultValue, isRegulateur, listValues) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", "+req.isFour+", "+req.isGlobal+", '"+req.unit+"', "+req.defaultValue+", "+req.isRegulateur+", '"+req.listValues+"')"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'élément KO");
       else response.json("Création de l'élément OK");
-  });
-});
-
-//Update element
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1
-app.put("/updateElement/:id", (request, response) => {
-  const req=request.query
-  connection.query('UPDATE elementcontrole SET zoneId = ' + req.zoneId + ', nom = "'+ req.nom +'", valeurMin = '+ req.valeurMin+', valeurMax = '+ req.valeurMax +', typeChamp = '+ req.typeChamp +', unit = "'+ req.unit +'", defaultValue = "'+ req.defaultValue +'", isRegulateur = '+ req.isRegulateur +', listValues = "'+ req.listValues +'", isCompteur = '+ req.isCompteur +' WHERE Id = '+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json("Mise à jour de l'element OK")
-  });
-});
-
-//Suppression element
-//?id=12
-app.delete("/deleteElement", (request, response) => {
-  const req=request.query
-  connection.query('DELETE FROM elementcontrole WHERE Id = '+ req.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression de l'élément OK")
   });
 });
 
@@ -1003,29 +956,11 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
   });
 });
 
-//Récupérer l'ensemble des élements de type compteur
-app.get("/elementsCompteur", (request, response) => {
-  const req=request.query
-  connection.query('SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY nom ASC', (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
-//Récupérer un element 
-app.get("/element/:elementId", (request, response) => {
-  const req=request.query
-  connection.query('SELECT * FROM elementcontrole WHERE Id = '+request.params.elementId, (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
 //Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
 //?date=07/02/2022
 app.get("/elementsOfRonde/:quart", (request, response) => {
   const req=request.query
-  connection.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
+  connection.query("SELECT Id FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1033,10 +968,10 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 
 
 /*Ronde*/
-//?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1
+//?dateHeure=07/02/2022 08:00&quart=1&userId=1
 app.put("/ronde", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+")"
+  connection.query("INSERT INTO ronde (dateHeure, quart, userId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1044,20 +979,10 @@ app.put("/ronde", (request, response) => {
 });
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
-//?commentaire=ejejejeje&image=imageAnomalie&id=1&four1=0&four2=1
+//?commentaire=ejejejeje&image=imageAnomalie
 app.put("/closeRonde", (request, response) => {
   const req=request.query
-  connection.query('UPDATE ronde SET commentaire = "' + req.commentaire +'", image = "' + req.image +'", fonctFour1 = ' + req.four1 +', fonctFour2 = ' + req.four2 + ' , isFinished = 1 WHERE id = '+ req.id, (err,data) => {
-    if(err) throw err;
-    response.json("Cloture de la ronde OK")
-  });
-});
-
-//Cloture de la ronde encore en cours
-//?id=12
-app.put("/closeRondeEnCours", (request, response) => {
-  const req=request.query
-  connection.query('UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1 WHERE id = '+ req.id, (err,data) => {
+  connection.query('UPDATE ronde SET commentaire = ' + req.commentaire +', image = ' + req.image + ' WHERE isFinished = 0', (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1074,7 +999,7 @@ app.get("/AuteurRonde/:quart", (request, response) => {
   });
 });
 
-//Récupérer l'id de la dernière ronde inséré (ronde en cours)
+//Récupérer l'id de la dernière ronde inséré
 app.get("/LastRonde", (request, response) => {
   const req=request.query
   connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
@@ -1083,92 +1008,41 @@ app.get("/LastRonde", (request, response) => {
   });
 });
 
-//Récupérer l'id de la ronde précédente (0 si première ronde de la BDD)
-app.get("/RondePrecedente", (request, response) => {
-  const req=request.query
-  connection.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
-    if(err) throw err;
-    if(data.length>1){
-      response.json(data[1].Id)
-    }
-    else response.json(0)
-  });
-});
-
-//Récupérer la ronde encore en cours => permettre au rondier de la reprendre
-app.get("/LastRondeOpen", (request, response) => {
-  const req=request.query
-  connection.query("SELECT * from ronde WHERE isFinished = 0 ORDER BY Id DESC LIMIT 1", (err,data) => {
-    if(err) throw err;
-    response.json(data[0])
-  });
-});
-
 //Récupérer les rondes et leurs infos pour une date donnée
 //?date=07/02/2022
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+  connection.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, u.Nom, u.Prenom FROM ronde r INNER JOIN users u ON u.Id = r .userId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
-//Suppression ronde
-//?id=12
-app.delete("/deleteRonde", (request, response) => {
-  const req=request.query
-  connection.query('DELETE FROM ronde WHERE id = '+ req.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression de la ronde OK")
-  });
-});
-
 /*Mesures Rondier*/
-//?elementId=1&modeRegulateur=AP&value=2.4&rondeId=1
+//?elementId=1&isFour1=1&isFour2=0&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
   const req=request.query
-  connection.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", '"+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
+  connection.query("INSERT INTO mesuresrondier (elementId, isFour1, isFour2, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", "+req.isFour1+", "+req.isFour2+", '"+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
   });
 });
 
-//Update valeur de l'élement de contrôle
-//?id=12&value=dhdhhd
-app.put("/updateMesureRonde", (request, response) => {
-  const req=request.query
-  connection.query('UPDATE mesuresrondier SET value = "'+req.value+'" WHERE id = '+ req.id, (err,data) => {
-    if(err) throw err;
-    response.json("Mise à jour de la valeur OK")
-  });
-});
-
 //Récupérer l'ensemble des mesures pour une ronde => reporting
 app.get("/reportingRonde/:idRonde", (request, response) => {
   const req=request.query
-  connection.query("SELECT e.Id as elementId, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
-//Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
-//?id=111&date=dhdhdh
-app.get("/valueElementDay", (request, response) => {
-  const req=request.query
-  connection.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
+  connection.query("SELECT e.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
 });
 
 /*Permis de feu et zone de consignation*/
-//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
+//?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1
 app.put("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+', "'+req.zone+'", '+req.isPermisFeu+', "'+req.numero+'")'
+  connection.query('INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu) VALUES ("'+req.dateHeureDeb+'", "'+req.dateHeureFin+'", '+req.badgeId+', "'+req.zone+'", '+req.isPermisFeu+')'
   ,(err,result,fields) => {
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
@@ -1178,29 +1052,7 @@ app.put("/PermisFeu", (request, response) => {
 //Récupérer les permis de feu en cours ou les zones de consignation
 app.get("/PermisFeu", (request, response) => {
   const req=request.query
-  connection.query('SELECT p.Id, DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
-
-//Enregistrer une validation de permis de feu
-//?dateHeure=dggd&permisFeuId=1&userId=1&quart=1&rondeId=1
-app.put("/VerifPermisFeu", (request, response) => {
-  const req=request.query
-  connection.query('INSERT INTO permisfeuvalidation (permisFeuId, userId, dateHeure, quart, rondeId) VALUES ('+req.permisFeuId+', '+req.userId+', "'+req.dateHeure+'", '+req.quart+', '+req.rondeId+')'
-  ,(err,result,fields) => {
-      if(err) response.json("Validation du permis de feu KO");
-      else response.json("Validation du permis de feu OK");
-  });
-})
-
-//Récupérer les validation pour une date donnée
-//?dateHeure=22/06/2022
-app.get("/PermisFeuVerification", (request, response) => {
-  const req=request.query
-  connection.query('SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId WHERE p.dateHeure LIKE "%'+req.dateHeure+'%"', (err,data) => {
+  connection.query('SELECT DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, badgeId, isPermisFeu, zone FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1209,19 +1061,11 @@ app.get("/PermisFeuVerification", (request, response) => {
 
 /*Mode opératoire*/
 //?nom=dggd&fichier=fff&zoneId=1
-app.post("/modeOP", upload.single('fichier'), (request, response) => {
-  const req=request.query;
-  var query = "INSERT INTO modeoperatoire SET ?";
-  var values = {
-      nom: req.nom,
-      fichier: request.file.buffer,
-      zoneId: req.zoneId
-  };
-  connection.query(query,values,(err,result,fields) => {
-      if(err) {
-        //console.log(err);
-        response.json("Création du modeOP KO");
-      }
+app.put("/modeOP", (request, response) => {
+  const req=request.query
+  connection.query('INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ("'+req.nom+'", "'+req.fichier+'", '+req.zoneId+')'
+  ,(err,result,fields) => {
+      if(err) response.json("Création du modeOP KO");
       else response.json("Création du modeOP OK");
   });
 });
@@ -1238,7 +1082,7 @@ app.delete("/modeOP/:id", (request, response) => {
 //Récupérer l'ensemble des modeOP
 app.get("/modeOPs", (request, response) => {
   const req=request.query
-  connection.query('SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId', (err,data) => {
+  connection.query('SELECT m.Id, m.nom, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1260,56 +1104,5 @@ app.put("/modeOP/:id", (request, response) => {
   connection.query('UPDATE modeoperatoire SET fichier = ' + req.fichier + ' WHERE Id = '+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du modeOP OK")
-  });
-});
-
-
-/*Consignes*/
-//?commentaire=dggd&dateFin=fff&type=1
-app.put("/consigne", (request, response) => {
-  const req=request.query
-  connection.query('INSERT INTO consigne (commentaire, date_heure_fin, type) VALUES ("'+req.commentaire+'", "'+req.dateFin+'", '+req.type+')'
-  ,(err,result,fields) => {
-      if(err) response.json("Création de la consigne KO");
-      else response.json("Création de la consigne OK");
-  });
-});
-
-//Récupérer les consignes en cours
-app.get("/consignes", (request, response) => {
-  const req=request.query
-  connection.query('SELECT DATE_FORMAT(date_heure_fin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= NOW()', (err,data) => {
-    if(err) throw err;
-    response.json({data})
-  });
-});
-
-//DELETE consigne
-app.delete("/consigne/:id", (request, response) => {
-  const req=request.query
-  connection.query('DELETE FROM consigne WHERE id = '+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression de la consigne OK")
-  });
-});
-
-/*Anomalie*/
-//?rondeId=1&zoneId=2&commentaire=dggd&photo=fff
-app.put("/anomalie", (request, response) => {
-  const req=request.query
-  connection.query('INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ('+req.rondeId+', '+req.zoneId+', "'+req.commentaire+'", "'+req.photo+'")'
-  ,(err,result,fields) => {
-      if(err) response.json("Création de l'anomalie KO");
-      else response.json("Création de l'anomalie OK");
-  });
-});
-
-//TODO : inner join avec Ronde ??? Zone ???
-//Récupérer les anomalies d'une ronde
-app.get("/anomalies/:id", (request, response) => {
-  const req=request.query
-  connection.query('SELECT * FROM anomalie WHERE rondeId = '+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json({data})
   });
 });
