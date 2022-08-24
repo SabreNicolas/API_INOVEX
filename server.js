@@ -15,6 +15,9 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '50mb'}));
 //permet les requêtes cros domain
 app.use(cors({origin: "*" }));
 
+//utilisation des variables d'environnement
+require('dotenv').config();
+
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
 
@@ -23,10 +26,10 @@ let BadgeAndElementsOfZone = [];
 const mysql = require('mysql');
 const { response } = require("express");
 const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'dolibarrmysql',
-    password: 'AD*201903*',
-    database: 'dolibarr'
+    host: process.env.HOST,
+    user: process.env.USER_BDD,
+    password: process.env.PWD_BDD,
+    database: process.env.DATABASE
 });
 
 
@@ -52,7 +55,7 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = 'Laurent.Saintive@paprec.com, raymond.gorak@paprec.com, maintenance.noyelles@paprec.com, Jean-loic.SOUBIGOU@paprec.com, herve.bea@paprec.com';
+var maillist = process.env.MAIL_LIST;
 //var maillist = 'nsabre@kerlan-info.fr';
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
