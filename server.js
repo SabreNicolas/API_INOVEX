@@ -47,11 +47,11 @@ app.get("/", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: 'outbound',
-  host: 'outbound.mailhop.org',
+  service: 'paprec',
+  host: 'smtpbasic.paprec.fr',
   auth: {
-    user: 'infotec-lens',
-    pass: 'cast0r'
+    user: 'no-reply-inovex@paprec.com',
+    pass: '$Inove2022**'
   }
 }));
 
@@ -61,7 +61,7 @@ var maillist = process.env.MAIL_LIST;
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
   const message = {
-    from: 'arret.inova@gmail.com', // Sender address
+    from: 'Noreply.Inovex@paprec.com', // Sender address
     to: maillist,
     subject: '[NSL] Nouvel Arrêt Intempestif !!!', // Subject line
     html: 'ATTENTION, un arrêt intempestif vient d\'être signalé : '+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'. <br> Voici le commentaire : '+req.params.commentaire // Plain text body
