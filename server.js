@@ -1208,7 +1208,8 @@ app.get("/PermisFeuVerification", (request, response) => {
 
 
 /*Mode opératoire*/
-//?nom=dggd&fichier=fff&zoneId=1
+//?nom=dggd&zoneId=1
+//passage du fichier dans un formData portant le nom 'fichier'
 app.post("/modeOP", upload.single('fichier'), (request, response) => {
   const req=request.query;
   var query = "INSERT INTO modeoperatoire SET ?";
@@ -1294,11 +1295,18 @@ app.delete("/consigne/:id", (request, response) => {
 });
 
 /*Anomalie*/
-//?rondeId=1&zoneId=2&commentaire=dggd&photo=fff
-app.put("/anomalie", (request, response) => {
+//?rondeId=1&zoneId=2&commentaire=dggd
+//passage de la photo dans un formData portant le nom 'fichier'
+app.put("/anomalie", upload.single('fichier'),(request, response) => {
   const req=request.query
-  connection.query('INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ('+req.rondeId+', '+req.zoneId+', "'+req.commentaire+'", "'+req.photo+'")'
-  ,(err,result,fields) => {
+  var query = "INSERT INTO anomalie SET ?";
+  var values = {
+      rondeId: req.rondeId,
+      zondeId: req.zoneId,
+      commentaire: req.commentaire,
+      photo: request.file.buffer
+  };
+  connection.query(query,values,(err,result,fields) => {
       if(err) response.json("Création de l'anomalie KO");
       else response.json("Création de l'anomalie OK");
   });
