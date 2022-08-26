@@ -9,9 +9,9 @@ var smtpTransport = require('nodemailer-smtp-transport');
 const port = 3000;
 const app = express();
 // parse requests of content-type: application/json
-app.use(bodyParser.json({limit: '50mb'}));
+app.use(bodyParser.json({limit: '100mb'}));
 // parse requests of content-type: application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: true, limit: '50mb'}));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb'}));
 //permet les requêtes cros domain
 app.use(cors({origin: "*" }));
 
@@ -1298,16 +1298,20 @@ app.delete("/consigne/:id", (request, response) => {
 //?rondeId=1&zoneId=2&commentaire=dggd
 //passage de la photo dans un formData portant le nom 'fichier'
 app.put("/anomalie", upload.single('fichier'),(request, response) => {
-  const req=request.query
+  const req=request.query;
+  //console.log(Buffer.from(request.body));
   var query = "INSERT INTO anomalie SET ?";
   var values = {
       rondeId: req.rondeId,
-      zondeId: req.zoneId,
+      zoneId: req.zoneId,
       commentaire: req.commentaire,
-      photo: request.file.buffer
+      photo: Buffer.from(request.body)
   };
   connection.query(query,values,(err,result,fields) => {
-      if(err) response.json("Création de l'anomalie KO");
+      if(err) {
+        //console.log(err);
+        response.json("Création de l'anomalie KO");
+      }
       else response.json("Création de l'anomalie OK");
   });
 });
