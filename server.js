@@ -933,7 +933,7 @@ function getElementsHorsLigne(zone,previousId) {
       }
     });
 
-    pool.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId, (err,data) => {
+    pool.query('SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = '+previousId+' WHERE e.zoneId = '+zone.zoneId + ' ORDER BY e.ordre ASC', (err,data) => {
       if(err) throw err;
       else{
         let OneBadgeAndElementsOfZone = {
@@ -962,6 +962,15 @@ app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
   });
 });
 
+//Update nom
+app.put("/zoneNom/:id/:nom", (request, response) => {
+  const req=request.query
+  pool.query('UPDATE zonecontrole SET nom = "' + request.params.nom + '" WHERE Id = "'+request.params.id+'"', (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du nom OK")
+  });
+});
+
 //Récupérer l'ensemble des zones non affecté à un badge
 app.get("/ZonesLibre", (request, response) => {
   const req=request.query
@@ -972,21 +981,32 @@ app.get("/ZonesLibre", (request, response) => {
 });
 
 /*Element de controle*/
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10
 app.put("/element", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+")"
+  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'élément KO");
       else response.json("Création de l'élément OK");
   });
 });
 
+//Update ordre elements
+//Incrémente les ordres de 1 pour pouvoir insérer une éléments entre 2 éléments existants
+//?zoneId=1&maxOrdre=2
+app.put("/updateOrdreElement", (request, response) => {
+  const req=request.query
+  pool.query('UPDATE elementcontrole SET ordre = ordre + 1 WHERE zoneId = ' + req.zoneId + ' AND ordre > ' + req.maxOrdre, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour des ordres OK")
+  });
+});
+
 //Update element
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5
 app.put("/updateElement/:id", (request, response) => {
   const req=request.query
-  pool.query('UPDATE elementcontrole SET zoneId = ' + req.zoneId + ', nom = "'+ req.nom +'", valeurMin = '+ req.valeurMin+', valeurMax = '+ req.valeurMax +', typeChamp = '+ req.typeChamp +', unit = "'+ req.unit +'", defaultValue = "'+ req.defaultValue +'", isRegulateur = '+ req.isRegulateur +', listValues = "'+ req.listValues +'", isCompteur = '+ req.isCompteur +' WHERE Id = '+request.params.id, (err,data) => {
+  pool.query('UPDATE elementcontrole SET zoneId = ' + req.zoneId + ', nom = "'+ req.nom +'", valeurMin = '+ req.valeurMin+', valeurMax = '+ req.valeurMax +', typeChamp = '+ req.typeChamp +', unit = "'+ req.unit +'", defaultValue = "'+ req.defaultValue +'", isRegulateur = '+ req.isRegulateur +', listValues = "'+ req.listValues +'", isCompteur = '+ req.isCompteur +', ordre = '+ req.ordre +' WHERE Id = '+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'element OK")
   });
@@ -1005,7 +1025,7 @@ app.delete("/deleteElement", (request, response) => {
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId", (request, response) => {
   const req=request.query
-  pool.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId +' ORDER BY nom ASC', (err,data) => {
+  pool.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId +' ORDER BY ordre ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1014,7 +1034,7 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
 //Récupérer l'ensemble des élements de type compteur
 app.get("/elementsCompteur", (request, response) => {
   const req=request.query
-  pool.query('SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY nom ASC', (err,data) => {
+  pool.query('SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY ordre ASC', (err,data) => {
     if(err) throw err;
     response.json({data})
   });
