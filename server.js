@@ -25,7 +25,7 @@ let BadgeAndElementsOfZone = [];
 //create mysql connection
 const mysql = require('mysql');
 const { response } = require("express");
-const connection = mysql.createConnection({
+var pool =  mysql.createPool({
     host: process.env.HOST,
     user: process.env.USER_BDD,
     password: process.env.PWD_BDD,
