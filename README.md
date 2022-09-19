@@ -11,6 +11,11 @@ Il faudra surement utiliser CORS pour permettre au requêtes de passer :
     app.use(cors());`
 + `npm install cors --save`
 
+La commande `npm i` devrait suffir à elle seule pour tout installer
+
+# Configurer les infos de connexion à la BDD :
+Il suffit d'ouvrir le fichier `.env` et d'y mettre les bonnes infos
+
 # Lancer l'API : 
 `node server.js`
 
