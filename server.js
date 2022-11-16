@@ -1131,7 +1131,7 @@ app.get("/LastRondeOpen", (request, response) => {
 //?date=07/02/2022
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
@@ -1171,7 +1171,7 @@ app.put("/updateMesureRonde", (request, response) => {
 //Récupérer l'ensemble des mesures pour une ronde => reporting
 app.get("/reportingRonde/:idRonde", (request, response) => {
   const req=request.query
-  pool.query("SELECT e.Id as elementId, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
+  pool.query("SELECT e.Id as elementId, e.unit, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
     response.json({data})
   });
