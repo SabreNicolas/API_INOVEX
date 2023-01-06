@@ -1,3 +1,5 @@
+//TODO : remplacer ligne response.json({data}) par response.end(JSON.stringify(data['recordset']));
+
 const express = require("express");
 const bodyParser = require("body-parser");
 //pour reécupérer les fichiers envoyés via formData
@@ -6,7 +8,7 @@ const upload = multer();
 var cors = require('cors');
 const nodemailer = require("nodemailer");
 var smtpTransport = require('nodemailer-smtp-transport');
-const port = 3000;
+const port = 3001;
 const app = express();
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
@@ -22,26 +24,41 @@ require('dotenv').config();
 let BadgeAndElementsOfZone = [];
 
 
-//create mysql connection
-const mysql = require('mysql');
+//create sql connection
+const sql = require('mssql');
 const { response } = require("express");
-var pool =  mysql.createPool({
-    host: process.env.HOST,
-    user: process.env.USER_BDD,
-    password: process.env.PWD_BDD,
-    database: process.env.DATABASE
-});
 
+//Chaine de connexion
+var sqlConfig = {
+  server : process.env.HOST,
+  authentication : {
+    type : 'default',
+    options : {
+      userName : process.env.USER_BDD,
+      password : process.env.PWD_BDD
+    }
+  },
+  options : {
+    //Si utilisation de Microsoft Azure, besoin d'encrypter
+    encrypt : false,
+    database : process.env.DATABASE
+  }
+}
 
+var pool =  new sql.ConnectionPool(sqlConfig);
 
-// set port, listen for requests
-app.listen(port, () => {
-    console.log("Server is running on port 3000");
+pool.connect();
+
+var server = app.listen(port, function() {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log("API PAPREX SQL SERVER en route sur http://%s:%s",host,port);
 });
 
 // simple route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to INOVEX's API REST" });
+  res.json({ message: "Welcome to PAPREX's API REST for SQL Server" });
 });
 
 
@@ -284,8 +301,8 @@ app.get("/Products", (request, response) => {
     const req=request.query
     pool.query('SELECT * FROM products_new', (err,data) => {
       if(err) throw err;
-      response.json({data})
-    
+      //response.json({data})
+      response.end(JSON.stringify(data['recordset']));
     });
 });
 

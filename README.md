@@ -1,5 +1,8 @@
 ## API_INOVEX
 
+# POUR SQL Server
+ATTENTION : Le service `SQL Server Browser` doit être démarré
+
 # Tuto  utilisé :
 https://ichi.pro/fr/creer-une-api-rest-a-l-aide-de-nodejs-et-mysql-a-partir-de-zero-14397877526049
 
