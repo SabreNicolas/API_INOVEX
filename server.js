@@ -752,7 +752,7 @@ app.get("/User/:login", (request, response) => {
   pool.query('SELECT * FROM users WHERE login = "'+request.params.login+'"', (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-      response.json({data});
+    response.json({data});
   });
 });
 
@@ -825,7 +825,8 @@ app.get("/UsersLibre", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM users WHERE Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -850,16 +851,18 @@ app.get("/BadgeLastId", (request, response) => {
   pool.query('SELECT DISTINCT LAST_INSERT_ID() as Id FROM badge', (err,data) => {
     console.log(data);
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
 //Récupérer l'utilisateur lié au badge
 app.get("/UserOfBadge/:uid", (request, response) => {
   const req=request.query
-  pool.query('SELECT u.Id, u.Nom, u.Prenom, u.login, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
+  pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+request.params.uid+"'", (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -868,7 +871,8 @@ app.get("/ElementsOfBadge/:uid", (request, response) => {
   const req=request.query
   pool.query('SELECT e.Id, e.zoneId, z.nom as "NomZone", z.commentaire, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE "'+request.params.uid+'"', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -877,7 +881,8 @@ app.get("/BadgesUser", (request, response) => {
   const req=request.query
   pool.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -886,7 +891,8 @@ app.get("/BadgesZone", (request, response) => {
   const req=request.query
   pool.query('SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -895,7 +901,8 @@ app.get("/BadgesLibre", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM badge b WHERE b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW())', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -942,7 +949,8 @@ app.get("/zones", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM zonecontrole ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1026,7 +1034,8 @@ app.get("/ZonesLibre", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1077,7 +1086,8 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM elementcontrole WHERE zoneId = '+request.params.zoneId +' ORDER BY ordre ASC', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1086,7 +1096,8 @@ app.get("/elementsCompteur", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY ordre ASC', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1095,7 +1106,8 @@ app.get("/element/:elementId", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM elementcontrole WHERE Id = '+request.params.elementId, (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1105,7 +1117,8 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1148,7 +1161,8 @@ app.get("/AuteurRonde/:quart", (request, response) => {
   const req=request.query
   pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1188,7 +1202,8 @@ app.get("/Rondes", (request, response) => {
   const req=request.query
   pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1228,7 +1243,8 @@ app.get("/reportingRonde/:idRonde", (request, response) => {
   const req=request.query
   pool.query("SELECT e.Id as elementId, e.unit, e.typeChamp, e.valeurMin, e.valeurMax, e.defaultValue, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1238,7 +1254,8 @@ app.get("/valueElementDay", (request, response) => {
   const req=request.query
   pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1258,7 +1275,8 @@ app.get("/PermisFeu", (request, response) => {
   const req=request.query
   pool.query('SELECT p.Id, DATE_FORMAT(p.dateHeureDeb, "%d/%m/%Y %H:%i:%s") as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1280,7 +1298,8 @@ app.get("/PermisFeuVerification", (request, response) => {
   const req=request.query
   pool.query('SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId WHERE p.dateHeure LIKE "%'+req.dateHeure+'%"', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1319,7 +1338,8 @@ app.get("/modeOPs", (request, response) => {
   const req=request.query
   pool.query('SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1328,7 +1348,8 @@ app.get("/modeOPofZone/:zoneId", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM modeoperatoire WHERE zoneId='+request.params.zoneId, (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1359,7 +1380,8 @@ app.get("/consignes", (request, response) => {
   const req=request.query
   pool.query('SELECT DATE_FORMAT(date_heure_fin, "%d/%m/%Y %H:%i:%s") as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= NOW()', (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1400,9 +1422,27 @@ app.get("/anomalies/:id", (request, response) => {
   const req=request.query
   pool.query('SELECT * FROM anomalie WHERE rondeId = '+request.params.id, (err,data) => {
     if(err) throw err;
-    response.json({data})
+    data = data['recordset'];
+    response.json({data});
   });
 });
+
+
+/*
+******* SITES
+*/
+//Récupérer la liste des sites (pour choisir pour l'administration du superAdmin)
+app.get("/sites", (request, response) => {
+  const req=request.query
+  pool.query('SELECT * FROM site', (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+/*
+******* FIN SITES
+*/
 
 
 /*
