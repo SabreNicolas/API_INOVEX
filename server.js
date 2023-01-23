@@ -1448,7 +1448,15 @@ app.get("/sites", (request, response) => {
 /*
 ******* RAPPORTS
 */
-
+//Récupérer la liste des rapports pour un site en question
+app.get("/rapports/:id", (request, response) => {
+  const req=request.query
+  pool.query('SELECT * FROM rapport WHERE idUsine='+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
 
 
 /*
