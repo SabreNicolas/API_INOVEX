@@ -102,11 +102,11 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(
 //?Code=34343
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    pool.query('SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IF(LEFT(mr.Code,3) = "201","OM",IF(LEFT(mr.Code,3) = "202","DIB/DEA",IF(LEFT(mr.Code,3) = "203","DASRI",IF(LEFT(mr.Code,3) = "204","DAOM","Refus de tri")))) as produit,'+ 
-    'IF(SUBSTR(mr.Code, 4, 2)="01","CALLERGIE",IF(SUBSTR(mr.Code, 4, 2)="02","INOVA",IF(SUBSTR(mr.Code, 4, 2)="03","PAPREC",IF(SUBSTR(mr.Code, 4, 2)="04","NICOLLIN",IF(SUBSTR(mr.Code, 4, 2)="05","BGV",IF(SUBSTR(mr.Code, 4, 2)="06",'+
-    '"SITOMAP",IF(SUBSTR(mr.Code, 4, 2)="07","SIRTOMRA OM",IF(SUBSTR(mr.Code, 4, 2)="08","COMMUNES",IF(SUBSTR(mr.Code, 4, 2)="09","SMICTOM","SMETOM"))))))))) as collecteur FROM moralentities_new as mr '+ 
-    'INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code '+
-    'WHERE mr.Enabled=1 AND mr.Code LIKE "' + req.Code + '%" ORDER BY Name ASC', (err,data) => {
+    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
+    "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
+    "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
+    "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
+    "WHERE mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -117,18 +117,16 @@ app.get("/moralEntities", (request, response) => {
 //?Code=34343
 app.get("/moralEntitiesAll", (request, response) => {
   const req=request.query
-  pool.query('SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IF(LEFT(mr.Code,3) = "201","OM",IF(LEFT(mr.Code,3) = "202","DIB/DEA",IF(LEFT(mr.Code,3) = "203","DASRI",IF(LEFT(mr.Code,3) = "204","DAOM","Refus de tri")))) as produit,'+ 
-  'IF(SUBSTR(mr.Code, 4, 2)="01","CALLERGIE",IF(SUBSTR(mr.Code, 4, 2)="02","INOVA",IF(SUBSTR(mr.Code, 4, 2)="03","PAPREC",IF(SUBSTR(mr.Code, 4, 2)="04","NICOLLIN",IF(SUBSTR(mr.Code, 4, 2)="05","BGV",IF(SUBSTR(mr.Code, 4, 2)="06",'+
-  '"SITOMAP",IF(SUBSTR(mr.Code, 4, 2)="07","SIRTOMRA OM",IF(SUBSTR(mr.Code, 4, 2)="08","COMMUNES",IF(SUBSTR(mr.Code, 4, 2)="09","SMICTOM","SMETOM"))))))))) as collecteur FROM moralentities_new as mr '+ 
-  'INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code '+
-  'WHERE mr.Code LIKE "' + req.Code + '%" ORDER BY Name ASC', (err,data) => {
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
+  "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
+  "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
+  "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
+  "WHERE mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
   });
 });
-
-//************ICI */
 
 //create MoralEntitie
 //?Name=c&Address=d&Code=f&UnitPrice=g
@@ -850,8 +848,7 @@ app.put("/Badge", (request, response) => {
 //Récupérer le dernier ID de badge inséré
 app.get("/BadgeLastId", (request, response) => {
   const req=request.query
-  pool.query("SELECT DISTINCT LAST_INSERT_ID() as Id FROM badge", (err,data) => {
-    console.log(data);
+  pool.query("SELECT DISTINCT SCOPE_IDENTITY() as Id FROM badge", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
