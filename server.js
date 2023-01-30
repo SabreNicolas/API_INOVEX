@@ -1440,6 +1440,27 @@ app.get("/sites", (request, response) => {
     response.json({data});
   });
 });
+
+//Récupérer le nombre de ligne d'un site
+app.get("/nbLigne/:id", (request, response) => {
+  const req=request.query
+  pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer le nombre de GTA d'un site
+app.get("/nbGTA/:id", (request, response) => {
+  const req=request.query
+  pool.query("SELECT nbGTA FROM site WHERE id ="+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 /*
 ******* FIN SITES
 */
