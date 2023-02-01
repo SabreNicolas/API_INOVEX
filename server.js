@@ -74,11 +74,10 @@ var transporter = nodemailer.createTransport(smtpTransport({
   }
 }));
 
-var maillist = process.env.MAIL_LIST;
-//var maillist = 'nsabre@kerlan-info.fr';
-
 // define a sendmail endpoint, which will send emails and response with the corresponding status
-app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire', function(req, res) {
+app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', function(req, res) {
+  let mailListIdUsine = 'MAIL_LIST_'+req.params.idUsine;
+  var maillist = process.env[mailListIdUsine];
   const message = {
     from: 'Noreply.Inovex@paprec.com', // Sender address
     to: maillist,
