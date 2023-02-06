@@ -98,14 +98,14 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 
 /* MORAL ENTITIES*/
 //get all MoralEntities where Enabled = 1
-//?Code=34343
+//?Code=34343&idUsine=1
 app.get("/moralEntities", (request, response) => {
     const req=request.query
     pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
     "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
     "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
     "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
-    "WHERE mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+    "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -113,14 +113,14 @@ app.get("/moralEntities", (request, response) => {
 });
 
 //get all MoralEntities
-//?Code=34343
+//?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", (request, response) => {
   const req=request.query
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
   "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
   "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
-  "WHERE mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+  "WHERE mr.idUsine = "+req.idUsine+" AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -128,14 +128,12 @@ app.get("/moralEntitiesAll", (request, response) => {
 });
 
 //create MoralEntitie
-//?Name=c&Address=d&Code=f&UnitPrice=g
+//?Name=c&Address=d&Code=f&UnitPrice=g&idUsine=1
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie", (request, response) => {
     const req=request.query
-    const query="INSERT INTO moralentities_new SET ?";
-    var CURRENT_TIMESTAMP = mysql.raw('now()');
-    const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Address:req.Address,Enabled:1,Code:req.Code,UnitPrice:req.UnitPrice}
-    pool.query(query,params,(err,result,fields) => {
+    const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", "+req.idUsine+")";
+    pool.query(query,(err,result,fields) => {
         if(err) throw err;
         console.log("Création du client OK");
         response.json("Création du client OK");
@@ -143,10 +141,10 @@ app.put("/moralEntitie", (request, response) => {
 });
 
 //get Last Code INOVEX
-//?Code=29292
+//?Code=29292&idUsine=1
 app.get("/moralEntitieLastCode", (request, response) => {
   const req=request.query
-  pool.query("SELECT Code FROM moralentities_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC LIMIT 1", (err,data) => {
+  pool.query("SELECT TOP 1 Code FROM moralentities_new WHERE CODE LIKE '" + req.Code + "%' AND idUsine = "+req.idUsine+" ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -179,7 +177,7 @@ app.put("/moralEntitie/:id", (request, response) => {
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitieUnitPrice/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du prix unitaire OK")
   });
@@ -189,7 +187,7 @@ app.put("/moralEntitieUnitPrice/:id", (request, response) => {
 //?Code=123
 app.put("/moralEntitieCode/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE moralentities_new SET Code = " + req.Code + ", LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE moralentities_new SET Code = " + req.Code + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du code OK")
   });
@@ -198,7 +196,7 @@ app.put("/moralEntitieCode/:id", (request, response) => {
 //UPDATE MoralEntitie, set Enabled
 app.put("/moralEntitieEnabled/:id/:enabled", (request, response) => {
   const req=request.query
-  pool.query("UPDATE moralentities_new SET Enabled = "+request.params.enabled+", LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE moralentities_new SET Enabled = "+request.params.enabled+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de visibilité du client OK")
   });
@@ -208,7 +206,7 @@ app.put("/moralEntitieEnabled/:id/:enabled", (request, response) => {
 //?Name=tetet
 app.put("/moralEntitieName/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE moralentities_new SET Name = '"+req.Name+"', LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE moralentities_new SET Name = '"+req.Name+"', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de nom du client OK")
   });
@@ -264,10 +262,8 @@ app.get("/CategoriesSortants", (request, response) => {
 //?Name=c&Code=f&ParentId=g
 app.put("/Category", (request, response) => {
   const req=request.query
-  const query="INSERT INTO categories_new SET ?";
-  var CURRENT_TIMESTAMP = mysql.raw('now()');
-  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Enabled:1,Code:req.Code,ParentId:req.ParentId}
-  pool.query(query,params,(err,result,fields) => {
+  const query="INSERT INTO categories_new (CreateDate, LastModifiedDate, Name, Enabled, Code, ParentId) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.ParentId+")";
+  pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création de la catégorie OK");
   });
@@ -299,7 +295,7 @@ app.get("/Categories/:ParentId", (request, response) => {
 //?Code=29292
 app.get("/productLastCode", (request, response) => {
   const req=request.query
-  pool.query("SELECT Code FROM products_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC LIMIT 1", (err,data) => {
+  pool.query("SELECT TOP 1 Code FROM products_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -342,7 +338,7 @@ app.get("/Container", (request, response) => {
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", (request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET Enabled = "+request.params.enabled +" , LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET Enabled = "+request.params.enabled +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de visibilité du client OK")
   });
@@ -351,7 +347,7 @@ app.put("/productEnabled/:id/:enabled", (request, response) => {
 //UPDATE Product, change TypeId
 app.put("/productType/:id/:type", (request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET TypeId = "+request.params.type +" , LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET TypeId = "+request.params.type +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de catégorie du produit OK")
   });
@@ -361,7 +357,7 @@ app.put("/productType/:id/:type", (request, response) => {
 //?Unit=123
 app.put("/productUnit/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET Unit = '" + req.Unit + "', LastModifiedDate = NOW() WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET Unit = '" + req.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'unité OK")
   });
@@ -415,7 +411,7 @@ app.get("/Analyses", (request, response) => {
 });
 
 //get Analyses/ Dépassements 1/2 heures
-app.get("/AnalysesDep", (request, response) => {
+app.get("/AnalysesDep/:idUsine", (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -462,10 +458,8 @@ app.get("/pci", (request, response) => {
 //?Name=c&Code=f&typeId=g&Unit=j
 app.put("/Product", (request, response) => {
   const req=request.query
-  const query="INSERT INTO products_new SET ?";
-  var CURRENT_TIMESTAMP = new Date();
-  const params={CreateDate:CURRENT_TIMESTAMP,LastModifiedDate:CURRENT_TIMESTAMP,Name:req.Name,Enabled:1,Code:req.Code,typeId:req.typeId,Unit:req.Unit}
-  pool.query(query,params,(err,result,fields) => {
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"')";
+  pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
   });
@@ -481,31 +475,6 @@ app.get("/Product/:Id", (request, response) => {
     });
 });
 
-/*FORMULAIRE*/
-//create Formulaire
-//?Name=j
-app.put("/Formulaire", (request, response) => {
-  const req=request.query
-  const query="INSERT INTO Formulaire SET ?";
-  const params={Name:req.Name}
-  pool.query(query,params,(err,result,fields) => {
-      if(err) throw err;
-      response.json("Création du Formulaire OK");
-  });
-});
-
-//create ProductFormulaire
-//?ProductId=J&FormulaireId=K
-app.put("/ProductFormulaire", (request, response) => {
-  const req=request.query
-  const query="INSERT INTO ProductsFormulaire SET ?";
-  const params={ProductId:req.ProductId,FormulaireId:req.FormulaireId}
-  pool.query(query,params,(err,result,fields) => {
-      if(err) throw err;
-      response.json("Création du ProductFormulaire OK");
-  });
-});
-
 
 /*MEASURES*/
 //create Measure
@@ -513,9 +482,16 @@ app.put("/ProductFormulaire", (request, response) => {
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO dolibarr.measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId) VALUES (NOW(), NOW(),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
-  "ON DUPLICATE KEY UPDATE "+
-  "Value = "+req.Value+", LastModifiedDate =NOW()",(err,result,fields) => {
+  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+")"+
+    " BEGIN "+
+      "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
+      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
+    "END"+
+    " ELSE"+
+    " BEGIN "+
+    "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+
+    " END;"
+    pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du Measures OK");
   });
@@ -524,7 +500,7 @@ app.put("/Measure", (request, response) => {
 //get Entry
 app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
   const req=request.query
-  pool.query("SELECT Value FROM `measures_new` WHERE ProductId = " + request.params.ProductId + " AND ProducerId = " + request.params.ProducerId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
+  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND ProducerId = " + request.params.ProducerId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -534,7 +510,7 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
 //get value products
 app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
   const req=request.query
-  pool.query("SELECT Value FROM `measures_new` WHERE ProductId = " + request.params.ProductId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
+  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -542,9 +518,9 @@ app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
 });
 
 //get Total by day and Type
-app.get("/TotalMeasures/:Dechet/:Date", (request, response) => {
+app.get("/TotalMeasures/:Dechet/:Date/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new as m INNER JOIN products_new as p ON m.ProductId = p.Id WHERE m.EntryDate LIKE '"+request.params.Date+"%' AND m.ProducerId >1 AND p.Code LIKE '"+request.params.Dechet+"%'", (err,data) => {
+  pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new m INNER JOIN products_new p ON m.ProductId = p.Id WHERE p.idUsine = "+request.params.idUsine+ " AND m.EntryDate LIKE '"+request.params.Date+"%' AND m.ProducerId > 1 AND p.Code LIKE '"+request.params.Dechet+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -557,7 +533,7 @@ app.get("/TotalMeasures/:Dechet/:Date", (request, response) => {
 //get value compteurs
 app.get("/Compteurs/:Code/:Date", (request, response) => {
   const req=request.query
-  pool.query("SELECT Value FROM `saisiemensuelle` WHERE Code = " + request.params.Code + " AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
+  pool.query("SELECT Value FROM saisiemensuelle WHERE Code = " + request.params.Code + " AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -582,7 +558,7 @@ app.put("/SaisieMensuelle", (request, response) => {
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/Depassement", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, user, date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
+  pool.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
   ,(err,result,fields) => {
       if(err) response.json("Création du DEP KO");
       else response.json("Création du DEP OK");
@@ -591,9 +567,9 @@ app.put("/Depassement", (request, response) => {
 
 
 //Récupérer l'historique des dépassements pour un mois
-app.get("/Depassements/:dateDeb/:dateFin", (request, response) => {
+app.get("/Depassements/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT a.Id, p.Name, DATE_FORMAT(a.date_heure_debut, '%d/%m/%Y')as dateDebut, DATE_FORMAT(a.date_heure_debut, '%H:%i')as heureDebut, DATE_FORMAT(a.date_heure_fin, '%d/%m/%Y')as dateFin, DATE_FORMAT(a.date_heure_fin, '%H:%i')as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY a.date_heure_debut, p.Name ASC", (err,data) => {
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -610,9 +586,9 @@ app.delete("/DeleteDepassement/:id", (request, response) => {
 });
 
 //Récupérer le total des dépassements pour ligne 1
-app.get("/DepassementsSum1/:dateDeb/:dateFin", (request, response) => {
+app.get("/DepassementsSum1/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Ligne 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040101+"'", (err,data) => {
+  pool.query("SELECT 'Total Ligne 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040101+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -620,9 +596,9 @@ app.get("/DepassementsSum1/:dateDeb/:dateFin", (request, response) => {
 });
 
 //Récupérer le total des dépassements pour ligne 2
-app.get("/DepassementsSum2/:dateDeb/:dateFin", (request, response) => {
+app.get("/DepassementsSum2/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Ligne 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040201+"'", (err,data) => {
+  pool.query("SELECT 'Total Ligne 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040201+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -630,9 +606,9 @@ app.get("/DepassementsSum2/:dateDeb/:dateFin", (request, response) => {
 });
 
 //Récupérer le total des dépassements
-app.get("/DepassementsSum/:dateDeb/:dateFin", (request, response) => {
+app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
+  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -645,7 +621,7 @@ app.get("/DepassementsSum/:dateDeb/:dateFin", (request, response) => {
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/Arrets", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, user, date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
+  pool.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'arret KO");
       else response.json("Création de l'arret OK");
@@ -653,9 +629,9 @@ app.put("/Arrets", (request, response) => {
 });
 
 //Récupérer l'historique des arrêts pour un mois
-app.get("/Arrets/:dateDeb/:dateFin", (request, response) => {
+app.get("/Arrets/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT a.Id, p.Name, DATE_FORMAT(a.date_heure_debut, '%d/%m/%Y')as dateDebut, DATE_FORMAT(a.date_heure_debut, '%H:%i')as heureDebut, DATE_FORMAT(a.date_heure_fin, '%d/%m/%Y')as dateFin, DATE_FORMAT(a.date_heure_fin, '%H:%i')as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY a.date_heure_debut, p.Name ASC", (err,data) => {
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -673,9 +649,9 @@ app.delete("/DeleteArret/:id", (request, response) => {
 
 
 //Récupérer le total des arrêts par groupe
-app.get("/ArretsSumGroup/:dateDeb/:dateFin", (request, response) => {
+app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY p.Name", (err,data) => {
+  pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY p.Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -684,9 +660,9 @@ app.get("/ArretsSumGroup/:dateDeb/:dateFin", (request, response) => {
 
 
 //Récupérer le total des arrêts
-app.get("/ArretsSum/:dateDeb/:dateFin", (request, response) => {
+app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
+  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -694,9 +670,9 @@ app.get("/ArretsSum/:dateDeb/:dateFin", (request, response) => {
 });
 
 //Récupérer le total des arrêts pour four 1
-app.get("/ArretsSum1/:dateDeb/:dateFin", (request, response) => {
+app.get("/ArretsSum1/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Four 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%1%'", (err,data) => {
+  pool.query("SELECT 'Total Four 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%1%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -704,9 +680,9 @@ app.get("/ArretsSum1/:dateDeb/:dateFin", (request, response) => {
 });
 
 //Récupérer le total des arrêts pour four 2
-app.get("/ArretsSum2/:dateDeb/:dateFin", (request, response) => {
+app.get("/ArretsSum2/:dateDeb/:dateFin/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Four 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE DATE(a.date_heure_debut) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%2%'", (err,data) => {
+  pool.query("SELECT 'Total Four 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%2%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -714,10 +690,10 @@ app.get("/ArretsSum2/:dateDeb/:dateFin", (request, response) => {
 });
 
 /*USERS*/
-//?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isAdmin=0
+//?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isAdmin=01idUsine=1
 app.put("/User", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isAdmin) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isAdmin+") "
+  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isAdmin, idUsine) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isAdmin+", "+req.idUsine+") "
   ,(err,result,fields) => {
       if(err) response.json("Création de l'utilisateur KO");
       else response.json("Création de l'utilisateur OK");
@@ -725,10 +701,10 @@ app.put("/User", (request, response) => {
 });
 
 //Récupérer l'ensemble des utilisateurs
-//?login=aaaa
+//?login=aaaa&idUsine=1
 app.get("/Users", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' ORDER BY Nom ASC", (err,data) => {
+  pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -897,7 +873,7 @@ app.get("/BadgesZone", (request, response) => {
 //Récupérer l'ensemble des badges non affecté
 app.get("/BadgesLibre", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM badge b WHERE b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW())", (err,data) => {
+  pool.query("SELECT * FROM badge b WHERE b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -961,7 +937,7 @@ app.get("/BadgeAndElementsOfZone", (request, response) => {
     if(err) throw err;
     else {
       //On récupère l'Id de la ronde précedente
-      pool.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
+      pool.query("SELECT TOP 2 Id from ronde ORDER BY Id DESC", (err,data) => {
         if(err) throw err;
         else {
           if(data.length > 1){
@@ -1167,7 +1143,7 @@ app.get("/AuteurRonde/:quart", (request, response) => {
 //Récupérer l'id de la dernière ronde inséré (ronde en cours)
 app.get("/LastRonde", (request, response) => {
   const req=request.query
-  pool.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 1", (err,data) => {
+  pool.query("SELECT TOP 1 Id from ronde ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     response.json(data[0].Id)
   });
@@ -1176,7 +1152,7 @@ app.get("/LastRonde", (request, response) => {
 //Récupérer l'id de la ronde précédente (0 si première ronde de la BDD)
 app.get("/RondePrecedente", (request, response) => {
   const req=request.query
-  pool.query("SELECT Id from ronde ORDER BY Id DESC LIMIT 2", (err,data) => {
+  pool.query("SELECT TOP 2 Id from ronde ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     if(data.length>1){
       response.json(data[1].Id)
@@ -1188,7 +1164,7 @@ app.get("/RondePrecedente", (request, response) => {
 //Récupérer la ronde encore en cours => permettre au rondier de la reprendre
 app.get("/LastRondeOpen", (request, response) => {
   const req=request.query
-  pool.query("SELECT * from ronde WHERE isFinished = 0 ORDER BY Id DESC LIMIT 1", (err,data) => {
+  pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     response.json(data[0])
   });
@@ -1271,7 +1247,7 @@ app.put("/PermisFeu", (request, response) => {
 //Récupérer les permis de feu en cours ou les zones de consignation
 app.get("/PermisFeu", (request, response) => {
   const req=request.query
-  pool.query("SELECT p.Id, DATE_FORMAT(p.dateHeureDeb, '%d/%m/%Y %H:%i:%s') as dateHeureDeb, DATE_FORMAT(p.dateHeureFin, '%d/%m/%Y %H:%i:%s') as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= NOW() AND p.dateHeureFin > NOW()", (err,data) => {
+  pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1307,13 +1283,8 @@ app.get("/PermisFeuVerification", (request, response) => {
 //passage du fichier dans un formData portant le nom 'fichier'
 app.post("/modeOP", upload.single('fichier'), (request, response) => {
   const req=request.query;
-  var query = "INSERT INTO modeoperatoire SET ?";
-  var values = {
-      nom: req.nom,
-      fichier: request.file.buffer,
-      zoneId: req.zoneId
-  };
-  pool.query(query,values,(err,result,fields) => {
+  var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.Name+"', "+request.file.buffer+", "+req.zoneId+")";
+  pool.query(query,(err,result,fields) => {
       if(err) {
         console.log(err);
         response.json("Création du modeOP KO");
@@ -1376,7 +1347,7 @@ app.put("/consigne", (request, response) => {
 //Récupérer les consignes en cours
 app.get("/consignes", (request, response) => {
   const req=request.query
-  pool.query("SELECT DATE_FORMAT(date_heure_fin, '%d/%m/%Y %H:%i:%s') as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= NOW()", (err,data) => {
+  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1398,14 +1369,8 @@ app.delete("/consigne/:id", (request, response) => {
 app.put("/anomalie", upload.single('fichier'),(request, response) => {
   const req=request.query;
   //console.log(Buffer.from(request.body));
-  var query = "INSERT INTO anomalie SET ?";
-  var values = {
-      rondeId: req.rondeId,
-      zoneId: req.zoneId,
-      commentaire: req.commentaire,
-      photo: Buffer.from(request.body)
-  };
-  pool.query(query,values,(err,result,fields) => {
+  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", "+req.commentaire+", "+Buffer.from(request.body)+")";
+  pool.query(query,(err,result,fields) => {
       if(err) {
         //console.log(err);
         response.json("Création de l'anomalie KO");
