@@ -1130,7 +1130,7 @@ app.put("/closeRonde", (request, response) => {
 //?id=12
 app.put("/closeRondeEnCours", (request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1 WHERE id = "+ req.id, (err,data) => {
+  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1402,6 +1402,7 @@ app.get("/anomalies/:id", (request, response) => {
 /*
 ******* SITES
 */
+
 //Récupérer la liste des sites (pour choisir pour l'administration du superAdmin)
 //sauf le global
 app.get("/sites", (request, response) => {
@@ -1441,6 +1442,7 @@ app.get("/nbGTA/:id", (request, response) => {
 /*
 ******* RAPPORTS
 */
+
 //Récupérer la liste des rapports pour un site en question
 app.get("/rapports/:id", (request, response) => {
   const req=request.query
