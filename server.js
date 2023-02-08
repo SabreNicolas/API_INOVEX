@@ -227,7 +227,7 @@ app.get("/CategoriesCompteurs", (request, response) => {
     const req=request.query
     pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
     "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
-    "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name NOT LIKE 'Tonnage%' AND cat.Name NOT LIKE 'Cendres%' AND cat.Code NOT LIKE '701%' AND cat.Name NOT LIKE 'Mâchefers%' AND cat.Name NOT LIKE 'Arrêts%' AND cat.Name NOT LIKE 'Autres%' AND cat.Name NOT LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
+    "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name NOT LIKE 'Tonnage%' AND cat.Name NOT LIKE 'Cendres%' AND cat.Code NOT LIKE '701%' AND cat.Name NOT LIKE 'Mâchefers%' AND cat.Name NOT LIKE 'Arrêts%' AND cat.Name NOT LIKE 'Autres%' AND cat.Name NOT LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -239,7 +239,7 @@ app.get("/CategoriesAnalyses", (request, response) => {
   const req=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
-  "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LENGTH(cat.Code) > 1  AND cat.Name LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
+  "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -292,10 +292,10 @@ app.get("/Categories/:ParentId", (request, response) => {
 });
 
 //get Last Code INOVEX
-//?Code=29292
+//?Code=29292&idUsine=1
 app.get("/productLastCode", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 Code FROM products_new WHERE CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
+  pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + req.idUsine + " AND CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -314,10 +314,10 @@ app.get("/Products", (request, response) => {
 });
 
 //get ALL Products with type param
-//?Name=dgdgd
+//?Name=dgdgd&idUsine=1
 app.get("/Products/:TypeId", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -326,9 +326,9 @@ app.get("/Products/:TypeId", (request, response) => {
 });
 
 //get Container DASRI
-app.get("/Container", (request, response) => {
+app.get("/Container/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE Code LIKE '301010201' ", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND Code LIKE '301010201' ", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -364,10 +364,10 @@ app.put("/productUnit/:id", (request, response) => {
 });
 
 //get ALL Compteurs
-//?Code=ddhdhhd
+//?Code=ddhdhhd&idUsine=1
 app.get("/Compteurs", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -376,9 +376,10 @@ app.get("/Compteurs", (request, response) => {
 });
 
 //get ALL QSE
+//&idUsine=1
 app.get("/QSE", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE Code LIKE '701%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND Code LIKE '701%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -387,10 +388,10 @@ app.get("/QSE", (request, response) => {
 });
 
 //get ALL Compteurs for arrêts
-//?Code=ddhdhhd
+//?Code=ddhdhhd&idUsine=1
 app.get("/CompteursArrets", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -399,10 +400,10 @@ app.get("/CompteursArrets", (request, response) => {
 });
 
 //get ALL Analyses
-//?Code=ddhdhhd
+//?Code=ddhdhhd&idUsine=1
 app.get("/Analyses", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -413,7 +414,7 @@ app.get("/Analyses", (request, response) => {
 //get Analyses/ Dépassements 1/2 heures
 app.get("/AnalysesDep/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -422,10 +423,10 @@ app.get("/AnalysesDep/:idUsine", (request, response) => {
 });
 
 //get ALL Sortants
-//?Code=ddhdhhd
+//?Code=ddhdhhd&idUsine=1
 app.get("/Sortants", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 5 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 5 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -434,9 +435,9 @@ app.get("/Sortants", (request, response) => {
 });
 
 //get ALL conso & others
-app.get("/Consos", (request, response) => {
+app.get("/Consos/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -445,9 +446,9 @@ app.get("/Consos", (request, response) => {
 });
 
 //get ALL pci
-app.get("/pci", (request, response) => {
+app.get("/pci/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -455,10 +456,10 @@ app.get("/pci", (request, response) => {
 });
 
 //create Product
-//?Name=c&Code=f&typeId=g&Unit=j
+//?Name=c&Code=f&typeId=g&Unit=j&idUsine=1
 app.put("/Product", (request, response) => {
   const req=request.query
-  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"')";
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+")";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
@@ -531,9 +532,10 @@ app.get("/TotalMeasures/:Dechet/:Date/:idUsine", (request, response) => {
 
 /* SAISIE MENSUELLE */
 //get value compteurs
+//?idUsine=1
 app.get("/Compteurs/:Code/:Date", (request, response) => {
   const req=request.query
-  pool.query("SELECT Value FROM saisiemensuelle WHERE Code = " + request.params.Code + " AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
+  pool.query("SELECT Value FROM saisiemensuelle WHERE idUsine = "+req.idUsine+" AND Code = '" + request.params.Code + "' AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -541,13 +543,19 @@ app.get("/Compteurs/:Code/:Date", (request, response) => {
 });
 
 //create saisie compteurs
-//?Date=1&Value=1&Code=aaa
+//?Date=1&Value=1&Code=aaa&idUsine=1
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/SaisieMensuelle", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO saisiemensuelle (Date, Code, Value) VALUES ('"+req.Date+"', "+req.Code+", "+req.Value+") "+
-  "ON DUPLICATE KEY UPDATE "+
-  "Value = "+req.Value,(err,result,fields) => {
+  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM saisiemensuelle WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+")"+
+    " BEGIN "+
+      "INSERT INTO saisiemensuelle (Date, Code, Value, idUsine) VALUES ('"+req.Date+"', "+req.Code+", "+req.Value+", "+req.idUsine+") "+
+    "END"+
+    " ELSE"+
+    " BEGIN "+
+    "UPDATE saisiemensuelle SET Value = "+req.Value+" WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+
+    " END;"
+  pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du saisiemensuelle OK");
   });
