@@ -456,10 +456,10 @@ app.get("/pci/:idUsine", (request, response) => {
 });
 
 //create Product
-//?Name=c&Code=f&typeId=g&Unit=j&idUsine=1
+//?Name=c&Code=f&typeId=g&Unit=j&idUsine=1&TAG=sdhdhdh
 app.put("/Product", (request, response) => {
   const req=request.query
-  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+")";
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
@@ -1457,3 +1457,34 @@ app.get("/rapports/:id", (request, response) => {
 /*
 ******* FIN RAPPORTS
 */
+
+
+//////////////////////////
+//IMAGINDATA
+//////////////////////////
+
+//Get products without TAGs
+app.get("/ProductWithoutTag/:id", (request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +request.params.id+ " ORDER BY Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//UPDATE Product, set TAG
+//?TAG=123
+app.put("/productTAG/:id", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du TAG OK")
+  });
+});
+
+
+
+//////////////////////////
+// FIN IMAGINDATA
+//////////////////////////
