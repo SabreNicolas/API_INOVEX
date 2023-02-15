@@ -804,9 +804,9 @@ app.delete("/user/:id", (request, response) => {
 });
 
 //Récupérer l'ensemble des users non affecté à un badge
-app.get("/UsersLibre", (request, response) => {
+app.get("/UsersLibre/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM users WHERE Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
+  pool.query("SELECT * FROM users WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -818,10 +818,10 @@ app.get("/UsersLibre", (request, response) => {
 //*********************
 
 /*Badge*/
-//?uid=AD:123:D23
+//?uid=AD:123:D23&idUsine=1
 app.put("/Badge", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO badge (uid) VALUES ('"+req.uid+"') "
+  pool.query("INSERT INTO badge (uid, idUsine) VALUES ('"+req.uid+"', "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création du badge KO");
       else response.json("Création du badge OK");
@@ -831,7 +831,7 @@ app.put("/Badge", (request, response) => {
 //Récupérer le dernier ID de badge inséré
 app.get("/BadgeLastId", (request, response) => {
   const req=request.query
-  pool.query("SELECT DISTINCT SCOPE_IDENTITY() as Id FROM badge", (err,data) => {
+  pool.query("SELECT IDENT_CURRENT('badge') as Id", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -859,9 +859,9 @@ app.get("/ElementsOfBadge/:uid", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges affecté à un User
-app.get("/BadgesUser", (request, response) => {
+app.get("/BadgesUser/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId", (err,data) => {
+  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -869,9 +869,9 @@ app.get("/BadgesUser", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges affecté à une zone
-app.get("/BadgesZone", (request, response) => {
+app.get("/BadgesZone/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId", (err,data) => {
+  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -879,9 +879,9 @@ app.get("/BadgesZone", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges non affecté
-app.get("/BadgesLibre", (request, response) => {
+app.get("/BadgesLibre/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM badge b WHERE b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
+  pool.query("SELECT * FROM badge b WHERE b.idUsine = "+request.params.idUsine+" AND b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -916,20 +916,21 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 });
 
 /*Zone de controle*/
-//?nom=dggd&commentaire=fff&four1=1&four2=0
+//?nom=dggd&commentaire=fff&four=1&idUsine=1
 app.put("/zone", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO zonecontrole (nom, commentaire, four1, four2) VALUES ('"+req.nom+"', '"+req.commentaire+"', "+req.four1+", "+req.four2+")"
+  pool.query("INSERT INTO zonecontrole (nom, commentaire, four, idUsine) VALUES ('"+req.nom+"', '"+req.commentaire+"', "+req.four+", "+req.idUsine+")"
   ,(err,result,fields) => {
+    console.log(err);
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
   });
 });
 
 //Récupérer l'ensemble des zones de controle
-app.get("/zones", (request, response) => {
+app.get("/zones/:idUSine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM zonecontrole ORDER BY nom ASC", (err,data) => {
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUSine+" ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -938,16 +939,18 @@ app.get("/zones", (request, response) => {
 
 //POUR MODE HORS LIGNE
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
-app.get("/BadgeAndElementsOfZone", (request, response) => {
+app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
   let previousId = 0;
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four1, z.four2, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id ORDER BY z.nom ASC", async (err,data) => {
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err) throw err;
     else {
+      data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      pool.query("SELECT TOP 2 Id from ronde ORDER BY Id DESC", (err,data) => {
+      pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
         if(err) throw err;
         else {
+          data = data['recordset'];
           if(data.length > 1){
             previousId = data[1].Id;
           } else previousId = 0;
@@ -969,13 +972,14 @@ function getElementsHorsLigne(zone,previousId) {
     pool.query("SELECT m.nom, m.fichier FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
       if(err) throw err;
       else{
-        modesOp = data;
+        modesOp = data['recordset'];
       }
     });
 
     pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
       if(err) throw err;
       else{
+        data = data['recordset'];
         let OneBadgeAndElementsOfZone = {
           zoneId : zone.zoneId,
           zone : zone.nomZone,
@@ -1012,9 +1016,9 @@ app.put("/zoneNom/:id/:nom", (request, response) => {
 });
 
 //Récupérer l'ensemble des zones non affecté à un badge
-app.get("/ZonesLibre", (request, response) => {
+app.get("/ZonesLibre/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1074,9 +1078,9 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
 });
 
 //Récupérer l'ensemble des élements de type compteur
-app.get("/elementsCompteur", (request, response) => {
+app.get("/elementsCompteur/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM elementcontrole WHERE isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
+  pool.query("SELECT * FROM elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE z.IdUsine = "+request.params.idUsine+" AND e.isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1179,10 +1183,10 @@ app.get("/LastRondeOpen", (request, response) => {
 });
 
 //Récupérer les rondes et leurs infos pour une date donnée
-//?date=07/02/2022
+//?date=07/02/2022&idUsine=1
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
+  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1247,15 +1251,16 @@ app.put("/PermisFeu", (request, response) => {
   const req=request.query
   pool.query("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')"
   ,(err,result,fields) => {
+    console.log("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')");
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
   });
 })
 
 //Récupérer les permis de feu en cours ou les zones de consignation
-app.get("/PermisFeu", (request, response) => {
+app.get("/PermisFeu/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
+  pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE b.idUsine = "+request.params.idUsine+" AND p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1275,10 +1280,10 @@ app.put("/VerifPermisFeu", (request, response) => {
 })
 
 //Récupérer les validation pour une date donnée
-//?dateHeure=22/06/2022
+//?dateHeure=22/06/2022&idUsine=1
 app.get("/PermisFeuVerification", (request, response) => {
   const req=request.query
-  pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId WHERE p.dateHeure LIKE '%"+req.dateHeure+"%'", (err,data) => {
+  pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId INNER JOIN badge b ON pf.badgeId = b.Id WHERE b.idUsine = "+req.idUsine+" AND p.dateHeure LIKE '%"+req.dateHeure+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1311,9 +1316,9 @@ app.delete("/modeOP/:id", (request, response) => {
 });
 
 //Récupérer l'ensemble des modeOP
-app.get("/modeOPs", (request, response) => {
+app.get("/modeOPs/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId", (err,data) => {
+  pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId WHERE z.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1342,10 +1347,10 @@ app.put("/modeOP/:id", (request, response) => {
 
 
 /*Consignes*/
-//?commentaire=dggd&dateFin=fff&type=1
+//?commentaire=dggd&dateFin=fff&type=1&idUsine=1
 app.put("/consigne", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO consigne (commentaire, date_heure_fin, type) VALUES ('"+req.commentaire+"', '"+req.dateFin+"', "+req.type+")"
+  pool.query("INSERT INTO consigne (commentaire, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la consigne KO");
       else response.json("Création de la consigne OK");
@@ -1353,9 +1358,9 @@ app.put("/consigne", (request, response) => {
 });
 
 //Récupérer les consignes en cours
-app.get("/consignes", (request, response) => {
+app.get("/consignes/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
