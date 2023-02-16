@@ -11,6 +11,7 @@ var cors = require('cors');
 const nodemailer = require("nodemailer");
 var smtpTransport = require('nodemailer-smtp-transport');
 const app = express();
+const path = require('path');
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
 // parse requests of content-type: application/x-www-form-urlencoded
@@ -20,6 +21,18 @@ app.use(cors({origin: "*" }));
 
 //utilisation des variables d'environnement
 require('dotenv').config();
+
+//Gestion des fichiers avec multer
+const storage = multer.diskStorage({
+  destination: (req, file, callback) => {
+      callback(null, 'fichiers');
+  },
+  filename: (req, file, callback) => {
+      const name = file.originalname.split(' ').join('_');
+      //stockage du fichier d'image en mettant le nom en remplaçant les espaces par _
+      callback(null, name);
+  }
+});
 
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
@@ -46,6 +59,8 @@ var sqlConfig = {
     database : process.env.DATABASE
   }
 }
+//repertoire des fichiers
+app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 var pool =  new sql.ConnectionPool(sqlConfig);
 
@@ -1294,9 +1309,12 @@ app.get("/PermisFeuVerification", (request, response) => {
 /*Mode opératoire*/
 //?nom=dggd&zoneId=1
 //passage du fichier dans un formData portant le nom 'fichier'
-app.post("/modeOP", upload.single('fichier'), (request, response) => {
+app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
   const req=request.query;
-  var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.Name+"', "+request.file.buffer+", "+req.zoneId+")";
+  //création de l'url de stockage du fichier
+  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
+
+  var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
   pool.query(query,(err,result,fields) => {
       if(err) {
         console.log(err);
@@ -1379,10 +1397,12 @@ app.delete("/consigne/:id", (request, response) => {
 /*Anomalie*/
 //?rondeId=1&zoneId=2&commentaire=dggd
 //passage de la photo dans un formData portant le nom 'fichier'
-app.put("/anomalie", upload.single('fichier'),(request, response) => {
+app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, response) => {
   const req=request.query;
-  //console.log(Buffer.from(request.body));
-  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", "+req.commentaire+", "+Buffer.from(request.body)+")";
+  //création de l'url de stockage du fichier
+  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
+
+  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", "+req.commentaire+", '"+url+"')";
   pool.query(query,(err,result,fields) => {
       if(err) {
         //console.log(err);
