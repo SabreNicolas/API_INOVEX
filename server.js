@@ -6,12 +6,12 @@ const express = require("express");
 const bodyParser = require("body-parser");
 //pour reécupérer les fichiers envoyés via formData
 const multer = require('multer');
-const upload = multer();
 var cors = require('cors');
 const nodemailer = require("nodemailer");
 var smtpTransport = require('nodemailer-smtp-transport');
 const app = express();
 const path = require('path');
+const fs = require('fs');
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
 // parse requests of content-type: application/x-www-form-urlencoded
@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
   filename: (req, file, callback) => {
       const name = file.originalname.split(' ').join('_');
       //stockage du fichier d'image en mettant le nom en remplaçant les espaces par _
-      callback(null, name);
+      callback(null, Date.now()+name);
   }
 });
 
@@ -150,7 +150,6 @@ app.put("/moralEntitie", (request, response) => {
     const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", "+req.idUsine+")";
     pool.query(query,(err,result,fields) => {
         if(err) throw err;
-        console.log("Création du client OK");
         response.json("Création du client OK");
     });
 });
@@ -936,7 +935,6 @@ app.put("/zone", (request, response) => {
   const req=request.query
   pool.query("INSERT INTO zonecontrole (nom, commentaire, four, idUsine) VALUES ('"+req.nom+"', '"+req.commentaire+"', "+req.four+", "+req.idUsine+")"
   ,(err,result,fields) => {
-    console.log(err);
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
   });
@@ -1000,8 +998,7 @@ function getElementsHorsLigne(zone,previousId) {
           zone : zone.nomZone,
           commentaire : zone.commentaire,
           badge : zone.uidBadge,
-          four1 : zone.four1,
-          four2 : zone.four2,
+          four : zone.four,
           modeOP : modesOp,
           elements : data
         };
@@ -1136,10 +1133,10 @@ app.put("/ronde", (request, response) => {
 });
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
-//?commentaire=ejejejeje&image=imageAnomalie&id=1&four1=0&four2=1
+//?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1
 app.put("/closeRonde", (request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', image = '" + req.image +"', fonctFour1 = " + req.four1 +"", fonctFour2 = "" + req.four2 + " , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
+  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = " + req.four2 +"", fonctFour3 = "" + req.four3 + " , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1201,7 +1198,7 @@ app.get("/LastRondeOpen", (request, response) => {
 //?date=07/02/2022&idUsine=1
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.image, r.isFinished, r.fonctFour1, r.fonctFour2, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
+  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1266,7 +1263,6 @@ app.put("/PermisFeu", (request, response) => {
   const req=request.query
   pool.query("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')"
   ,(err,result,fields) => {
-    console.log("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')");
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
   });
@@ -1317,7 +1313,6 @@ app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, resp
   var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
   pool.query(query,(err,result,fields) => {
       if(err) {
-        console.log(err);
         response.json("Création du modeOP KO");
       }
       else response.json("Création du modeOP OK");
@@ -1325,11 +1320,17 @@ app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, resp
 });
 
 //DELETE modeOP
+//?nom=test.pdf
 app.delete("/modeOP/:id", (request, response) => {
   const req=request.query
-  pool.query("DELETE FROM modeoperatoire WHERE Id = "+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression du modeOP OK")
+
+  //On supprime le fichier du storage multer avant de supprimer le mode OP en BDD
+  fs.unlink(`fichiers/${req.nom}`, () => {
+    //Suppression en BDD du mode OP
+    pool.query("DELETE FROM modeoperatoire WHERE Id = "+request.params.id, (err,data) => {
+      if(err) throw err;
+      response.json("Suppression du modeOP OK")
+    });
   });
 });
 
@@ -1405,7 +1406,6 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
   var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", "+req.commentaire+", '"+url+"')";
   pool.query(query,(err,result,fields) => {
       if(err) {
-        //console.log(err);
         response.json("Création de l'anomalie KO");
       }
       else response.json("Création de l'anomalie OK");
