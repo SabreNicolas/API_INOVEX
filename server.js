@@ -116,9 +116,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 //?Code=34343&idUsine=1
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
-    "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
-    "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
+    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
     "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
     "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
@@ -131,9 +129,7 @@ app.get("/moralEntities", (request, response) => {
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", (request, response) => {
   const req=request.query
-  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, IIF(LEFT(mr.Code,3) = '201','OM',IIF(LEFT(mr.Code,3) = '202','DIB/DEA',IIF(LEFT(mr.Code,3) = '203','DASRI',IIF(LEFT(mr.Code,3) = '204','DAOM','Refus de tri')))) as produit,"+ 
-  "IIF(SUBSTRING(mr.Code, 4, 2)='01','CALLERGIE',IIF(SUBSTRING(mr.Code, 4, 2)='02','INOVA',IIF(SUBSTRING(mr.Code, 4, 2)='03','PAPREC',IIF(SUBSTRING(mr.Code, 4, 2)='04','NICOLLIN',IIF(SUBSTRING(mr.Code, 4, 2)='05','BGV',IIF(SUBSTRING(mr.Code, 4, 2)='06',"+
-  "'SITOMAP',IIF(SUBSTRING(mr.Code, 4, 2)='07','SIRTOMRA OM',IIF(SUBSTRING(mr.Code, 4, 2)='08','COMMUNES',IIF(SUBSTRING(mr.Code, 4, 2)='09','SMICTOM','SMETOM'))))))))) as collecteur FROM moralentities_new as mr "+ 
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
   "WHERE mr.idUsine = "+req.idUsine+" AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
@@ -489,6 +485,25 @@ app.get("/Product/:Id", (request, response) => {
       response.json({data});
     });
 });
+
+/*
+******* FILTRES DECHETS / COLLECTEURS
+*/
+
+//Get déchets & collecteurs pour la gestion des filtres entrants en fonction de l'idUsine
+app.get("/DechetsCollecteurs/:idUsine", (request, response) => {
+  const req=request.query
+  pool.query("SELECT Name, Code FROM products_new WHERE Code Like '2%' AND idUsine = " +request.params.idUsine+ " ORDER BY Code ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+
+/*
+******* FIN FILTRES DECHETS / COLLECTEURS
+*/
 
 
 /*MEASURES*/
