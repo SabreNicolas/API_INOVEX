@@ -12,6 +12,12 @@ var smtpTransport = require('nodemailer-smtp-transport');
 const app = express();
 const path = require('path');
 const fs = require('fs');
+//DEBUT partie pour utiliser l'API en https
+var https = require('https');
+var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
+var credentials = {key: privateKey, cert: certificate};
+//FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
 // parse requests of content-type: application/x-www-form-urlencoded
@@ -59,6 +65,9 @@ var sqlConfig = {
     database : process.env.DATABASE
   }
 }
+
+var httpsServer = https.createServer(credentials,app);
+
 //repertoire des fichiers
 app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
@@ -66,7 +75,8 @@ var pool =  new sql.ConnectionPool(sqlConfig);
 
 pool.connect();
 
-var server = app.listen(port, function() {
+//var server = httpsServer.listen(port, function() {
+  var server = app.listen(port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
