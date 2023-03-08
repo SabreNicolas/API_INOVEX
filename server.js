@@ -75,8 +75,8 @@ var pool =  new sql.ConnectionPool(sqlConfig);
 
 pool.connect();
 
-//var server = httpsServer.listen(port, function() {
-  var server = app.listen(port, function() {
+var server = httpsServer.listen(port, function() {
+  //var server = app.listen(port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
