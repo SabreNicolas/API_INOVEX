@@ -127,7 +127,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 app.get("/moralEntities", (request, response) => {
     const req=request.query
     pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-    "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
+    "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code AND p.idUsine = mr.idUsine "+
     "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
@@ -139,8 +139,8 @@ app.get("/moralEntities", (request, response) => {
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", (request, response) => {
   const req=request.query
-  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-  "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code "+
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
+  "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code AND p.idUsine = mr.idUsine "+
   "WHERE mr.idUsine = "+req.idUsine+" AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -149,11 +149,11 @@ app.get("/moralEntitiesAll", (request, response) => {
 });
 
 //create MoralEntitie
-//?Name=c&Address=d&Code=f&UnitPrice=g&idUsine=1
+//?Name=c&Address=d&Code=f&UnitPrice=g&numCAP=sh&codeDechet=dg&nomClient=dg&prenomClient=fg&mailClient=dh&idUsine=1
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie", (request, response) => {
     const req=request.query
-    const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", "+req.idUsine+")";
+    const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, numCAP, codeDechet, nomClient, prenomClient, mailClient, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", '"+req.numCAP+"', '"+req.codeDechet+"', '"+req.nomClient+"', '"+req.prenomClient+"','"+req.mailClient+"', "+req.idUsine+")";
     pool.query(query,(err,result,fields) => {
         if(err) throw err;
         response.json("Création du client OK");
@@ -200,6 +200,27 @@ app.put("/moralEntitieUnitPrice/:id", (request, response) => {
   pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du prix unitaire OK")
+  });
+});
+
+//UPDATE MoralEntitie, changeALL
+//?Name=d&Address=d&Code=12&UnitPrice=1&numCAP=123&codeDechet=34343&nomClient=dhddg&prenomClient=dhdhdh&mailClient=dhggdgd
+//ATTENION Unit Price doit contenir un . pour les décimales
+app.put("/moralEntitieAll/:id", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE moralentities_new SET mailClient = '" + req.mailClient + "', prenomClient = '" + req.prenomClient + "', nomClient = '" + req.nomClient + "', codeDechet = '" + req.codeDechet + "', numCAP = '" + req.numCAP + "', Code = '" + req.Code + "', Address = '" + req.Address + "', Name = '" + req.Name + "', UnitPrice = '" + req.UnitPrice + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du MR OK")
+  });
+});
+
+//UPDATE MoralEntitie, set CAP
+//?cap=123
+app.put("/moralEntitieCAP/:id", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE moralentities_new SET numCAP = '" + req.cap + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du CAP OK")
   });
 });
 
