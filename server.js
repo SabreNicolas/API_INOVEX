@@ -1193,7 +1193,7 @@ app.put("/ronde", (request, response) => {
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
 //?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1
-app.put("/closeRonde", (request, response) => {
+app.put("/closeRonde/:idUsine", (request, response) => {
   const req=request.query
   pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = " + req.four2 +"", fonctFour3 = "" + req.four3 + " , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
@@ -1224,18 +1224,18 @@ app.get("/AuteurRonde/:quart", (request, response) => {
 });
 
 //Récupérer l'id de la dernière ronde inséré (ronde en cours)
-app.get("/LastRonde", (request, response) => {
+app.get("/LastRonde/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 Id from ronde ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     response.json(data[0].Id)
   });
 });
 
 //Récupérer l'id de la ronde précédente (0 si première ronde de la BDD)
-app.get("/RondePrecedente", (request, response) => {
+app.get("/RondePrecedente/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 2 Id from ronde ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     if(data.length>1){
       response.json(data[1].Id)
@@ -1245,9 +1245,9 @@ app.get("/RondePrecedente", (request, response) => {
 });
 
 //Récupérer la ronde encore en cours => permettre au rondier de la reprendre
-app.get("/LastRondeOpen", (request, response) => {
+app.get("/LastRondeOpen/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     response.json(data[0])
   });
@@ -1512,6 +1512,16 @@ app.get("/nbLigne/:id", (request, response) => {
 app.get("/nbGTA/:id", (request, response) => {
   const req=request.query
   pool.query("SELECT nbGTA FROM site WHERE id ="+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer le type d'import pour les pesées d'un site
+app.get("/typeImport/:id", (request, response) => {
+  const req=request.query
+  pool.query("SELECT typeImport FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
