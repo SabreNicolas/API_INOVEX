@@ -80,22 +80,22 @@ var server = httpsServer.listen(port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
-  console.log("API PAPREX SQL SERVER en route sur http://%s:%s",host,port);
+  console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s",host,port);
 });
 
 // simple route
 app.get("/", (req, res) => {
-  res.json({ message: "Welcome to PAPREX's API REST for SQL Server" });
+  res.json({ message: "Welcome to CAP EXPLOITATION's API REST for SQL Server" });
 });
 
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: 'paprec',
-  host: 'smtpbasic.paprec.fr',
+  service: process.env.SERVICE_SMTP,
+  host: process.env.HOST_SMTP,
   auth: {
-    user: 'no-reply-inovex@paprec.com',
-    pass: '$Inove2022**'
+    user: process.env.USER_SMTP,
+    pass: process.env.PWD_SMTP
   }
 }));
 
@@ -103,6 +103,7 @@ var transporter = nodemailer.createTransport(smtpTransport({
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', function(req, res) {
   let mailListIdUsine = 'MAIL_LIST_'+req.params.idUsine;
   var maillist = process.env[mailListIdUsine];
+  console.log(maillist);
   const message = {
     from: 'Noreply.Inovex@paprec.com', // Sender address
     to: maillist,
