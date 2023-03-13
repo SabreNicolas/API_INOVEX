@@ -126,9 +126,9 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 //?Code=34343&idUsine=1
 app.get("/moralEntities", (request, response) => {
     const req=request.query
-    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-    "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code AND p.idUsine = mr.idUsine "+
-    "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled=1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
+    "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
+    "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled = 1 AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -139,9 +139,9 @@ app.get("/moralEntities", (request, response) => {
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", (request, response) => {
   const req=request.query
-  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)-1) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-  "INNER JOIN products_new as p ON LEFT(mr.Code,5) = p.Code AND p.idUsine = mr.idUsine "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
+  "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
+  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -778,6 +778,18 @@ app.get("/Users", (request, response) => {
       response.json({data});
   });
 });
+
+//Récupérer l'ensemble des utilisateurs d'un site ayant les droits ayant les droits rondier
+//?idUsine=1
+app.get("/UsersRondier", (request, response) => { 
+  const req=request.query 
+  pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+    if(err) throw err; 
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 
 //Récupérer l'utilisateur qui est connecté
 app.get("/User/:login/:pwd", (request, response) => {
