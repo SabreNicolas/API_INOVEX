@@ -654,20 +654,10 @@ app.delete("/DeleteDepassement/:id", (request, response) => {
   });
 });
 
-//Récupérer le total des dépassements pour ligne 1
-app.get("/DepassementsSum1/:dateDeb/:dateFin/:idUsine", (request, response) => {
+//Récupérer le total des dépassements pour 1 ligne
+app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Ligne 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040101+"'", (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-      response.json({data});
-  });
-});
-
-//Récupérer le total des dépassements pour ligne 2
-app.get("/DepassementsSum2/:dateDeb/:dateFin/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total Ligne 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '"+601040201+"'", (err,data) => {
+  pool.query("SELECT 'Total Ligne "+request.params.numLigne+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '601040"+request.params.numLigne+"01'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -738,25 +728,16 @@ app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
   });
 });
 
-//Récupérer le total des arrêts pour four 1
-app.get("/ArretsSum1/:dateDeb/:dateFin/:idUsine", (request, response) => {
+//Récupérer le total des arrêts pour 1 four
+app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", (request, response) => {
   const req=request.query
-  pool.query("SELECT 'Total Four 1' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%1%'", (err,data) => {
+  pool.query("SELECT 'Total Four "+request.params.numFour+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%"+request.params.numFour+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
   });
 });
 
-//Récupérer le total des arrêts pour four 2
-app.get("/ArretsSum2/:dateDeb/:dateFin/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total Four 2' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%2%'", (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-      response.json({data});
-  });
-});
 
 /*USERS*/
 //?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isAdmin=01idUsine=1
