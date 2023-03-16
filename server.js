@@ -895,7 +895,7 @@ app.get("/BadgeLastId", (request, response) => {
 //Récupérer l'utilisateur lié au badge
 app.get("/UserOfBadge/:uid", (request, response) => {
   const req=request.query
-  pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+request.params.uid+"'", (err,data) => {
+  pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.idUsine, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+request.params.uid+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1162,10 +1162,10 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 
 
 /*Ronde*/
-//?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1
+//?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/ronde", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+")"
+  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+", "+req.idUSine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1194,10 +1194,10 @@ app.put("/closeRondeEnCours", (request, response) => {
 
 
 //Récupérer l'auteur d'une ronde
-//?date=07/02/2022
+//?date=07/02/2022&idUsine=1
 app.get("/AuteurRonde/:quart", (request, response) => {
   const req=request.query
-  pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
+  pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
