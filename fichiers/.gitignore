@@ -1,0 +1,5 @@
+# on ne push pas les images dans le repo
+*
+
+# on conserve le gitignore dans le repo
+!.gitignore
