@@ -544,14 +544,14 @@ app.get("/DechetsCollecteurs/:idUsine", (request, response) => {
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", (request, response) => {
   const req=request.query
-  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+")"+
+  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId = "+req.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
       " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
     "END"+
     " ELSE"+
     " BEGIN "+
-    "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+
+    "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err) throw err;
@@ -981,9 +981,9 @@ app.put("/zone", (request, response) => {
 });
 
 //Récupérer l'ensemble des zones de controle
-app.get("/zones/:idUSine", (request, response) => {
+app.get("/zones/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUSine+" ORDER BY nom ASC", (err,data) => {
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1164,8 +1164,8 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 /*Ronde*/
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/ronde", (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+", "+req.idUSine+")"
+  const req=request.query;
+  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+", "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1174,9 +1174,9 @@ app.put("/ronde", (request, response) => {
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
 //?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1
-app.put("/closeRonde/:idUsine", (request, response) => {
+app.put("/closeRonde/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = " + req.four2 +"", fonctFour3 = "" + req.four3 + " , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
+  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = '" + req.four2 +"', fonctFour3 = '" + req.four3 + "' , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1209,6 +1209,7 @@ app.get("/LastRonde/:idUsine", (request, response) => {
   const req=request.query
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
+    data = data['recordset'];
     response.json(data[0].Id)
   });
 });
@@ -1218,6 +1219,7 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
   const req=request.query
   pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
+    data = data['recordset'];
     if(data.length>1){
       response.json(data[1].Id)
     }
@@ -1230,6 +1232,7 @@ app.get("/LastRondeOpen/:idUsine", (request, response) => {
   const req=request.query
   pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
+    data = data['recordset'];
     response.json(data[0])
   });
 });
@@ -1348,7 +1351,7 @@ app.get("/PermisFeuVerification", (request, response) => {
 app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
   const req=request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
+  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
   var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
   pool.query(query,(err,result,fields) => {
@@ -1489,6 +1492,17 @@ app.get("/nbLigne/:id", (request, response) => {
   });
 });
 
+
+//Récupérer le nombre de ligne d'un site avec une réponse au format chiffre
+app.get("/nbLigneChiffre/:id", (request, response) => {
+  const req=request.query
+  pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json(data[0].nbLigne);
+  });
+});
+
 //Récupérer le nombre de GTA d'un site
 app.get("/nbGTA/:id", (request, response) => {
   const req=request.query
@@ -1562,4 +1576,25 @@ app.put("/productTAG/:id", (request, response) => {
 
 //////////////////////////
 // FIN IMAGINDATA
+//////////////////////////
+
+
+
+//////////////////////////
+//MAINTENANCE
+//////////////////////////
+
+//Récupérer la maintenance prévue
+app.get("/Maintenance", (request, response) => {
+  const req=request.query
+  pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json(data[0]) 
+  });
+});
+
+
+//////////////////////////
+// FIN MAINTENANCE
 //////////////////////////
