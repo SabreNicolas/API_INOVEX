@@ -1,0 +1,63 @@
+{
+    "swagger": "2.0",
+    "info": {
+      "title": "Documentation de l'API de CAP EXPLOITATION",
+      "version": "v1"
+    },
+    "paths": {
+        "/sites": {
+          "get": {
+            "summary": "Liste des différentes usines, classé par ordre alphabétique de la Ville du site.",
+            "description": "La requête retourne les différents sites. Cela permet de connaitre le nombre de four, de GTA et le type de pesées de chacun.",
+            "tags": [
+              "Sites"
+            ],
+            "responses": {
+              "200": {
+                "description": "Un tableau de site",
+                "examples": {
+                    "application/json": "{\n    \"data\":\n   [\n {\"id\":4,\"localisation\":\"Cergy\",\"codeUsine\":\"004\",\"nbLigne\":2,\"nbGTA\":1,\"typeImport\":\"Hodja\"},\n {\"id\":2,\"localisation\":\"Chinon\",\"codeUsine\":\"002\",\"nbLigne\":1,\"nbGTA\":1,\"typeImport\":\"Ademi\"}\n ]\n }"
+                }
+              }
+            }
+          }
+        },
+        "/Users": {
+            "get": {
+              "summary": "Liste des utilisateurs d'un site, classé par ordre alphabétique du Nom.",
+              "description": "La requête retourne les différents utilisateurs d'un site, ainsi que leurs droits sur CAP Exploitation. Mettre idUsine à 5 pour les superAdmin.",
+              "parameters": [
+                {
+                  "name": "login",
+                  "in": "query",
+                  "description": "Retourne les utilisateurs pour lesquels le login contient le paramètre.",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "idUsine",
+                  "in": "query",
+                  "description": "Id de l'usine.",
+                  "required": true,
+                  "type": "number",
+                  "format": "simple"
+                }
+              ],
+              "tags": [
+                "Utilisateurs"
+              ],
+              "responses": {
+                "200": {
+                  "description": "Un tableau d'utilisateur",
+                  "examples": {
+                      "application/json": "{\n    \"data\":\n   [\n {\"Id\":24,\"Nom\":\"Caron\",\"Prenom\":\"Laure\",\"login\":\"lcaron\",\"pwd\":\"8cc30d77c7b9625bdea09a4ec4825083\",\"isRondier\":true,\"isSaisie\":true,\"isQSE\":true,\"isRapport\":true,\"isAdmin\":true,\"idUsine\":1}\n ]\n }"
+                  }
+                }
+              }
+            }
+          }
+    },
+    "consumes": [
+      "application/json"
+    ]
+  }

@@ -28,6 +28,12 @@ app.use(cors({origin: "*" }));
 //utilisation des variables d'environnement
 require('dotenv').config();
 
+/**Documentation avec Swagger UI**/
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./swagger.json');
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+/**Documentation avec Swagger UI**/
+
 //Gestion des fichiers avec multer
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -39,6 +45,8 @@ const storage = multer.diskStorage({
       callback(null, Date.now()+name);
   }
 });
+//repertoire des fichiers
+app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
@@ -67,9 +75,6 @@ var sqlConfig = {
 }
 
 var httpsServer = https.createServer(credentials,app);
-
-//repertoire des fichiers
-app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 var pool =  new sql.ConnectionPool(sqlConfig);
 
