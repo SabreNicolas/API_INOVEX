@@ -1027,28 +1027,28 @@ function getElementsHorsLigne(zone,previousId) {
   return new Promise((resolve) => {
     let modesOp;
     //Récupération des modesOP
-    pool.query("SELECT m.nom, m.fichier FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
+    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
       if(err) throw err;
       else{
         modesOp = data['recordset'];
-      }
-    });
 
-    pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
-      if(err) throw err;
-      else{
-        data = data['recordset'];
-        let OneBadgeAndElementsOfZone = {
-          zoneId : zone.zoneId,
-          zone : zone.nomZone,
-          commentaire : zone.commentaire,
-          badge : zone.uidBadge,
-          four : zone.four,
-          modeOP : modesOp,
-          elements : data
-        };
-        resolve();
-        BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
+          if(err) throw err;
+          else{
+            data = data['recordset'];
+            let OneBadgeAndElementsOfZone = {
+              zoneId : zone.zoneId,
+              zone : zone.nomZone,
+              commentaire : zone.commentaire,
+              badge : zone.uidBadge,
+              four : zone.four,
+              modeOP : modesOp,
+              elements : data
+            };
+            resolve();
+            BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+          }
+        });
       }
     });
   });
