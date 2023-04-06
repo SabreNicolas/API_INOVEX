@@ -108,21 +108,30 @@ var transporter = nodemailer.createTransport(smtpTransport({
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', function(req, res) {
   let mailListIdUsine = 'MAIL_LIST_'+req.params.idUsine;
   var maillist = process.env[mailListIdUsine];
-  console.log(maillist);
-  const message = {
-    from: 'Noreply.Inovex@paprec.com', // Sender address
-    to: maillist,
-    subject: '[NSL] Nouvel Arrêt Intempestif !!!', // Subject line
-    html: 'ATTENTION, un arrêt intempestif vient d\'être signalé : '+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'. <br> Voici le commentaire : '+req.params.commentaire // Plain text body
-  };
-  transporter.sendMail(message, function(err, info) {
-    if (err) {
-      console.log(err);
-      throw err;
-    } else {
-      console.log('Email sent: ' + info.response);
-      res.json("mail OK");
-    }
+  
+  //On récupére le nom du site pour l'inscrire dans l'email
+  pool.query("SELECT localisation FROM site WHERE id = "+req.params.idUsine, (err,data) => {
+    if(err) throw err;
+    let localisation = data['recordset'][0].localisation;
+
+    //Envoi du mail
+    const message = {
+      from: 'Noreply.Inovex@paprec.com', // Sender address
+      to: maillist,
+      subject: '['+localisation+'] Nouvel Arrêt Intempestif !!!', // Subject line
+      html: '<h1>ATTENTION, un arrêt intempestif vient d\'être signalé pour le site de '+localisation+ ':</h1> '+
+      '<h2>'+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'.</h2>'+ 
+      '<h3>Voici le commentaire : '+req.params.commentaire+'</h3>'//Cors du mail en HTML
+    };
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        throw err;
+      } else {
+        console.log('Email sent: ' + info.response);
+        res.json("mail OK");
+      }
+    });
   });
 });
 
