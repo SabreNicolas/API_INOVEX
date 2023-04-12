@@ -1187,10 +1187,10 @@ app.put("/ronde", (request, response) => {
 });
 
 //Cloture de la ronde avec ou sans commentaire/anomalie
-//?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1
+//?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1&four4=1
 app.put("/closeRonde/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = '" + req.four2 +"', fonctFour3 = '" + req.four3 + "' , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
+  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = '" + req.four2 +"', fonctFour3 = '" + req.four3 + "' , fonctFour4 = '" + req.four4 + "' , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1200,7 +1200,7 @@ app.put("/closeRonde/:id", (request, response) => {
 //?id=12
 app.put("/closeRondeEnCours", (request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1 WHERE id = "+ req.id, (err,data) => {
+  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1, fonctFour4 = 1 WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1255,7 +1255,7 @@ app.get("/LastRondeOpen/:idUsine", (request, response) => {
 //?date=07/02/2022&idUsine=1
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
+  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
