@@ -100,41 +100,6 @@
             }
           }
         },
-        "/Users": {
-            "get": {
-              "summary": "Liste des utilisateurs d'un site, classés par ordre alphabétique du Nom.",
-              "description": "La requête retourne les différents utilisateurs d'un site, ainsi que leurs droits sur CAP Exploitation. Mettre idUsine à 5 pour les superAdmin.",
-              "parameters": [
-                {
-                  "name": "login",
-                  "in": "query",
-                  "description": "Retourne les utilisateurs pour lesquels le login contient le paramètre.",
-                  "required": true,
-                  "type": "string"
-                },
-                {
-                  "name": "idUsine",
-                  "in": "query",
-                  "description": "Id de l'usine.",
-                  "required": true,
-                  "type": "number",
-                  "format": "simple"
-                }
-              ],
-              "tags": [
-                "Utilisateurs"
-              ],
-              "responses": {
-                "200": {
-                  "description": "Un tableau d'utilisateur",
-                  "examples": {
-                      "application/json": "{\n    \"data\":\n   [\n {\"Id\":24,\"Nom\":\"Caron\",\"Prenom\":\"Laure\",\"login\":\"lcaron\",\"pwd\":\"8cc30d77c7b9625bdea09a4ec4825083\",\"isRondier\":true,\"isSaisie\":true,\"isQSE\":true,\"isRapport\":true,\"isAdmin\":true,\"idUsine\":1}\n ]\n }"
-                  }
-                }
-              }
-            },
-            "SwaggerExclude " : "pwd"
-          },
           "/UsersRondier": {
             "get": {
               "summary": "Liste des utilisateurs rondier d'un site, classés par ordre alphabétique du Nom.",
@@ -190,57 +155,6 @@
               "responses": {
                 "200": {
                   "description": "Un tableau d'utilisateur"
-                }
-              }
-            }
-          },
-          "/User/{login}": {
-            "get": {
-              "summary": "Récupère les informations d'un utilisateur en fonction de son login.",
-              "description": "La requête retourne les différents informations de l'utilisateur et permet ainsi de voir si celui-ci existe.",
-              "parameters": [
-                {
-                  "name": "login",
-                  "in": "path",
-                  "description": "Login de l'utilisateur.",
-                  "required": true,
-                  "type": "string",
-                  "format": "simple"
-                }
-              ],
-              "tags": [
-                "Utilisateurs"
-              ],
-              "responses": {
-                "200": {
-                  "description": "Un tableau d'un utilisateur"
-                }
-              }
-            }
-          },
-          "/UsersLibre/{idUsine}": {
-            "get": {
-              "summary": "Récupère les informations des utilisateurs non affectés à un badge.",
-              "description": "La requête retourne les informations des utilisateurs non affectés à un badge et permet de voir les utilisateurs libres.",
-              "parameters": [
-                {
-                  "name": "idUsine",
-                  "in": "path",
-                  "description": "Id de l'usine.",
-                  "required": true,
-                  "type": "string",
-                  "format": "simple"
-                }
-              ],
-              "tags": [
-                "Utilisateurs"
-              ],
-              "responses": {
-                "200": {
-                  "description": "Un tableau d'un utilisateur",
-                  "examples" : {
-                    "application/json" : "{\r\n  \"data\": [\r\n    {\r\n      \"Id\": 30,\r\n      \"Nom\": \"Bonnemaison\",\r\n      \"Prenom\": \"Bénédicte\",\r\n      \"login\": \"bbonnemaison\",\r\n      \"pwd\": \"8cc30d77c7b9625bdea09a4ec4825083\",\r\n      \"isRondier\": true,\r\n      \"isSaisie\": true,\r\n      \"isQSE\": true,\r\n      \"isRapport\": true,\r\n      \"isAdmin\": false,\r\n      \"idUsine\": 1\r\n    },\r\n    {\r\n      \"Id\": 47,\r\n      \"Nom\": \"Borowski\",\r\n      \"Prenom\": \"stéphane\",\r\n      \"login\": \"ST\",\r\n      \"pwd\": \"8cc30d77c7b9625bdea09a4ec4825083\",\r\n      \"isRondier\": true,\r\n      \"isSaisie\": false,\r\n      \"isQSE\": false,\r\n      \"isRapport\": false,\r\n      \"isAdmin\": false,\r\n      \"idUsine\": 1\r\n    }\r\n  ]\r\n}"
-                  }
                 }
               }
             }
