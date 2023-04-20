@@ -81,7 +81,7 @@ var pool =  new sql.ConnectionPool(sqlConfig);
 pool.connect();
 
 var server = httpsServer.listen(port, function() {
-  //var server = app.listen(port, function() {
+//var server = app.listen(port, function() {
   var host = server.address().address;
   var port = server.address().port;
 
@@ -347,8 +347,8 @@ app.get("/Categories/:ParentId", (request, response) => {
     });
 });
 
-//get Last Code INOVEX
-//?Code=29292&idUsine=1
+//get Last Code INOVEX 
+//?Code=29292&idUsine=1 
 app.get("/productLastCode", (request, response) => {
   const req=request.query
   pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + req.idUsine + " AND CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
@@ -390,7 +390,7 @@ app.get("/Container/:idUsine", (request, response) => {
       response.json({data});
   });
 });
-
+ 
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", (request, response) => {
   const req=request.query
@@ -427,7 +427,6 @@ app.get("/Compteurs", (request, response) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
-  
   });
 });
 
@@ -441,7 +440,7 @@ app.get("/QSE", (request, response) => {
       response.json({data});
   
   });
-});
+}); 
 
 //get ALL Compteurs for arrêts
 //?Code=ddhdhhd&idUsine=1
@@ -451,12 +450,11 @@ app.get("/CompteursArrets", (request, response) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
-  
   });
 });
 
 //get ALL Analyses
-//?Code=ddhdhhd&idUsine=1
+//?Code=ddhdhhd&idUsine=1 
 app.get("/Analyses", (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' ORDER BY Name", (err,data) => {
@@ -1258,7 +1256,7 @@ app.get("/Rondes", (request, response) => {
   pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json({data});
+    response.json({data});    
   });
 });
 
