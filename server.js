@@ -1594,10 +1594,10 @@ app.put("/productTAG/:id", (request, response) => {
 });
 
 //UPDATE Product, set Code
-//?Code=123
-app.put("/productCode/:id", (request, response) => {
+//?CodeEquipement=123
+app.put("/productCodeEquipement/:id", (request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET CodeEquipement = '" + req.Code + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du Code OK")
   });
