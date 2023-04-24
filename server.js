@@ -752,10 +752,10 @@ app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", (request, response
 
 
 /*USERS*/
-//?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isAdmin=01idUsine=1
+//?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isChefQuart=1&isAdmin=01idUsine=1
 app.put("/User", (request, response) => {
   const req=request.query
-  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isAdmin, idUsine) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isAdmin+", "+req.idUsine+") "
+  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isChefQuart, isAdmin, idUsine) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isChefQuart+", "+req.isAdmin+", "+req.idUsine+") "
   ,(err,result,fields) => {
       if(err) response.json("Création de l'utilisateur KO");
       else response.json("Création de l'utilisateur OK");
@@ -851,10 +851,19 @@ app.put("/UserRapport/:login/:droit", (request, response) => {
   });
 });
 
+//Update droit chef quart
+app.put("/UserChefQuart/:login/:droit", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE users SET isChefQuart = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du droit OK")
+  });
+});
+
 //Update droit admin
 app.put("/UserAdmin/:login/:droit", (request, response) => {
   const req=request.query
-  pool.query('UPDATE users SET isAdmin = "' + request.params.droit + '" WHERE login = "'+request.params.login+'"', (err,data) => {
+  pool.query("UPDATE users SET isAdmin = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1581,6 +1590,16 @@ app.put("/productTAG/:id", (request, response) => {
   pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du TAG OK")
+  });
+});
+
+//UPDATE Product, set Code
+//?CodeEquipement=123
+app.put("/productCodeEquipement/:id", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du Code OK")
   });
 });
 
