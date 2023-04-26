@@ -1633,7 +1633,6 @@ app.get("/Maintenance", (request, response) => {
     if(data.length>0){
       response.json(data[0])
     }
-    else response.json(0)
   });
 });
 
