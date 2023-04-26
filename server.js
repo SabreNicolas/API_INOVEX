@@ -1231,7 +1231,10 @@ app.get("/LastRonde/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0].Id)
+    if(data.length>0){
+      response.json(data[0].Id)
+    }
+    else response.json(0)
   });
 });
 
@@ -1254,7 +1257,10 @@ app.get("/LastRondeOpen/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0])
+    if(data.length>0){
+      response.json(data[0])
+    }
+    else response.json(0)
   });
 });
 
@@ -1520,7 +1526,10 @@ app.get("/nbLigneChiffre/:id", (request, response) => {
   pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0].nbLigne);
+    if(data.length>0){
+      response.json(data[0].nbLigne)
+    }
+    else response.json(0)
   });
 });
 
@@ -1621,7 +1630,10 @@ app.get("/Maintenance", (request, response) => {
   pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0]) 
+    if(data.length>0){
+      response.json(data[0])
+    }
+    else response.json(0)
   });
 });
 
