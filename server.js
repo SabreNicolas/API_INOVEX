@@ -1473,7 +1473,7 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
   //création de l'url de stockage du fichier
   const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
 
-  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", "+req.commentaire+", '"+url+"')";
+  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", '"+req.commentaire+"', '"+url+"')";
   pool.query(query,(err,result,fields) => {
       if(err) {
         response.json("Création de l'anomalie KO");
