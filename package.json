@@ -29,13 +29,17 @@
     "express": "^4.17.1",
     "fs": "^0.0.1-security",
     "https": "^1.0.0",
+    "jsonwebtoken": "^9.0.0",
+    "jwt-redis": "^7.0.3",
     "mssql": "^9.0.1",
     "multer": "^1.4.5-lts.1",
     "mysql": "^2.18.1",
     "nodemailer": "^6.6.3",
     "nodemailer-smtp-transport": "^2.7.4",
-    "nodemon": "^2.0.20",
+    "nodemon": "^2.0.22",
     "path": "^0.12.7",
-    "swagger-ui-express": "^4.6.2"
+    "swagger-ui-express": "^4.6.2",
+    "sync-request": "^6.1.0",
+    "xmlhttprequest": "^1.8.0"
   }
 }
