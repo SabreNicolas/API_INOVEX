@@ -27,10 +27,8 @@ const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
 const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-// var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
-// var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
-var privateKey = fs.readFileSync('C:/Users/MCoulon/Desktop/api/crt_api/server-decrypted.key','utf8');
-var certificate = fs.readFileSync('C:/Users/MCoulon/Desktop/api/crt_api/server.crt','utf8');
+var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
