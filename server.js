@@ -2,6 +2,18 @@
 ****** SQL SERVER ******
 */
 
+//Gestion des tokens
+
+//Libraire de gestion des tokens
+const jwt = require('jsonwebtoken');
+const middleware = require('./token/middleware.js');
+
+//Fonction pour générer un token
+function generateAcessToken(id){
+  return jwt.sign({id}, process.env.ACESS_TOKEN_SECRET)
+}
+
+
 const express = require("express");
 const bodyParser = require("body-parser");
 //pour reécupérer les fichiers envoyés via formData
@@ -14,8 +26,11 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
-var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
+const httpsAgent = new https.Agent({ rejectUnauthorized: false });
+// var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
+// var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
+var privateKey = fs.readFileSync('C:/Users/MCoulon/Desktop/api/crt_api/server-decrypted.key','utf8');
+var certificate = fs.readFileSync('C:/Users/MCoulon/Desktop/api/crt_api/server.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
@@ -139,7 +154,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 /* MORAL ENTITIES*/
 //get all MoralEntities where Enabled = 1
 //?Code=34343&idUsine=1
-app.get("/moralEntities", (request, response) => {
+app.get("/moralEntities", middleware,(request, response) => {
     const req=request.query
     pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
     "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
@@ -152,7 +167,7 @@ app.get("/moralEntities", (request, response) => {
 
 //get all MoralEntities
 //?Code=34343&idUsine=1
-app.get("/moralEntitiesAll", (request, response) => {
+app.get("/moralEntitiesAll", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
@@ -166,7 +181,7 @@ app.get("/moralEntitiesAll", (request, response) => {
 //create MoralEntitie
 //?Name=c&Address=d&Code=f&UnitPrice=g&numCAP=sh&codeDechet=dg&nomClient=dg&prenomClient=fg&mailClient=dh&idUsine=1
 //ATTENION Unit Price doit contenir un . pour les décimales
-app.put("/moralEntitie", (request, response) => {
+app.put("/moralEntitie", middleware,(request, response) => {
     const req=request.query
     const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, numCAP, codeDechet, nomClient, prenomClient, mailClient, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", '"+req.numCAP+"', '"+req.codeDechet+"', '"+req.nomClient+"', '"+req.prenomClient+"','"+req.mailClient+"', "+req.idUsine+")";
     pool.query(query,(err,result,fields) => {
@@ -177,7 +192,7 @@ app.put("/moralEntitie", (request, response) => {
 
 //get Last Code INOVEX
 //?Code=29292&idUsine=1
-app.get("/moralEntitieLastCode", (request, response) => {
+app.get("/moralEntitieLastCode", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT TOP 1 Code FROM moralentities_new WHERE CODE LIKE '" + req.Code + "%' AND idUsine = "+req.idUsine+" ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
@@ -187,7 +202,7 @@ app.get("/moralEntitieLastCode", (request, response) => {
 });
 
 //get One MoralEntitie
-app.get("/moralEntitie/:id", (request, response) => {
+app.get("/moralEntitie/:id",middleware, (request, response) => {
     const req=request.query
     pool.query("SELECT * FROM moralentities_new WHERE Id = "+request.params.id, (err,data) => {
       if(err) throw err;
@@ -199,7 +214,7 @@ app.get("/moralEntitie/:id", (request, response) => {
 //UPDATE MoralEntitie, set UnitPrice & Code
 //?UnitPrice=2.3&Code=1234
 //ATTENION Unit Price doit contenir un . pour les décimales
-app.put("/moralEntitie/:id", (request, response) => {
+app.put("/moralEntitie/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", Code = " + req.Code + " WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -210,7 +225,7 @@ app.put("/moralEntitie/:id", (request, response) => {
 //UPDATE MoralEntitie, set UnitPrice
 //?UnitPrice=2.3
 //ATTENION Unit Price doit contenir un . pour les décimales
-app.put("/moralEntitieUnitPrice/:id", (request, response) => {
+app.put("/moralEntitieUnitPrice/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -221,7 +236,7 @@ app.put("/moralEntitieUnitPrice/:id", (request, response) => {
 //UPDATE MoralEntitie, changeALL
 //?Name=d&Address=d&Code=12&UnitPrice=1&numCAP=123&codeDechet=34343&nomClient=dhddg&prenomClient=dhdhdh&mailClient=dhggdgd
 //ATTENION Unit Price doit contenir un . pour les décimales
-app.put("/moralEntitieAll/:id", (request, response) => {
+app.put("/moralEntitieAll/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET mailClient = '" + req.mailClient + "', prenomClient = '" + req.prenomClient + "', nomClient = '" + req.nomClient + "', codeDechet = '" + req.codeDechet + "', numCAP = '" + req.numCAP + "', Code = '" + req.Code + "', Address = '" + req.Address + "', Name = '" + req.Name + "', UnitPrice = '" + req.UnitPrice + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -231,7 +246,7 @@ app.put("/moralEntitieAll/:id", (request, response) => {
 
 //UPDATE MoralEntitie, set CAP
 //?cap=123
-app.put("/moralEntitieCAP/:id", (request, response) => {
+app.put("/moralEntitieCAP/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET numCAP = '" + req.cap + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -241,7 +256,7 @@ app.put("/moralEntitieCAP/:id", (request, response) => {
 
 //UPDATE MoralEntitie, set Code
 //?Code=123
-app.put("/moralEntitieCode/:id", (request, response) => {
+app.put("/moralEntitieCode/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET Code = " + req.Code + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -250,7 +265,7 @@ app.put("/moralEntitieCode/:id", (request, response) => {
 });
 
 //UPDATE MoralEntitie, set Enabled
-app.put("/moralEntitieEnabled/:id/:enabled", (request, response) => {
+app.put("/moralEntitieEnabled/:id/:enabled", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET Enabled = "+request.params.enabled+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -260,7 +275,7 @@ app.put("/moralEntitieEnabled/:id/:enabled", (request, response) => {
 
 //UPDATE MoralEntitie, set Name
 //?Name=tetet
-app.put("/moralEntitieName/:id", (request, response) => {
+app.put("/moralEntitieName/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE moralentities_new SET Name = '"+req.Name+"', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -269,7 +284,7 @@ app.put("/moralEntitieName/:id", (request, response) => {
 });
 
 //DELETE MoralEntitie
-app.delete("/moralEntitie/:id", (request, response) => {
+app.delete("/moralEntitie/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM moralentities_new WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -279,7 +294,7 @@ app.delete("/moralEntitie/:id", (request, response) => {
 
 /*CATEGORIES*/
 //get ALL Categories for compteurs
-app.get("/CategoriesCompteurs", (request, response) => {
+app.get("/CategoriesCompteurs", middleware, (request, response) => {
     const req=request.query
     pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
     "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
@@ -291,7 +306,7 @@ app.get("/CategoriesCompteurs", (request, response) => {
 });
 
 //get ALL Categories for analyses
-app.get("/CategoriesAnalyses", (request, response) => {
+app.get("/CategoriesAnalyses", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
@@ -303,7 +318,7 @@ app.get("/CategoriesAnalyses", (request, response) => {
 });
 
 //get ALL Categories for sortants
-app.get("/CategoriesSortants", (request, response) => {
+app.get("/CategoriesSortants",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
@@ -316,7 +331,7 @@ app.get("/CategoriesSortants", (request, response) => {
 
 //create Categorie
 //?Name=c&Code=f&ParentId=g
-app.put("/Category", (request, response) => {
+app.put("/Category",middleware, (request, response) => {
   const req=request.query
   const query="INSERT INTO categories_new (CreateDate, LastModifiedDate, Name, Enabled, Code, ParentId) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.ParentId+")";
   pool.query(query,(err,result,fields) => {
@@ -326,7 +341,7 @@ app.put("/Category", (request, response) => {
 });
 
 //get ONE Categorie
-app.get("/Category/:Id", (request, response) => {
+app.get("/Category/:Id",middleware, (request, response) => {
     const req=request.query
     pool.query("SELECT * FROM categories_new WHERE Id = "+ request.params.Id, (err,data) => {
       if(err) throw err;
@@ -337,7 +352,7 @@ app.get("/Category/:Id", (request, response) => {
 });
 
 //Get Catégories filles d'une catégorie mère
-app.get("/Categories/:ParentId", (request, response) => {
+app.get("/Categories/:ParentId",middleware, (request, response) => {
     const req=request.query
     pool.query("SELECT * FROM categories_new WHERE ParentId = "+ request.params.ParentId, (err,data) => {
       if(err) throw err;
@@ -349,7 +364,7 @@ app.get("/Categories/:ParentId", (request, response) => {
 
 //get Last Code INOVEX 
 //?Code=29292&idUsine=1 
-app.get("/productLastCode", (request, response) => {
+app.get("/productLastCode", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + req.idUsine + " AND CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
@@ -360,7 +375,7 @@ app.get("/productLastCode", (request, response) => {
 
 /*PRODUCTS*/
 //get ALL Products
-app.get("/Products", (request, response) => {
+app.get("/Products", middleware,(request, response) => {
     const req=request.query
     pool.query("SELECT * FROM products_new", (err,data) => {
       if(err) throw err;
@@ -371,7 +386,7 @@ app.get("/Products", (request, response) => {
 
 //get ALL Products with type param
 //?Name=dgdgd&idUsine=1
-app.get("/Products/:TypeId", (request, response) => {
+app.get("/Products/:TypeId", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
@@ -382,7 +397,7 @@ app.get("/Products/:TypeId", (request, response) => {
 });
 
 //get Container DASRI
-app.get("/Container/:idUsine", (request, response) => {
+app.get("/Container/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND Code LIKE '301010201' ", (err,data) => {
     if(err) throw err;
@@ -392,7 +407,7 @@ app.get("/Container/:idUsine", (request, response) => {
 });
  
 //UPDATE Product, change Enabled
-app.put("/productEnabled/:id/:enabled", (request, response) => {
+app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET Enabled = "+request.params.enabled +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -401,7 +416,7 @@ app.put("/productEnabled/:id/:enabled", (request, response) => {
 });
 
 //UPDATE Product, change TypeId
-app.put("/productType/:id/:type", (request, response) => {
+app.put("/productType/:id/:type",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET TypeId = "+request.params.type +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -411,7 +426,7 @@ app.put("/productType/:id/:type", (request, response) => {
 
 //UPDATE Product, set Unit
 //?Unit=123
-app.put("/productUnit/:id", (request, response) => {
+app.put("/productUnit/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET Unit = '" + req.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -421,7 +436,7 @@ app.put("/productUnit/:id", (request, response) => {
 
 //get ALL Compteurs
 //?Code=ddhdhhd&idUsine=1
-app.get("/Compteurs", (request, response) => {
+app.get("/Compteurs",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -432,7 +447,7 @@ app.get("/Compteurs", (request, response) => {
 
 //get ALL QSE
 //&idUsine=1
-app.get("/QSE", (request, response) => {
+app.get("/QSE",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND Code LIKE '701%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -444,7 +459,7 @@ app.get("/QSE", (request, response) => {
 
 //get ALL Compteurs for arrêts
 //?Code=ddhdhhd&idUsine=1
-app.get("/CompteursArrets", (request, response) => {
+app.get("/CompteursArrets",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -455,7 +470,7 @@ app.get("/CompteursArrets", (request, response) => {
 
 //get ALL Analyses
 //?Code=ddhdhhd&idUsine=1 
-app.get("/Analyses", (request, response) => {
+app.get("/Analyses", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -466,7 +481,7 @@ app.get("/Analyses", (request, response) => {
 });
 
 //get Analyses/ Dépassements 1/2 heures
-app.get("/AnalysesDep/:idUsine", (request, response) => {
+app.get("/AnalysesDep/:idUsine", middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -478,7 +493,7 @@ app.get("/AnalysesDep/:idUsine", (request, response) => {
 
 //get ALL Sortants
 //?Code=ddhdhhd&idUsine=1
-app.get("/Sortants", (request, response) => {
+app.get("/Sortants", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 5 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -489,7 +504,7 @@ app.get("/Sortants", (request, response) => {
 });
 
 //get ALL conso & others
-app.get("/Consos/:idUsine", (request, response) => {
+app.get("/Consos/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -500,7 +515,7 @@ app.get("/Consos/:idUsine", (request, response) => {
 });
 
 //get ALL pci
-app.get("/pci/:idUsine", (request, response) => {
+app.get("/pci/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
@@ -511,7 +526,7 @@ app.get("/pci/:idUsine", (request, response) => {
 
 //create Product
 //?Name=c&Code=f&typeId=g&Unit=j&idUsine=1&TAG=sdhdhdh
-app.put("/Product", (request, response) => {
+app.put("/Product", middleware,(request, response) => {
   const req=request.query
   const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
   pool.query(query,(err,result,fields) => {
@@ -521,7 +536,7 @@ app.put("/Product", (request, response) => {
 });
 
 //get ONE Product
-app.get("/Product/:Id", (request, response) => {
+app.get("/Product/:Id",middleware, (request, response) => {
     const req=request.query
     pool.query("SELECT * FROM products_new WHERE Id = " + request.params.Id, (err,data) => {
       if(err) throw err;
@@ -535,7 +550,7 @@ app.get("/Product/:Id", (request, response) => {
 */
 
 //Get déchets & collecteurs pour la gestion des filtres entrants en fonction de l'idUsine
-app.get("/DechetsCollecteurs/:idUsine", (request, response) => {
+app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT Name, Code FROM products_new WHERE Code Like '2%' AND idUsine = " +request.params.idUsine+ " ORDER BY Code ASC", (err,data) => {
     if(err) throw err;
@@ -554,7 +569,7 @@ app.get("/DechetsCollecteurs/:idUsine", (request, response) => {
 //create Measure
 //?EntryDate=1&Value=1&ProductId=1&ProducerId=1
 //ATTENION Value doit contenir un . pour les décimales
-app.put("/Measure", (request, response) => {
+app.put("/Measure", middleware,(request, response) => {
   const req=request.query
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId = "+req.ProductId+")"+
     " BEGIN "+
@@ -572,7 +587,7 @@ app.put("/Measure", (request, response) => {
 });
 
 //get Entry
-app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
+app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND ProducerId = " + request.params.ProducerId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
@@ -582,7 +597,7 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", (request, response) => {
 });
 
 //get value products
-app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
+app.get("/ValuesProducts/:ProductId/:Date", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
@@ -592,7 +607,7 @@ app.get("/ValuesProducts/:ProductId/:Date", (request, response) => {
 });
 
 //get Total by day and Type
-app.get("/TotalMeasures/:Dechet/:Date/:idUsine", (request, response) => {
+app.get("/TotalMeasures/:Dechet/:Date/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new m INNER JOIN products_new p ON m.ProductId = p.Id WHERE p.idUsine = "+request.params.idUsine+ " AND m.EntryDate LIKE '"+request.params.Date+"%' AND m.ProducerId > 1 AND p.Code LIKE '"+request.params.Dechet+"%'", (err,data) => {
     if(err) throw err;
@@ -606,7 +621,7 @@ app.get("/TotalMeasures/:Dechet/:Date/:idUsine", (request, response) => {
 /* SAISIE MENSUELLE */
 //get value compteurs
 //?idUsine=1
-app.get("/Compteurs/:Code/:Date", (request, response) => {
+app.get("/Compteurs/:Code/:Date", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT Value FROM saisiemensuelle WHERE idUsine = "+req.idUsine+" AND Code = '" + request.params.Code + "' AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
     if(err) throw err;
@@ -618,7 +633,7 @@ app.get("/Compteurs/:Code/:Date", (request, response) => {
 //create saisie compteurs
 //?Date=1&Value=1&Code=aaa&idUsine=1
 //ATTENION Value doit contenir un . pour les décimales
-app.put("/SaisieMensuelle", (request, response) => {
+app.put("/SaisieMensuelle", middleware,(request, response) => {
   const req=request.query
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM saisiemensuelle WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+")"+
     " BEGIN "+
@@ -637,7 +652,7 @@ app.put("/SaisieMensuelle", (request, response) => {
 
 /*DEPASSEMENT*/
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
-app.put("/Depassement", (request, response) => {
+app.put("/Depassement", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
   ,(err,result,fields) => {
@@ -648,7 +663,7 @@ app.put("/Depassement", (request, response) => {
 
 
 //Récupérer l'historique des dépassements pour un mois
-app.get("/Depassements/:dateDeb/:dateFin/:idUsine", (request, response) => {
+app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
     if(err) throw err;
@@ -658,7 +673,7 @@ app.get("/Depassements/:dateDeb/:dateFin/:idUsine", (request, response) => {
 });
 
 //Supprimer Dépassement
-app.delete("/DeleteDepassement/:id", (request, response) => {
+app.delete("/DeleteDepassement/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM depassements WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -667,7 +682,7 @@ app.delete("/DeleteDepassement/:id", (request, response) => {
 });
 
 //Récupérer le total des dépassements pour 1 ligne
-app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne", (request, response) => {
+app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT 'Total Ligne "+request.params.numLigne+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '601040"+request.params.numLigne+"01'", (err,data) => {
     if(err) throw err;
@@ -677,7 +692,7 @@ app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne", (request, r
 });
 
 //Récupérer le total des dépassements
-app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
+app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
     if(err) throw err;
@@ -690,7 +705,7 @@ app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
 
 /*ARRETS*/
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
-app.put("/Arrets", (request, response) => {
+app.put("/Arrets", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+")"
   ,(err,result,fields) => {
@@ -700,7 +715,7 @@ app.put("/Arrets", (request, response) => {
 });
 
 //Récupérer l'historique des arrêts pour un mois
-app.get("/Arrets/:dateDeb/:dateFin/:idUsine", (request, response) => {
+app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
     if(err) throw err;
@@ -710,7 +725,7 @@ app.get("/Arrets/:dateDeb/:dateFin/:idUsine", (request, response) => {
 });
 
 //Supprimer Arret
-app.delete("/DeleteArret/:id", (request, response) => {
+app.delete("/DeleteArret/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM arrets WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -720,7 +735,7 @@ app.delete("/DeleteArret/:id", (request, response) => {
 
 
 //Récupérer le total des arrêts par groupe
-app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine", (request, response) => {
+app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY p.Name", (err,data) => {
     if(err) throw err;
@@ -731,7 +746,7 @@ app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine", (request, response) => {
 
 
 //Récupérer le total des arrêts
-app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
+app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
     if(err) throw err;
@@ -741,7 +756,7 @@ app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", (request, response) => {
 });
 
 //Récupérer le total des arrêts pour 1 four
-app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", (request, response) => {
+app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT 'Total Four "+request.params.numFour+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%"+request.params.numFour+"%'", (err,data) => {
     if(err) throw err;
@@ -753,7 +768,7 @@ app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", (request, response
 
 /*USERS*/
 //?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isChefQuart=1&isAdmin=01idUsine=1
-app.put("/User", (request, response) => {
+app.put("/User", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isChefQuart, isAdmin, idUsine) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isChefQuart+", "+req.isAdmin+", "+req.idUsine+") "
   ,(err,result,fields) => {
@@ -764,7 +779,7 @@ app.put("/User", (request, response) => {
 
 //Récupérer l'ensemble des utilisateurs
 //?login=aaaa&idUsine=1
-app.get("/Users", (request, response) => {
+app.get("/Users", middleware,   (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
@@ -775,7 +790,7 @@ app.get("/Users", (request, response) => {
 
 //Récupérer l'ensemble des utilisateurs d'un site ayant les droits ayant les droits rondier
 //?idUsine=1
-app.get("/UsersRondier", (request, response) => { 
+app.get("/UsersRondier",middleware, (request, response) => { 
   const req=request.query 
   pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err) throw err; 
@@ -785,18 +800,26 @@ app.get("/UsersRondier", (request, response) => {
 });
 
 
-//Récupérer l'utilisateur qui est connecté
+//Récupérer l'utilisateur qui est connecté et Connexion
 app.get("/User/:login/:pwd", (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM users WHERE login = '"+request.params.login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-      response.json({data});
+    //Si on a une valeur de retour on génère un token
+    if(data.length>0){
+      const token = generateAcessToken(data[0]["Id"])
+      response.send({
+        'data' : data,
+        token
+      });
+    }
+    else response.json({data})
   });
 });
 
 //Permet de verifier si l'identifiant est déjà utilisé
-app.get("/User/:login", (request, response) => {
+app.get("/User/:login", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM users WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -807,7 +830,7 @@ app.get("/User/:login", (request, response) => {
 
 
 //Update du mdp utilisateur
-app.put("/User/:login/:pwd", (request, response) => {
+app.put("/User/:login/:pwd", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET pwd = '" + request.params.pwd + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -816,7 +839,7 @@ app.put("/User/:login/:pwd", (request, response) => {
 });
 
 //Update droit rondier
-app.put("/UserRondier/:login/:droit", (request, response) => {
+app.put("/UserRondier/:login/:droit", middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isRondier = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -825,7 +848,7 @@ app.put("/UserRondier/:login/:droit", (request, response) => {
 });
 
 //Update droit saisie
-app.put("/UserSaisie/:login/:droit", (request, response) => {
+app.put("/UserSaisie/:login/:droit", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isSaisie = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -834,7 +857,7 @@ app.put("/UserSaisie/:login/:droit", (request, response) => {
 });
 
 //Update droit QSE
-app.put("/UserQSE/:login/:droit", (request, response) => {
+app.put("/UserQSE/:login/:droit", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isQSE = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -843,7 +866,7 @@ app.put("/UserQSE/:login/:droit", (request, response) => {
 });
 
 //Update droit rapport
-app.put("/UserRapport/:login/:droit", (request, response) => {
+app.put("/UserRapport/:login/:droit", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isRapport = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -852,7 +875,7 @@ app.put("/UserRapport/:login/:droit", (request, response) => {
 });
 
 //Update droit chef quart
-app.put("/UserChefQuart/:login/:droit", (request, response) => {
+app.put("/UserChefQuart/:login/:droit", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isChefQuart = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -861,7 +884,7 @@ app.put("/UserChefQuart/:login/:droit", (request, response) => {
 });
 
 //Update droit admin
-app.put("/UserAdmin/:login/:droit", (request, response) => {
+app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE users SET isAdmin = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
@@ -870,7 +893,7 @@ app.put("/UserAdmin/:login/:droit", (request, response) => {
 });
 
 //DELETE User
-app.delete("/user/:id", (request, response) => {
+app.delete("/user/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM users WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -879,7 +902,7 @@ app.delete("/user/:id", (request, response) => {
 });
 
 //Récupérer l'ensemble des users non affecté à un badge
-app.get("/UsersLibre/:idUsine", (request, response) => {
+app.get("/UsersLibre/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM users WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
@@ -894,7 +917,7 @@ app.get("/UsersLibre/:idUsine", (request, response) => {
 
 /*Badge*/
 //?uid=AD:123:D23&idUsine=1
-app.put("/Badge", (request, response) => {
+app.put("/Badge", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO badge (uid, idUsine) VALUES ('"+req.uid+"', "+req.idUsine+")"
   ,(err,result,fields) => {
@@ -904,7 +927,7 @@ app.put("/Badge", (request, response) => {
 });
 
 //Récupérer le dernier ID de badge inséré
-app.get("/BadgeLastId", (request, response) => {
+app.get("/BadgeLastId", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT IDENT_CURRENT('badge') as Id", (err,data) => {
     if(err) throw err;
@@ -934,7 +957,7 @@ app.get("/ElementsOfBadge/:uid", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges affecté à un User
-app.get("/BadgesUser/:idUsine", (request, response) => {
+app.get("/BadgesUser/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
@@ -944,7 +967,7 @@ app.get("/BadgesUser/:idUsine", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges affecté à une zone
-app.get("/BadgesZone/:idUsine", (request, response) => {
+app.get("/BadgesZone/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
@@ -954,7 +977,7 @@ app.get("/BadgesZone/:idUsine", (request, response) => {
 });
 
 //Récupérer l'ensemble des badges non affecté
-app.get("/BadgesLibre/:idUsine", (request, response) => {
+app.get("/BadgesLibre/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM badge b WHERE b.idUsine = "+request.params.idUsine+" AND b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
     if(err) throw err;
@@ -964,7 +987,7 @@ app.get("/BadgesLibre/:idUsine", (request, response) => {
 });
 
 //Update enabled
-app.put("/BadgeEnabled/:id/:enabled", (request, response) => {
+app.put("/BadgeEnabled/:id/:enabled",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE badge SET isEnabled = '" + request.params.enabled + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
@@ -973,7 +996,7 @@ app.put("/BadgeEnabled/:id/:enabled", (request, response) => {
 });
 
 //Update affectation
-app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", (request, response) => {
+app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE badge SET " + request.params.typeAffectation+" = '" + request.params.idAffectation + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
@@ -982,7 +1005,7 @@ app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", (request, respo
 });
 
 //Update affectation => retirer les affectations
-app.put("/BadgeDeleteAffectation/:id", (request, response) => {
+app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE badge SET userId = NULL, zoneId = NULL WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
@@ -992,7 +1015,7 @@ app.put("/BadgeDeleteAffectation/:id", (request, response) => {
 
 /*Zone de controle*/
 //?nom=dggd&commentaire=fff&four=1&idUsine=1
-app.put("/zone", (request, response) => {
+app.put("/zone", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO zonecontrole (nom, commentaire, four, idUsine) VALUES ('"+req.nom+"', '"+req.commentaire+"', "+req.four+", "+req.idUsine+")"
   ,(err,result,fields) => {
@@ -1002,7 +1025,7 @@ app.put("/zone", (request, response) => {
 });
 
 //Récupérer l'ensemble des zones de controle
-app.get("/zones/:idUsine", (request, response) => {
+app.get("/zones/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
@@ -1071,7 +1094,7 @@ function getElementsHorsLigne(zone,previousId) {
 }
 
 //Update commentaire
-app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
+app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE zonecontrole SET commentaire = '" + request.params.commentaire + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
@@ -1080,7 +1103,7 @@ app.put("/zoneCommentaire/:id/:commentaire", (request, response) => {
 });
 
 //Update nom
-app.put("/zoneNom/:id/:nom", (request, response) => {
+app.put("/zoneNom/:id/:nom", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE zonecontrole SET nom = '" + request.params.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
@@ -1089,7 +1112,7 @@ app.put("/zoneNom/:id/:nom", (request, response) => {
 });
 
 //Récupérer l'ensemble des zones non affecté à un badge
-app.get("/ZonesLibre/:idUsine", (request, response) => {
+app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
@@ -1100,7 +1123,7 @@ app.get("/ZonesLibre/:idUsine", (request, response) => {
 
 /*Element de controle*/
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10
-app.put("/element", (request, response) => {
+app.put("/element", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+")"
   ,(err,result,fields) => {
@@ -1112,7 +1135,7 @@ app.put("/element", (request, response) => {
 //Update ordre elements
 //Incrémente les ordres de 1 pour pouvoir insérer une éléments entre 2 éléments existants
 //?zoneId=1&maxOrdre=2
-app.put("/updateOrdreElement", (request, response) => {
+app.put("/updateOrdreElement", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE elementcontrole SET ordre = ordre + 1 WHERE zoneId = " + req.zoneId + " AND ordre > " + req.maxOrdre, (err,data) => {
     if(err) throw err;
@@ -1122,7 +1145,7 @@ app.put("/updateOrdreElement", (request, response) => {
 
 //Update element
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5
-app.put("/updateElement/:id", (request, response) => {
+app.put("/updateElement/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +" WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1132,7 +1155,7 @@ app.put("/updateElement/:id", (request, response) => {
 
 //Suppression element
 //?id=12
-app.delete("/deleteElement", (request, response) => {
+app.delete("/deleteElement", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM elementcontrole WHERE Id = "+ req.id, (err,data) => {
     if(err) throw err;
@@ -1141,7 +1164,7 @@ app.delete("/deleteElement", (request, response) => {
 });
 
 //Récupérer l'ensemble des élements d'une zone
-app.get("/elementsOfZone/:zoneId", (request, response) => {
+app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM elementcontrole WHERE zoneId = "+request.params.zoneId +" ORDER BY ordre ASC", (err,data) => {
     if(err) throw err;
@@ -1151,7 +1174,7 @@ app.get("/elementsOfZone/:zoneId", (request, response) => {
 });
 
 //Récupérer l'ensemble des élements de type compteur
-app.get("/elementsCompteur/:idUsine", (request, response) => {
+app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE z.IdUsine = "+request.params.idUsine+" AND e.isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
     if(err) throw err;
@@ -1161,7 +1184,7 @@ app.get("/elementsCompteur/:idUsine", (request, response) => {
 });
 
 //Récupérer un element 
-app.get("/element/:elementId", (request, response) => {
+app.get("/element/:elementId", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM elementcontrole WHERE Id = "+request.params.elementId, (err,data) => {
     if(err) throw err;
@@ -1277,7 +1300,7 @@ app.get("/Rondes", (request, response) => {
 
 //Suppression ronde
 //?id=12
-app.delete("/deleteRonde", (request, response) => {
+app.delete("/deleteRonde", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM ronde WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
@@ -1298,7 +1321,7 @@ app.put("/mesureRondier", (request, response) => {
 
 //Update valeur de l'élement de contrôle
 //?id=12&value=dhdhhd
-app.put("/updateMesureRonde", (request, response) => {
+app.put("/updateMesureRonde", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE mesuresrondier SET value = '"+req.value+"' WHERE id = "+ req.id, (err,data) => {
     if(err) throw err;
@@ -1307,7 +1330,7 @@ app.put("/updateMesureRonde", (request, response) => {
 });
 
 //Récupérer l'ensemble des mesures pour une ronde => reporting
-app.get("/reportingRonde/:idRonde", (request, response) => {
+app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT e.Id as elementId, e.unit, e.typeChamp, e.valeurMin, e.valeurMax, e.defaultValue, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
@@ -1318,7 +1341,7 @@ app.get("/reportingRonde/:idRonde", (request, response) => {
 
 //Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
 //?id=111&date=dhdhdh
-app.get("/valueElementDay", (request, response) => {
+app.get("/valueElementDay", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
     if(err) throw err;
@@ -1329,7 +1352,7 @@ app.get("/valueElementDay", (request, response) => {
 
 /*Permis de feu et zone de consignation*/
 //?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
-app.put("/PermisFeu", (request, response) => {
+app.put("/PermisFeu", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')"
   ,(err,result,fields) => {
@@ -1362,7 +1385,7 @@ app.put("/VerifPermisFeu", (request, response) => {
 
 //Récupérer les validation pour une date donnée
 //?dateHeure=22/06/2022&idUsine=1
-app.get("/PermisFeuVerification", (request, response) => {
+app.get("/PermisFeuVerification",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId INNER JOIN badge b ON pf.badgeId = b.Id WHERE b.idUsine = "+req.idUsine+" AND p.dateHeure LIKE '%"+req.dateHeure+"%'", (err,data) => {
     if(err) throw err;
@@ -1375,7 +1398,7 @@ app.get("/PermisFeuVerification", (request, response) => {
 /*Mode opératoire*/
 //?nom=dggd&zoneId=1
 //passage du fichier dans un formData portant le nom 'fichier'
-app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
+app.post("/modeOP", multer({storage: storage}).single('fichier'),middleware, (request, response) => {
   const req=request.query;
   //création de l'url de stockage du fichier
   const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
@@ -1391,7 +1414,7 @@ app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, resp
 
 //DELETE modeOP
 //?nom=test.pdf
-app.delete("/modeOP/:id", (request, response) => {
+app.delete("/modeOP/:id", middleware,(request, response) => {
   const req=request.query
 
   //On supprime le fichier du storage multer avant de supprimer le mode OP en BDD
@@ -1405,7 +1428,7 @@ app.delete("/modeOP/:id", (request, response) => {
 });
 
 //Récupérer l'ensemble des modeOP
-app.get("/modeOPs/:idUsine", (request, response) => {
+app.get("/modeOPs/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId WHERE z.idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
@@ -1426,7 +1449,7 @@ app.get("/modeOPofZone/:zoneId", (request, response) => {
 
 //Update du fichier du modeOP
 //?fichier=modeOP1
-app.put("/modeOP/:id", (request, response) => {
+app.put("/modeOP/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE modeoperatoire SET fichier = " + req.fichier + " WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1437,7 +1460,7 @@ app.put("/modeOP/:id", (request, response) => {
 
 /*Consignes*/
 //?commentaire=dggd&dateFin=fff&type=1&idUsine=1
-app.put("/consigne", (request, response) => {
+app.put("/consigne", middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO consigne (commentaire, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
   ,(err,result,fields) => {
@@ -1457,7 +1480,7 @@ app.get("/consignes/:idUsine", (request, response) => {
 });
 
 //DELETE consigne
-app.delete("/consigne/:id", (request, response) => {
+app.delete("/consigne/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("DELETE FROM consigne WHERE id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1484,7 +1507,7 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
 
 //TODO : inner join avec Ronde ??? Zone ???
 //Récupérer les anomalies d'une ronde
-app.get("/anomalies/:id", (request, response) => {
+app.get("/anomalies/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM anomalie WHERE rondeId = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1500,7 +1523,7 @@ app.get("/anomalies/:id", (request, response) => {
 
 //Récupérer la liste des sites (pour choisir pour l'administration du superAdmin)
 //sauf le global
-app.get("/sites", (request, response) => {
+app.get("/sites", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' ORDER BY localisation ASC", (err,data) => {
     if(err) throw err;
@@ -1510,7 +1533,7 @@ app.get("/sites", (request, response) => {
 });
 
 //Récupérer le nombre de ligne d'un site
-app.get("/nbLigne/:id", (request, response) => {
+app.get("/nbLigne/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1521,7 +1544,7 @@ app.get("/nbLigne/:id", (request, response) => {
 
 
 //Récupérer le nombre de ligne d'un site avec une réponse au format chiffre
-app.get("/nbLigneChiffre/:id", (request, response) => {
+app.get("/nbLigneChiffre/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1534,7 +1557,7 @@ app.get("/nbLigneChiffre/:id", (request, response) => {
 });
 
 //Récupérer le nombre de GTA d'un site
-app.get("/nbGTA/:id", (request, response) => {
+app.get("/nbGTA/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT nbGTA FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1544,7 +1567,7 @@ app.get("/nbGTA/:id", (request, response) => {
 });
 
 //Récupérer le type d'import pour les pesées d'un site
-app.get("/typeImport/:id", (request, response) => {
+app.get("/typeImport/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT typeImport FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1563,7 +1586,7 @@ app.get("/typeImport/:id", (request, response) => {
 */
 
 //Récupérer la liste des rapports pour un site en question
-app.get("/rapports/:id", (request, response) => {
+app.get("/rapports/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM rapport WHERE idUsine="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1583,7 +1606,7 @@ app.get("/rapports/:id", (request, response) => {
 //////////////////////////
 
 //Get products without TAGs
-app.get("/ProductWithoutTag/:id", (request, response) => {
+app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +request.params.id+ " ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
@@ -1594,7 +1617,7 @@ app.get("/ProductWithoutTag/:id", (request, response) => {
 
 //UPDATE Product, set TAG
 //?TAG=123
-app.put("/productTAG/:id", (request, response) => {
+app.put("/productTAG/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1604,7 +1627,7 @@ app.put("/productTAG/:id", (request, response) => {
 
 //UPDATE Product, set Code
 //?CodeEquipement=123
-app.put("/productCodeEquipement/:id", (request, response) => {
+app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1625,7 +1648,7 @@ app.put("/productCodeEquipement/:id", (request, response) => {
 //////////////////////////
 
 //Récupérer la maintenance prévue
-app.get("/Maintenance", (request, response) => {
+app.get("/Maintenance", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
     if(err) throw err;
@@ -1640,3 +1663,56 @@ app.get("/Maintenance", (request, response) => {
 //////////////////////////
 // FIN MAINTENANCE
 //////////////////////////
+
+//////////////////////////
+//        TOKEN         //
+//////////////////////////
+
+//Requête permettant de générer un nouveau token
+//?affectation=tesst
+app.put("/accesToken", middleware,(request, response) => {
+  //On passe un objet aléatoire pour générer un token aléatoirement
+  const token =  jwt.sign({token :"ffrezqskz7f" }, process.env.ACESS_TOKEN_SECRET);
+  const req=request.query
+  pool.query("INSERT INTO token(token,affectation) VALUES ('Bearer " + token + "', '" + req.affectation + "')", (err,data) => {
+    if(err) throw err;
+    response.json(token);
+  });
+});
+
+//Requête permettant de récupérer les tokens actifs générés manuellement.
+app.get("/allAccesTokens", middleware,(request, response) => {
+  pool.query("SELECT * FROM token where Enabled = 1", (err,data) => {
+    if(err) throw err;
+    response.json(data);
+  });
+});
+
+//Requête permettant de désactiver un token 
+//?id=5
+app.put("/desactivate", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE token SET Enabled = '0' WHERE id = "+req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du token OK")
+  });
+});
+
+//Requête permettant de modifier la personne affectée à un token
+//?id=5
+//?affectation=tesst
+app.put("/updateToken", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE token SET affectation = '" + req.affectation +"' WHERE id = "+req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+//Requête permettant de récupérer tout les tokens non autorisés
+app.get("/unauthorizedTokens" ,(request, response) => {
+  pool.query("SELECT token FROM token where Enabled = 0", (err,data) => {
+    if(err) throw err;
+    response.json(data);
+  });
+});
