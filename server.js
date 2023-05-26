@@ -26,7 +26,6 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-const httpsAgent = new https.Agent({ rejectUnauthorized: false });
 var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
 var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
@@ -777,7 +776,7 @@ app.put("/User", middleware,(request, response) => {
 
 //Récupérer l'ensemble des utilisateurs
 //?login=aaaa&idUsine=1
-app.get("/Users", middleware,   (request, response) => {
+app.get("/Users", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
@@ -1688,7 +1687,7 @@ app.get("/allAccesTokens", middleware,(request, response) => {
 
 //Requête permettant de désactiver un token 
 //?id=5
-app.put("/desactivate", middleware,(request, response) => {
+app.put("/desactivateToken", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE token SET Enabled = '0' WHERE id = "+req.id, (err,data) => {
     if(err) throw err;
@@ -1697,8 +1696,7 @@ app.put("/desactivate", middleware,(request, response) => {
 });
 
 //Requête permettant de modifier la personne affectée à un token
-//?id=5
-//?affectation=tesst
+//?id=5&affectation=tesst
 app.put("/updateToken", middleware,(request, response) => {
   const req=request.query
   pool.query("UPDATE token SET affectation = '" + req.affectation +"' WHERE id = "+req.id, (err,data) => {
