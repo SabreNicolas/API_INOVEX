@@ -1681,7 +1681,8 @@ app.put("/accesToken", middleware,(request, response) => {
 app.get("/allAccesTokens", middleware,(request, response) => {
   pool.query("SELECT * FROM token where Enabled = 1", (err,data) => {
     if(err) throw err;
-    response.json(data);
+    data = data['recordset'];
+    response.json({data}) 
   });
 });
 
@@ -1709,6 +1710,7 @@ app.put("/updateToken", middleware,(request, response) => {
 app.get("/unauthorizedTokens" ,(request, response) => {
   pool.query("SELECT token FROM token where Enabled = 0", (err,data) => {
     if(err) throw err;
-    response.json(data);
+    data = data['recordset'];
+    response.json({data}) 
   });
 });
