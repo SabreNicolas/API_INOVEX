@@ -2,9 +2,28 @@
 
 //Libraire de gestion des tokens
 const jwt = require('jsonwebtoken');
-//Libraire de requêtes https asyncrone
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'; // Ignorer les erreurs de certificat (à utiliser avec précaution)
+//utilisation des variables d'environnement
+require('dotenv').config();
+//create sql connection
+const sql = require('mssql');
+var sqlConfig = {
+    server : process.env.HOST,
+    authentication : {
+      type : 'default',
+      options : {
+        userName : process.env.USER_BDD,
+        password : process.env.PWD_BDD
+      }
+    },
+    options : {
+      //Si utilisation de Microsoft Azure, besoin d'encrypter
+      encrypt : false,
+      database : process.env.DATABASE
+    }
+  }
+var pool =  new sql.ConnectionPool(sqlConfig);
+
+pool.connect();
 
 module.exports = async (req, res, next) => {
     
@@ -16,33 +35,21 @@ module.exports = async (req, res, next) => {
         const decodedToken = jwt.verify(token, process.env.ACESS_TOKEN_SECRET);
 
         //Intérrogation de l'api pour vérifier si le token n'est pas désactivé
-        const xhr = new XMLHttpRequest();
-        let tabResult = [];
-        let tabTokens = [];
-        xhr.open('GET', 'https://localhost:3100/unauthorizedTokens',true);
-        xhr.send();
-        xhr.onreadystatechange =  function() {
-            if (xhr.readyState === 4) {
-                if (xhr.status === 200) {
-                    //récupération de la réponse
-                    tabResult = JSON.parse(xhr.responseText);
-                    tabResult = tabResult["recordset"];
-                    //Copie des token dans tabTokens
-                    for(i=0;i<tabResult.length;i++){
-                        tabTokens.push(tabResult[i]['token']);
-                    }
-                    //Si le token n'est pas interdit on next sinon on interdit l'accès
-                    if(!tabTokens.includes(authHeader)){
-                        next();
-                    }
-                    else {
-                        res.status(401).json({ token : "Token désactivé" });
-                    }
-                } else {
-                    console.error('Error: ' + xhr.status);
-                }
-            }
-        };
+        const result = await pool.query("SELECT token FROM token where Enabled = 0");
+  
+        //Vérification de présence de token en bdd      
+        
+        let tabToken = [];
+        //récupération de tout les tokens dans tabToken
+        for(i=0;i<result.recordset.length;i++){
+            tabToken.push(result.recordset[i]['token']);
+        }
+        //Si le token n'est pas interdit on next sinon on interdit l'accès
+        if(!tabToken.includes(authHeader)){
+            next();
+        }
+        else res.status(401).json({ token : "token désactivé" });
+        
     }
     catch(error){
         res.status(401).json({ error });

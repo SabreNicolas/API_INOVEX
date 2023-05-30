@@ -39,7 +39,6 @@
     "nodemon": "^2.0.22",
     "path": "^0.12.7",
     "swagger-ui-express": "^4.6.2",
-    "sync-request": "^6.1.0",
-    "xmlhttprequest": "^1.8.0"
+    "sync-request": "^6.1.0"
   }
 }

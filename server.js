@@ -1690,7 +1690,7 @@ app.get("/allAccesTokens", middleware,(request, response) => {
 //?id=5
 app.put("/desactivateToken", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE token SET Enabled = '0' WHERE id = "+req.id, (err,data) => {
+  pool.query("UPDATE token SET Enabled = 0 WHERE Id = "+req.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression du token OK")
   });
@@ -1700,7 +1700,7 @@ app.put("/desactivateToken", middleware,(request, response) => {
 //?id=5&affectation=tesst
 app.put("/updateToken", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE token SET affectation = '" + req.affectation +"' WHERE id = "+req.id, (err,data) => {
+  pool.query("UPDATE token SET affectation = '" + req.affectation +"' WHERE Id = "+req.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
