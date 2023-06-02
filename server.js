@@ -1513,6 +1513,44 @@ app.get("/anomalies/:id", middleware,(request, response) => {
   });
 });
 
+//////////////////////////
+//       EQUIPE         //
+//////////////////////////
+
+
+//Récupérer la maintenance prévue
+//?nomEquipe=test&quart=1&idChefQuart=1
+app.put("/equipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart) OUTPUT INSERTED.Id VALUES('"+req.nomEquipe+"',"+req.quart+","+req.idChefQuart+")", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer la maintenance prévue
+//?nomEquipe=test&quart=1&idChefQuart=1
+app.put("/affectationEquipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+req.idRondier+","+req.idEquipe+","+req.idZone+",'"+req.poste+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Ajout ok");
+  });
+});
+
+
+//////////////////////////
+//   FIN EQUIPE         //
+//////////////////////////
+
+
+
+//*********************
+/*******FIN RONDIER****/
+//*********************
+
+
 
 /*
 ******* SITES
@@ -1599,7 +1637,7 @@ app.get("/rapports/:id",middleware, (request, response) => {
 
 
 //////////////////////////
-//IMAGINDATA
+//eMonitoring
 //////////////////////////
 
 //Get products without TAGs
@@ -1635,7 +1673,7 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
 
 
 //////////////////////////
-// FIN IMAGINDATA
+// FIN eMonitoring
 //////////////////////////
 
 
@@ -1644,17 +1682,7 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
 //MAINTENANCE
 //////////////////////////
 
-//Récupérer la maintenance prévue
-app.get("/Maintenance", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-    if(data.length>0){
-      response.json(data[0])
-    }
-  });
-});
+
 
 
 //////////////////////////
@@ -1714,3 +1742,7 @@ app.get("/unauthorizedTokens" ,(request, response) => {
     response.json({data}) 
   });
 });
+
+//////////////////////////
+//    FIN TOKEN         //
+//////////////////////////
