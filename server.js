@@ -1059,6 +1059,19 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   });
 });
 
+//Récupérer la ronde affecté à un utilisateur et ses éléments de controle
+app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
+  BadgeAndElementsOfZone = [];
+  let previousId = 0;
+  //à changer
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+    if(err) throw err;
+    else {
+      //meme chose qu'au dessus mais à mettre dans une fonction pour éviter les redondance
+    }
+  });
+});
+
 function getElementsHorsLigne(zone,previousId) {
   return new Promise((resolve) => {
     let modesOp;
@@ -1536,6 +1549,47 @@ app.put("/affectationEquipe",middleware, (request, response) => {
   pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+req.idRondier+","+req.idEquipe+","+req.idZone+",'"+req.poste+"')", (err,data) => {
     if(err) throw err;
     response.json("Ajout ok");
+  });
+});
+
+//Récupérer les anomalies d'une ronde
+//?idUsine=1
+app.get("/usersRondierSansEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe)", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les anomalies d'une ronde
+//?idUsine=1
+app.get("/equipes", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//?idUsine=1&idEquipe=28
+app.get("/getOneEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine +"and equipe.id ="+req.idEquipe, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//?nomEquipe=test&quart=1&idEquipe=1
+app.put("/updateEquipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" where id = "+req.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Update ok");
   });
 });
 
