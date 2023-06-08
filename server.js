@@ -62,7 +62,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
-
+let ElementsOfZone = [];
 
 //create sql connection
 const sql = require('mssql');
@@ -1041,15 +1041,7 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
-        if(err) throw err;
-        else {
-          data = data['recordset'];
-          if(data.length > 1){
-            previousId = data[1].Id;
-          } else previousId = 0;
-        }
-      });
+      previousId = getPreviousId(request.params.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone,previousId);
@@ -1061,16 +1053,66 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
 
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
-  BadgeAndElementsOfZone = [];
+  ElementsOfZone = [];
   let previousId = 0;
-  //à changer
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+request.params.idUsine+" and e.idRondier = "+request.params.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
     if(err) throw err;
     else {
-      //meme chose qu'au dessus mais à mettre dans une fonction pour éviter les redondance
+      //On récupère l'Id de la ronde précedente
+      data = data['recordset'];
+      previousId = getPreviousId(request.params.idUsine);
+      //On récupère les éléments de la zone
+      await getElementsHorsLigneUser(data,previousId);
+      
+      response.json({ElementsOfZone});
     }
   });
 });
+
+//Fonction qui renvoie l'id de la dernière ronde
+function getPreviousId(id){
+  var previousId = 0;
+  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+id+" ORDER BY Id DESC", (err,data) => {
+    if(err) throw err;
+    else {
+      data = data['recordset'];
+      if(data.length > 1){
+        previousId = data[1].Id;
+      } else previousId = 0;
+    }
+  });
+  return previousId;
+}
+function getElementsHorsLigneUser(zone,previousId) {
+  return new Promise((resolve) => {
+    let modesOp;
+    //Récupération des modesOP
+    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone[0]['zoneId'], (err,data) => {
+      if(err) throw err;
+      else{
+        modesOp = data['recordset'];
+
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone[0]['zoneId'] + " ORDER BY e.ordre ASC", (err,data) => {
+          if(err) throw err;
+          else{
+            data = data['recordset'];
+            // console.log(data);
+            let OneElementOfZone = {
+              zoneId : zone[0]['zoneId'],
+              zone : zone[0]['nomZone'],
+              commentaire : zone[0]['commentaire'],
+              four : zone[0]['four'],
+              modeOP : modesOp,
+              elements : data
+            };
+            resolve();
+            ElementsOfZone.push(OneElementOfZone);
+          }
+        });
+      }
+    });
+  });
+}
 
 function getElementsHorsLigne(zone,previousId) {
   return new Promise((resolve) => {
@@ -1135,11 +1177,11 @@ app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10
 app.put("/element", middleware,(request, response) => {
   const req=request.query
-  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+")"
-  ,(err,result,fields) => {
-      if(err) response.json("Création de l'élément KO");
-      else response.json("Création de l'élément OK");
-  });
+    pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +")"
+    ,(err,result,fields) => {
+        if(err) response.json("Création de l'élément KO");
+        else response.json("Création de l'élément OK");
+    });
 });
 
 //Update ordre elements
@@ -1531,7 +1573,7 @@ app.get("/anomalies/:id", middleware,(request, response) => {
 //////////////////////////
 
 
-//Récupérer la maintenance prévue
+//Créer une nouvelle équipe
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/equipe",middleware, (request, response) => {
   const req = request.query
@@ -1542,7 +1584,7 @@ app.put("/equipe",middleware, (request, response) => {
   });
 });
 
-//Récupérer la maintenance prévue
+//Créer les nouveau rondier d'une équipe
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/affectationEquipe",middleware, (request, response) => {
   const req = request.query
@@ -1552,7 +1594,7 @@ app.put("/affectationEquipe",middleware, (request, response) => {
   });
 });
 
-//Récupérer les anomalies d'une ronde
+//Récupérer les utilisateurs rondier qui ne sont pas affecter à une équipe
 //?idUsine=1
 app.get("/usersRondierSansEquipe", middleware,(request, response) => {
   const req=request.query
@@ -1563,7 +1605,7 @@ app.get("/usersRondierSansEquipe", middleware,(request, response) => {
   });
 });
 
-//Récupérer les anomalies d'une ronde
+//Récupérer les équipe d'une usine
 //?idUsine=1
 app.get("/equipes", middleware,(request, response) => {
   const req=request.query
@@ -1574,16 +1616,18 @@ app.get("/equipes", middleware,(request, response) => {
   });
 });
 
+//Récupérer une seule équipe
 //?idUsine=1&idEquipe=28
 app.get("/getOneEquipe", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine +"and equipe.id ="+req.idEquipe, (err,data) => {
+  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine +"and equipe.id ="+req.idEquipe, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
   });
 });
 
+//Mise à jour des information d'une équipe
 //?nomEquipe=test&quart=1&idEquipe=1
 app.put("/updateEquipe",middleware, (request, response) => {
   const req = request.query
@@ -1593,6 +1637,25 @@ app.put("/updateEquipe",middleware, (request, response) => {
   });
 });
 
+//Récupérer les groupements d'une zone
+//?zoneId=220
+app.get("/getGroupements", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * from groupement WHERE zoneId ="+ req.zoneId, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//DELETE affectation_equipe
+app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM affectation_equipe WHERE idEquipe = "+request.params.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression des Rondiers OK")
+  });
+});
 
 //////////////////////////
 //   FIN EQUIPE         //
