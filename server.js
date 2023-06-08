@@ -1177,7 +1177,10 @@ app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10
 app.put("/element", middleware,(request, response) => {
   const req=request.query
-    pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +")"
+  if(req.idGroupement==0){
+    req.idGroupement = null;
+  }
+  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +")"
     ,(err,result,fields) => {
         if(err) response.json("Création de l'élément KO");
         else response.json("Création de l'élément OK");
@@ -1196,10 +1199,13 @@ app.put("/updateOrdreElement", middleware,(request, response) => {
 });
 
 //Update element
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5&idGroupement=1
 app.put("/updateElement/:id", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +" WHERE Id = "+request.params.id, (err,data) => {
+  if(req.idGroupement == 0 ){
+    req.idGroupement = null;
+  }
+  pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +", idGroupement ="+ req.idGroupement +" WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'element OK")
   });
@@ -1218,7 +1224,7 @@ app.delete("/deleteElement", middleware,(request, response) => {
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM elementcontrole WHERE zoneId = "+request.params.zoneId +" ORDER BY ordre ASC", (err,data) => {
+  pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+request.params.zoneId +" ORDER BY idGroupement asc, ordre ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
