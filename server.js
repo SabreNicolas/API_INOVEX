@@ -1261,7 +1261,45 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
     response.json({data});
   });
 });
+//Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
+//?idUsine=1
+app.get("/getAllGroupements", (request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+req.idUsine + "order by groupement.zoneId asc", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
 
+//Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
+//?idGroupement=1
+app.get("/getOneGroupement", (request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM groupement where id="+req.idGroupement, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+//?zoneId=2&groupement=test
+app.put("/groupement", (request, response) => {
+  const req=request.query;
+  pool.query("INSERT INTO groupement (groupement, zoneId) VALUES ('"+req.groupement+"', "+req.zoneId+")"
+  ,(err,result,fields) => {
+      if(err) response.json("Création du groupement KO");
+      else response.json("Création du groupement OK");
+  });
+});
+
+//?idGroupement=1&groupement=test&zoneId=1
+app.put("/updateGroupement", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE groupement SET zoneId = " + req.zoneId + ", groupement = '"+ req.groupement +"' WHERE id = "+req.idGroupement, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de l'element OK")
+  });
+});
 
 /*Ronde*/
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
