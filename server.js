@@ -1261,9 +1261,25 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
     response.json({data});
   });
 });
+
+/////////////////////////
+//      Groupements    //
+/////////////////////////
+
+//Récupérer les groupements d'une zone
+//?zoneId=220
+app.get("/getGroupements", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * from groupement WHERE zoneId ="+ req.zoneId, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //Récupérer l'ensemble des groupements d'une usine
 //?idUsine=1
-app.get("/getAllGroupements", (request, response) => {
+app.get("/getAllGroupements",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+req.idUsine + "order by groupement.zoneId asc", (err,data) => {
     if(err) throw err;
@@ -1274,7 +1290,7 @@ app.get("/getAllGroupements", (request, response) => {
 
 //Récupérer un groupement
 //?idGroupement=1
-app.get("/getOneGroupement", (request, response) => {
+app.get("/getOneGroupement",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM groupement where id="+req.idGroupement, (err,data) => {
     if(err) throw err;
@@ -1285,7 +1301,7 @@ app.get("/getOneGroupement", (request, response) => {
 
 //Créer un groupement
 //?zoneId=2&groupement=test
-app.put("/groupement", (request, response) => {
+app.put("/groupement", middleware,(request, response) => {
   const req=request.query;
   pool.query("INSERT INTO groupement (groupement, zoneId) VALUES ('"+req.groupement+"', "+req.zoneId+")"
   ,(err,result,fields) => {
@@ -1303,6 +1319,10 @@ app.put("/updateGroupement", middleware,(request, response) => {
     response.json("Mise à jour de l'element OK")
   });
 });
+
+///////////////////////
+//  Fin Groupement   //
+///////////////////////
 
 /*Ronde*/
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
@@ -1684,16 +1704,6 @@ app.put("/updateEquipe",middleware, (request, response) => {
   });
 });
 
-//Récupérer les groupements d'une zone
-//?zoneId=220
-app.get("/getGroupements", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * from groupement WHERE zoneId ="+ req.zoneId, (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-    response.json({data});
-  });
-});
 
 //DELETE affectation_equipe
 app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) => {
