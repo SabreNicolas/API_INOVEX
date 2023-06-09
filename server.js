@@ -1931,3 +1931,26 @@ app.get("/unauthorizedTokens" ,(request, response) => {
 //////////////////////////
 //    FIN TOKEN         //
 //////////////////////////
+
+//Requête permettant de récupérer les moral entities d'une usine sans correspondance
+//?idUsine=1
+app.get("/getMoralEntitiesSansCorrespondance" ,(request, response) => {
+  const req=request.query
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
+  "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
+  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' AND mr.Id NOT IN( SELECT ProducerId FROM import_tonnage)", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//Requête permettant de modifier la personne affectée à un token
+//?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
+app.put("/import_tonnage", middleware,(request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
