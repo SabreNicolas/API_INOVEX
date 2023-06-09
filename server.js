@@ -1714,6 +1714,17 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
   });
 });
 
+//Récupérer l'équipe d'un utilisateur POUR RONDIER
+//?idRondier
+app.get("/getEquipeUser", (request, response) => {
+  const req=request.query
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +req.idRondier, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //////////////////////////
 //   FIN EQUIPE         //
 //////////////////////////

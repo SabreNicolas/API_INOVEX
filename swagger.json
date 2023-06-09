@@ -1462,7 +1462,7 @@
               }
             }
           },
-          "/ElementsOfRonde/{idUsine}/{idUser}": {
+          "/getEquipeUser": {
             "get": {
               "security": [
                 {
@@ -1473,16 +1473,9 @@
               "description": "La requête retourne l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente. L'id de l'usine est passé en paramètre.",
               "parameters": [
                 {
-                  "name": "idUsine",
-                  "in": "path",
+                  "name": "idRondier",
+                  "in": "query",
                   "description": "Id de l'usine.",
-                  "required": true,
-                  "type": "number"
-                },
-                {
-                  "name": "idUser",
-                  "in": "path",
-                  "description": "Id de l'user.",
                   "required": true,
                   "type": "number"
                 }
