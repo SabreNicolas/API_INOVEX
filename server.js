@@ -1261,7 +1261,7 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
     response.json({data});
   });
 });
-//Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
+//Récupérer l'ensemble des groupements d'une usine
 //?idUsine=1
 app.get("/getAllGroupements", (request, response) => {
   const req=request.query
@@ -1272,7 +1272,7 @@ app.get("/getAllGroupements", (request, response) => {
   });
 });
 
-//Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
+//Récupérer un groupement
 //?idGroupement=1
 app.get("/getOneGroupement", (request, response) => {
   const req=request.query
@@ -1282,6 +1282,8 @@ app.get("/getOneGroupement", (request, response) => {
     response.json({data});
   });
 });
+
+//Créer un groupement
 //?zoneId=2&groupement=test
 app.put("/groupement", (request, response) => {
   const req=request.query;
@@ -1292,6 +1294,7 @@ app.put("/groupement", (request, response) => {
   });
 });
 
+//Modifier un groupement
 //?idGroupement=1&groupement=test&zoneId=1
 app.put("/updateGroupement", middleware,(request, response) => {
   const req=request.query
