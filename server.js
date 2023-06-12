@@ -1091,8 +1091,8 @@ function getElementsHorsLigneUser(zone,previousId) {
       if(err) throw err;
       else{
         modesOp = data['recordset'];
-
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone[0]['zoneId'] + " ORDER BY e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + " ORDER BY e.ordre ASC"
+        , (err,data) => {
           if(err) throw err;
           else{
             data = data['recordset'];
@@ -1103,6 +1103,7 @@ function getElementsHorsLigneUser(zone,previousId) {
               commentaire : zone[0]['commentaire'],
               four : zone[0]['four'],
               modeOP : modesOp,
+              groupement : zone[0]['groupement'],
               elements : data
             };
             resolve();
@@ -1123,7 +1124,7 @@ function getElementsHorsLigne(zone,previousId) {
       else{
         modesOp = data['recordset'];
 
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
           if(err) throw err;
           else{
             data = data['recordset'];
@@ -1133,6 +1134,7 @@ function getElementsHorsLigne(zone,previousId) {
               commentaire : zone.commentaire,
               badge : zone.uidBadge,
               four : zone.four,
+              groupement : zone.groupement,
               modeOP : modesOp,
               elements : data
             };
@@ -1320,6 +1322,13 @@ app.put("/updateGroupement", middleware,(request, response) => {
   });
 });
 
+app.delete("/deleteGroupement", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM groupement WHERE id = "+ req.idGroupement, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression ok")
+  });
+});
 ///////////////////////
 //  Fin Groupement   //
 ///////////////////////
@@ -1704,6 +1713,14 @@ app.put("/updateEquipe",middleware, (request, response) => {
   });
 });
 
+//DELETE equipe
+app.delete("/deleteEquipe/:idEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM equipe WHERE id = "+request.params.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression des Rondiers OK")
+  });
+});
 
 //DELETE affectation_equipe
 app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) => {
@@ -1932,20 +1949,26 @@ app.get("/unauthorizedTokens" ,(request, response) => {
 //    FIN TOKEN         //
 //////////////////////////
 
+
+//////////////////////////
+//    Import tonnage    //
+//////////////////////////
+
+
 //Requête permettant de récupérer les moral entities d'une usine sans correspondance
 //?idUsine=1
-app.get("/getMoralEntitiesSansCorrespondance" ,(request, response) => {
+app.get("/getMoralEntitiesAndCorrespondance" ,(request, response) => {
   const req=request.query
-  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
+  pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur, i.nomImport, i.productImport FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' AND mr.Id NOT IN( SELECT ProducerId FROM import_tonnage)", (err,data) => {
+  "FULL OUTER JOIN import_tonnage i ON i.ProducerId = mr.Id "+
+  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
   });
 });
 
-//Requête permettant de modifier la personne affectée à un token
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
 app.put("/import_tonnage", middleware,(request, response) => {
   const req=request.query
