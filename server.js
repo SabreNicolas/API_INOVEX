@@ -1962,7 +1962,7 @@ app.get("/getMoralEntitiesAndCorrespondance" ,(request, response) => {
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur, i.nomImport, i.productImport FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
   "FULL OUTER JOIN import_tonnage i ON i.ProducerId = mr.Id "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%'", (err,data) => {
+  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Enabled = 1 AND mr.Code LIKE '" + req.Code + "%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -1972,8 +1972,29 @@ app.get("/getMoralEntitiesAndCorrespondance" ,(request, response) => {
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
 app.put("/import_tonnage", middleware,(request, response) => {
   const req=request.query
-  pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"')", (err,data) => {
+  pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"','"+req.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
 });
+
+//Requête permettant de récupérer tout les tokens non autorisés
+app.get("/correspondance/:Id" ,(request, response) => {
+  pool.query("SELECT * FROM import_tonnage where ProducerId ="+request.params.Id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//UPDATE Product, set Code
+//?CodeEquipement=123
+app.put("/updateCorrespondance",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnage SET nomImport='"+ req.nomImport+"', productImport ='"+ req.productImport+"' WHERE ProducerId =" +req.ProducerId, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+//UPDATE import_tonnage SET nomImport='', productImport ='' WHERE id =1
