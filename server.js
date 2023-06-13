@@ -1997,4 +1997,11 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
   });
 });
 
-//UPDATE import_tonnage SET nomImport='', productImport ='' WHERE id =1
+//Requête permettant de récupérer tout les tokens non autorisés
+app.get("/getCorrespondance/:idUsine" ,(request, response) => {
+  pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
