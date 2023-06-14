@@ -4,9 +4,22 @@
       "title": "Documentation de l'API de CAP EXPLOITATION",
       "version": "v1.1"
     },
+    "securityDefinitions": {
+      "BearerAuth": {
+        "type": "apiKey",
+        "name": "Authorization",
+        "in": "header",
+        "value": "Bearer"
+      }
+    },
     "paths": {
         "/sites": {
           "get": {
+            "security": [
+              {
+                "BearerAuth": []
+              }
+            ],
             "summary": "Liste des différentes usines, classées par ordre alphabétique de la Ville du site.",
             "description": "La requête retourne les différents sites. Cela permet de connaitre le nombre de four, de GTA et le type de pesées de chacun.",
             "tags": [
@@ -24,6 +37,11 @@
         },
         "/nbLigne/{id}": {
           "get": {
+            "security": [
+              {
+                "BearerAuth": []
+              }
+            ],
             "summary": "Retourne le nombre de ligne d'un site.",
             "description": "La requête retourne le nombre de ligne d'un site. L'id de l'usine est passé en paramètre.",
             "parameters": [
@@ -50,6 +68,11 @@
         },
         "/nbGTA/{id}": {
           "get": {
+            "security": [
+              {
+                "BearerAuth": []
+              }
+            ],
             "summary": "Retourne le nombre de GTA d'un site.",
             "description": "La requête retourne le nombre de GTA d'un site. L'id de l'usine est passé en paramètre.",
             "parameters": [
@@ -76,6 +99,11 @@
         },
         "/typeImport/{id}": {
           "get": {
+            "security": [
+              {
+                "BearerAuth": []
+              }
+            ],
             "summary": "Retourne le type d'import pour les pesées d'un site.",
             "description": "La requête retourne le type d'import pour les pesées d'un site. L'id de l'usine est passé en paramètre.",
             "parameters": [
@@ -102,6 +130,11 @@
         },
           "/UsersRondier": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des utilisateurs rondier d'un site, classés par ordre alphabétique du Nom.",
               "description": "La requête retourne les différents utilisateurs ayant les droits rondier d'un site. L'id de l'usine est passé en query string.",
               "parameters": [
@@ -161,6 +194,11 @@
           },
           "/moralEntitiesAll": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des clients qui apportent du tonnage sur un site, classés par ordre alphabétique du Nom.",
               "description": "La requête retourne les informations sur les différents clients qui apportent du tonnage sur un site. Le code du déchet et l'id de l'usine sont passés dans la query string.",
               "parameters": [
@@ -195,6 +233,11 @@
           },
           "/moralEntitieLastCode": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le code du dernier client enregistré sur un site.",
               "description": "La requête retourne uniquement le code du dernier client ayant apporté du tonnage sur un site. Le code du déchet et l'id de l'usine sont passés dans la query string.",
               "parameters": [
@@ -229,6 +272,11 @@
           },
           "/moralEntitie/{id}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne les informations sur une client précis.",
               "description": "La requête retourne toutes les informations sur un client. L'id du client est passé en paramètre.",
               "parameters": [
@@ -255,6 +303,11 @@
           },
           "/CategoriesCompteurs": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur l'ensemble des compteurs.",
               "description": "La requête retourne toutes les informations sur l'ensemble des compteurs, nottamment le code de ceux-ci.",
               "tags": [
@@ -272,6 +325,11 @@
           },
           "/CategoriesAnalyses": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur toutes les analyses.",
               "description": "La requête retourne toutes les informations sur toutes les analyses, nottamment le code de celles-ci.",
               "tags": [
@@ -289,6 +347,11 @@
           },
           "/CategoriesSortants": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur l'ensemble des sortants.",
               "description": "La requête retourne toutes les informations sur l'ensemble des sortants, nottamment le code de ceux-ci.",
               "tags": [
@@ -306,6 +369,11 @@
           },
           "/Category/{id}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur une catégorie de produit précise.",
               "description": "La requête retourne toutes les informations sur une catégorie dont l'id est passé en paramètre.",
               "parameters": [
@@ -332,6 +400,11 @@
           },
           "/Categories/{ParentId}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les filles d'une catégorie mère.",
               "description": "La requête retourne toutes les informations sur les catégories filles dont l'id du parent est passé en paramètre.",
               "parameters": [
@@ -358,6 +431,11 @@
           },
           "/productLastCode": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le dernier code d'un type de produit dans une usine.",
               "description": "La requête retourne le dernier code produit d'un type de produit, dans une usine. L'id de l'usine et le code du produit sont passés dans la query string.",
               "parameters": [
@@ -391,6 +469,11 @@
           },
           "/Products": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste l'ensemble des produits.",
               "description": "La requête retourne l'ensemble des produits existants sans les trier.",
               "tags": [
@@ -408,6 +491,11 @@
           },
           "/Products/{TypeId}": {
             "get": { 
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne toutes les informations sur un produit précis.",
               "description": "La requête retourne toutes les informations sur un produit précis, en fonction de son nom, et de son usine passés en query string et de son type passé en paramètre.",
               "parameters": [
@@ -448,6 +536,11 @@
           },
           "/Container/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les containers de DASRI d'une usine.",
               "description": "La requête retourne les informations sur les containers de DASRI d'une usine dont l'id est passé en paramètre.",
               "parameters": [
@@ -474,6 +567,11 @@
           },
           "/Compteurs": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur des compteurs.",
               "description": "La requête retourne les informations sur les compteurs d'une usine dont l'id est passé en query string. Le début du code du compteur est également passé en query string.",
               "parameters": [
@@ -507,6 +605,11 @@
           },
           "/QSE": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les objectifs QSE d'une usine.",
               "description": "La requête retourne les informations sur les objectifs QSE d'une usine dont l'id est passé en query string.",
               "parameters": [
@@ -533,6 +636,11 @@
           },
           "/CompteursArrets": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les arrêts d'une usine.",
               "description": "La requête retourne les informations sur les arrêts d'une usine dont l'id et le code des compteurs sont passés en query string.",
               "parameters": [
@@ -566,6 +674,11 @@
           },
           "/Analyses": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les analyses d'une usine.",
               "description": "La requête retourne les informations sur les analyses d'une usine dont l'id et le code des analyses sont passés en query string.",
               "parameters": [
@@ -599,6 +712,11 @@
           },
           "/AnalysesDep/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les dépassements d'une usine.",
               "description": "La requête retourne les informations sur les dépassements d'une usine dont l'id est passé en paramètre.",
               "parameters": [
@@ -625,6 +743,11 @@
           },
           "/Sortants": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur les produits sortants d'une l'usine.",
               "description": "La requête retourne les informations sur les produits sortants d'une usine dont l'id et le code des produits sont passés en query string.",
               "parameters": [
@@ -658,6 +781,11 @@
           },
           "/Consos/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur l'ensemble des consommables d'une usine.",
               "description": "La requête retourne les informations sur l'ensemble des consommables d'une usine dont l'id est passé en paramètre.",
               "parameters": [
@@ -684,6 +812,11 @@
           },
           "/pci/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les informations sur l'ensemble des éléments permettants le calcul des pci d'une usine",
               "description": "La requête retourne les informations sur l'ensemble des éléments permettants le calcul des pci d'une usine dont l'id est passé en paramètre.",
               "parameters": [
@@ -710,6 +843,11 @@
           },
           "/Product/{Id}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne un produit précis.",
               "description": "La requête retourne les informations sur le produit dont l'id paramètre.",
               "parameters": [
@@ -762,6 +900,11 @@
           },
           "/Depassements/{dateDeb}/{dateFin}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les dépassements d'une usine entre deux dates.",
               "description": "La requête retourne les informations sur les dépassements d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine sont passés en paramètre.",
               "parameters": [
@@ -802,6 +945,11 @@
           },
           "/DepassementsSumFour/{dateDeb}/{dateFin}/{idUsine}/{numLigne}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le temps de dépassement d'une ligne de production d'une usine entre deux dates",
               "description": "La requête retourne la somme du temps de dépassement d'une ligne de production d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine et le numéro de la ligne sont passés en paramètre.",
               "parameters": [
@@ -849,6 +997,11 @@
           },
           "/DepassementsSum/{dateDeb}/{dateFin}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le temps de dépassement d'une usine entre deux dates.",
               "description": "La requête retourne la somme du temps de dépassement d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine sont passés en paramètre.",
               "parameters": [
@@ -889,6 +1042,11 @@
           },
           "/Arrets/{dateDeb}/{dateFin}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les arrêts d'une usine entre deux dates.",
               "description": "La requête retourne les informations sur les arrêts d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine sont passés en paramètre.",
               "parameters": [
@@ -929,6 +1087,11 @@
           },
           "/ArretsSumGroup/{dateDeb}/{dateFin}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le temps d'arrêt de chaque ligne d'une usine entre deux dates.",
               "description": "La requête retourne la somme du temps d'arrêt de chaque ligne d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine sont passés en paramètre.",
               "parameters": [
@@ -969,6 +1132,11 @@
           },
           "/ArretsSum/{dateDeb}/{dateFin}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le temps total d'arrêts d'une usine entre deux dates.",
               "description": "La requête retourne la somme du temps d'arrêt d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine sont passés en paramètre.",
               "parameters": [
@@ -1009,6 +1177,11 @@
           },
           "/ArretsSumFour/{dateDeb}/{dateFin}/{idUsine}/{numFour}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne le temps d'arrêt d'un four d'une usine entre deux dates.",
               "description": "La requête retourne la somme du temps d'arrêt d'un four d'une usine entre deux date. La date de début, la date de fin, l'id de l'usine et le numéro de la ligne sont passés en paramètre.",
               "parameters": [
@@ -1056,6 +1229,11 @@
           },
           "/Compteurs/{Code}/{Date}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne la valeur de saisie d'un compteur à une date précise.",
               "description": "La requête retourne la valeur de saisie d'un compteur à une date précise d'une usine . Le code du compteur et la date sont passés en paramètre. L'id de l'usine est passé dans la query string.",
               "parameters": [
@@ -1096,6 +1274,11 @@
           },
           "/Entrant/{ProductId}/{ProducerId}/{Date}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne la valeur d'entrée d'un produit par un client à une certaine date.",
               "description": "La requête retourne la valeur d'entrée d'un produit par un client à une certaine date. La date et les Id sont passés en paramètre.",
               "parameters": [
@@ -1136,6 +1319,11 @@
           },
           "/ValuesProducts/{ProductId}/{Date}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne la valeur d'entrée d'un produit à une certaine date.",
               "description": "La requête retourne la valeur d'entrée d'un produit à une certaine date. La date et l'id du produit sont passés en paramètre.",
               "parameters": [
@@ -1169,6 +1357,11 @@
           },
           "/TotalMeasures/{Dechet}/{Date}/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne la valeur totale d'entrée d'un produit à une certaine date dans une certaine usine.",
               "description": "La requête retourne la valeur totale d'entrée d'un produit à une certaine date dans une certaine usine. La date, l'id de l'usine et le code du produit sont passés en paramètre.",
               "parameters": [
@@ -1209,6 +1402,11 @@
           },
           "/zones/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne les informations sur les zones de contrôle d'une certaine usine.",
               "description": "La requête retourne les informations sur les zones de contrôle d'une certaine usine. L'id de l'usine est passé en paramètre.",
               "parameters": [
@@ -1235,6 +1433,11 @@
           },
           "/BadgeAndElementsOfZone/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des bages et des éléments d'une zone.",
               "description": "La requête retourne l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente. L'id de l'usine est passé en paramètre.",
               "parameters": [
@@ -1259,8 +1462,51 @@
               }
             }
           },
+          "/ElementsOfRonde/{idUsine}/{idUser}": {
+            "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
+              "summary": "Liste des bages et des éléments d'une zone.",
+              "description": "La requête retourne l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente. L'id de l'usine est passé en paramètre.",
+              "parameters": [
+                {
+                  "name": "idUsine",
+                  "in": "path",
+                  "description": "Id de l'usine.",
+                  "required": true,
+                  "type": "number"
+                },
+                {
+                  "name": "idUser",
+                  "in": "path",
+                  "description": "Id de l'user.",
+                  "required": true,
+                  "type": "number"
+                }
+              ], 
+              "tags": [
+                "Zones de contrôle"
+              ],
+              "responses": {
+                "200": {
+                  "description": "Un tableau contenant les zones d'une usine. Chaque zone contient un sous tableau avec ses éléments.",
+                  "examples" : {
+                    "application/json" :"{\r\n  \"BadgeAndElementsOfZone\": [\r\n    {\r\n      \"zoneId\": 85,\r\n      \"zone\": \"AEROcondenseurs\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"17:FF:F6:EF\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 532,\r\n          \"zoneId\": 85,\r\n          \"nom\": \"Absence d anomalie sur les persiennes\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": \"Oui\"\r\n        },\r\n        {\r\n          \"Id\": 533,\r\n          \"zoneId\": 85,\r\n          \"nom\": \"Absence d anomalie sur motoreducteur, palmes. Absence de bruit, fumees et vibrations\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": \"Oui\"\r\n        },\r\n        {\r\n          \"Id\": 535,\r\n          \"zoneId\": 85,\r\n          \"nom\": \"Absence de corps etrangers sur les tubes et ailettes\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": \"Oui\"\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 66,\r\n      \"zone\": \"Analyseur\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"E2:06:4A:12\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 617,\r\n          \"zoneId\": 66,\r\n          \"nom\": \"Controle niveau eau de refroidissement AMESA\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"correct\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"correct pasCorrect\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 618,\r\n          \"zoneId\": 66,\r\n          \"nom\": \"Absence d entree d air au niveau de la cheminee\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 73,\r\n      \"zone\": \"Ancien TGBT\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"D3:40:19:0A\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 547,\r\n          \"zoneId\": 73,\r\n          \"nom\": \"Fermeture des portes, temperature normale et absence de fumees\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 548,\r\n          \"zoneId\": 73,\r\n          \"nom\": \"Releve du cos PHI\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 549,\r\n          \"zoneId\": 73,\r\n          \"nom\": \"Releve mesure d isolement a la terre\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"kOhm\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 550,\r\n          \"zoneId\": 73,\r\n          \"nom\": \"Controle et absence de fuite au transfo\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 551,\r\n          \"zoneId\": 73,\r\n          \"nom\": \"Absence de defaut sur l onduleur\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 55,\r\n      \"zone\": \"Bache 50 m3 eau de forage\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"13:5B:EB:09\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 459,\r\n          \"zoneId\": 55,\r\n          \"nom\": \"compteur eau de forage\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"m3\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": true,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 460,\r\n          \"zoneId\": 55,\r\n          \"nom\": \"Absence de fuite d eau\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"Oui\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Oui Non\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 62,\r\n      \"zone\": \"Bas filtre à manche\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"13:1C:14:08\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 604,\r\n          \"zoneId\": 62,\r\n          \"nom\": \"Controle motoreducteur des vis REFIOM\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 605,\r\n          \"zoneId\": 62,\r\n          \"nom\": \"Controle motoreducteur ecluses\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 606,\r\n          \"zoneId\": 62,\r\n          \"nom\": \"Controle motoreducteur Redler\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 607,\r\n          \"zoneId\": 62,\r\n          \"nom\": \"Controle motoreducteur des vis transfert\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 608,\r\n          \"zoneId\": 62,\r\n          \"nom\": \"Controle bas elevateur: absence de fuite REFIOM\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 90,\r\n      \"zone\": \"Bassins de 100 m3\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"33:DB:C0:08\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 633,\r\n          \"zoneId\": 90,\r\n          \"nom\": \"Controle du bassin eau de voierie: bon fonctionnement des pompes, pas de debordement\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 634,\r\n          \"zoneId\": 90,\r\n          \"nom\": \"Controle du bassin eau de machefers: bon fonctionnement de la pompe, pas de debordement\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"3\",\r\n          \"unit\": \"\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"Fait Pasfait\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 134,\r\n      \"zone\": \"bungalow analyseur\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"77:39:61:2A\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 663,\r\n          \"zoneId\": 134,\r\n          \"nom\": \"Niveau de la bouteille azote\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"bar\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 630,\r\n          \"zoneId\": 134,\r\n          \"nom\": \"Pression de distribution de l'azote vers le bungalow\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"bar\",\r\n          \"defaultValue\": \"2.5\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    },\r\n    {\r\n      \"zoneId\": 81,\r\n      \"zone\": \"Centrale Hydrolique GTA\",\r\n      \"commentaire\": \"_\",\r\n      \"badge\": \"63:A7:15:08\",\r\n      \"four\": 0,\r\n      \"modeOP\": [],\r\n      \"elements\": [\r\n        {\r\n          \"Id\": 504,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve niveau de caisse\",\r\n          \"valeurMin\": 17,\r\n          \"valeurMax\": 22,\r\n          \"typeChamp\": \"1\",\r\n          \"unit\": \"Cm\",\r\n          \"defaultValue\": \"18\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 505,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve delta P DI1453\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"bar\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 506,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve pression graissage PI455\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"bar\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 507,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve pression pompe auxiliaire PI451\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"bar\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 508,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve temperature eau entree TI564\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"degre\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        },\r\n        {\r\n          \"Id\": 509,\r\n          \"zoneId\": 81,\r\n          \"nom\": \"Releve temperature eau sortie TI560\",\r\n          \"valeurMin\": 0,\r\n          \"valeurMax\": 0,\r\n          \"typeChamp\": \"2\",\r\n          \"unit\": \"degre\",\r\n          \"defaultValue\": \"\",\r\n          \"isRegulateur\": false,\r\n          \"listValues\": \"\",\r\n          \"isCompteur\": false,\r\n          \"previousValue\": null\r\n        }\r\n      ]\r\n    }\r\n  ]\r\n}"
+                  }
+                }
+              }
+            }
+          },
           "/elementsOfZone/{zoneId}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des éléments de contrôle d'une zone.",
               "description": "La requête retourne l'ensemble des éléments de contrôle d'une zone. L'id de la zone est passé en paramètre.",
               "parameters": [
@@ -1287,6 +1533,11 @@
           },
           "/elementsCompteur/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": " Liste les éléments de contrôle compteur.",
               "description": "La requête retourne les éléments contrôle de type compteur. L'id de l'usine est passé en paramètre.",
               "parameters": [
@@ -1313,6 +1564,11 @@
           },
           "/element/{elementId}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne un élément de contrôle.",
               "description": "La requête retourne les informations sur un élément de contrôle. L'id de l'élément est passé en paramètre.",
               "parameters": [
@@ -1339,6 +1595,11 @@
           },
           "/Rondes": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les rondes à une date donnée.",
               "description": "La requête retourne les informations les rondes d'une usine à une date donnée. L'id de l'usine et la date sont passés dans la query string.",
               "parameters": [
@@ -1372,6 +1633,11 @@
           },
           "/reportingRonde/{idRonde}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des mesures d'une ronde.",
               "description": "La requête retourne l'ensemble des mesures pour une ronde dans le but de faire un reporting. L'id de la ronde est passé en paramètre.",
               "parameters": [
@@ -1398,6 +1664,11 @@
           },
           "/valueElementDay": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Retourne la valeur d'un élément de contrôle pour une date.",
               "description": "La requête retourne la valeur pour un élément de contrôle et une date. L'id de l'élément et la date sont passés dans la query string.",
               "parameters": [
@@ -1431,6 +1702,11 @@
           },
           "/PermisFeu/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste des permis de feu en cours d'une usine.",
               "description": "La requête retourne les permis de feu en cours ou les zones de consignation. L'id de l'usine est passé en paramètre.",
               "parameters": [
@@ -1457,6 +1733,11 @@
           },
           "/PermisFeuVerification": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les validations de permis de feu.",
               "description": "La requête retourne les validations de permis de feu pour une date donnée. L'id de l'usine et la date sont passés dans la query string.",
               "parameters": [
@@ -1490,6 +1771,11 @@
           },
           "/consignes/{idUsine}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les consignes en cours.",
               "description": "La requête retourne les consignes en cours. L'id de l'usine est passé en paramètre.",
               "parameters": [
@@ -1516,6 +1802,11 @@
           },
           "/anomalies/{id}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les anomalies d'une ronde.",
               "description": "La requête retourne les anomalies d'une ronde. L'id de la ronde est passé en paramètre.",
               "parameters": [
@@ -1542,6 +1833,11 @@
           },
           "/rapports/{id}": {
             "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
               "summary": "Liste les rapports d'une usine.",
               "description": "La requête retourne la liste des rapports pour un site en question. L'id de l'usine est passé en paramètre.",
               "parameters": [
