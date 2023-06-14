@@ -1947,7 +1947,7 @@ app.put("/updateToken", middleware,(request, response) => {
 });
 
 //Requête permettant de récupérer tout les tokens non autorisés
-app.get("/unauthorizedTokens" ,(request, response) => {
+app.get("/unauthorizedTokens",(request, response) => {
   pool.query("SELECT token FROM token where Enabled = 0", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -1967,7 +1967,7 @@ app.get("/unauthorizedTokens" ,(request, response) => {
 
 //Requête permettant de récupérer les moral entities d'une usine sans correspondance
 //?idUsine=1
-app.get("/getMoralEntitiesAndCorrespondance" ,(request, response) => {
+app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur, i.nomImport, i.productImport FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
@@ -1980,7 +1980,7 @@ app.get("/getMoralEntitiesAndCorrespondance" ,(request, response) => {
 });
 
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
-app.put("/import_tonnage", middleware,(request, response) => {
+app.put("/import_tonnage",middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"','"+req.productImport+"')", (err,data) => {
     if(err) throw err;
@@ -1989,7 +1989,7 @@ app.put("/import_tonnage", middleware,(request, response) => {
 });
 
 //Requête permettant de récupérer tout les tokens non autorisés
-app.get("/correspondance/:Id" ,(request, response) => {
+app.get("/correspondance/:Id",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where ProducerId ="+request.params.Id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2008,7 +2008,7 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
 });
 
 //Requête permettant de récupérer tout les tokens non autorisés
-app.get("/getCorrespondance/:idUsine" ,(request, response) => {
+app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
