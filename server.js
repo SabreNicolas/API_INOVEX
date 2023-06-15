@@ -787,7 +787,7 @@ app.get("/Users", middleware,(request, response) => {
 
 //Récupérer l'ensemble des utilisateurs d'un site ayant les droits ayant les droits rondier
 //?idUsine=1
-app.get("/UsersRondier",middleware, (request, response) => { 
+app.get("/UsersRondier", (request, response) => { 
   const req=request.query 
   pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err) throw err; 
@@ -1635,7 +1635,7 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
 
 //TODO : inner join avec Ronde ??? Zone ???
 //Récupérer les anomalies d'une ronde
-app.get("/anomalies/:id", middleware,(request, response) => {
+app.get("/anomalies/:id",(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM anomalie WHERE rondeId = "+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1781,7 +1781,7 @@ app.get("/nbLigne/:id", middleware,(request, response) => {
 
 
 //Récupérer le nombre de ligne d'un site avec une réponse au format chiffre
-app.get("/nbLigneChiffre/:id", middleware,(request, response) => {
+app.get("/nbLigneChiffre/:id",(request, response) => {
   const req=request.query
   pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
@@ -1947,7 +1947,8 @@ app.put("/updateToken", middleware,(request, response) => {
 });
 
 //Requête permettant de récupérer tout les tokens non autorisés
-app.get("/unauthorizedTokens",(request, response) => {
+app.get("/unauthorizedTokens",
+(request, response) => {
   pool.query("SELECT token FROM token where Enabled = 0", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
