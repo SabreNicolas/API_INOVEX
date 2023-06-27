@@ -392,6 +392,15 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
   });
 });
 
+app.get("/getProductsWithTag", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});;
+  });
+});
+
 //get Container DASRI
 app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   const req=request.query
