@@ -26,7 +26,7 @@ curseur = connexion.cursor()
 for site in listeSites['data'] :
 
     # Récupération des produits avec un TAG dans chaque usine
-    requete = "SELECT * FROM tagflow JOIN site ON site.SitId = tagflow.FkSitId WHERE site.SitName = '" + site['localisation'] + "' AND tafUtsTs = '2023-06-18' ;"
+    requete = "SELECT * FROM tagflow JOIN site ON site.SitId = tagflow.FkSitId WHERE site.SitName = '" + site['localisation'] + "' AND tafUtsTs = '"+ hier +"';"
     curseur.execute(requete)
     listData = curseur.fetchall()
 
@@ -43,13 +43,16 @@ for site in listeSites['data'] :
             if "TAG" in product :
                 if data[1] == product["TAG"] :
                     if product['typeRecupEMonitoring'] == "tafMin" :
-                        recup = 4
+                        recup = data[4]
                     else :
                         if product['typeRecupEMonitoring'] == "tafMax" :
-                            recup = 5
+                            recup = data[5]
                         else :
-                            recup = 3
-                    req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(data[recup]) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                            if product['typeRecupEMonitoring'] == "tafVal" :
+                                recup = data[3]
+                            else :
+                                recup = data[5] - data[4]
+                    req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
 
 # Fermeture du curseur et de la connexion
