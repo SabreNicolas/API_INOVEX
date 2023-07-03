@@ -26,7 +26,7 @@ curseur = connexion.cursor()
 for site in listeSites['data'] :
 
     # Récupération des produits avec un TAG dans chaque usine
-    requete = "SELECT * FROM tagflow JOIN site ON site.SitId = tagflow.FkSitId WHERE site.SitName = '" + site['localisation'] + "' AND tafUtsTs = '"+ hier +"';"
+    requete = "SELECT * FROM tagflow JOIN site ON site.SitId = tagflow.FkSitId WHERE site.SitName = '" + site['localisation'] + "' AND tafUtsTs = '"+ str(hier) +"';"
     curseur.execute(requete)
     listData = curseur.fetchall()
 
