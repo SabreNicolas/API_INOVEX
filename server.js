@@ -165,9 +165,6 @@ app.get("/moralEntities", middleware,(request, response) => {
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", middleware,(request, response) => {
   const req=request.query
-  console.log("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-  "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC")
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
   "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
@@ -1428,6 +1425,7 @@ app.put("/closeRondeEnCours", (request, response) => {
 });
 
 
+
 //Récupérer l'auteur d'une ronde
 //?date=07/02/2022&idUsine=1
 app.get("/AuteurRonde/:quart", (request, response) => {
@@ -1744,6 +1742,26 @@ app.get("/anomalies/:id",(request, response) => {
     response.json({data});
   });
 });
+//UpdateAnomalie
+//?rondeId=12&zoneId=5&commentaire=test
+app.put("/updateAnomalie", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE anomalie SET commentaire = '" + req.commentaire + "' WHERE rondeId ="+ req.rondeId +" AND zoneId =" + req.zoneId, (err,data) => {
+    if(err) throw err;
+    response.json("OK")
+  });
+});
+
+//UpdateAnomalie
+//?rondeId=1&zoneId=12&commentaire=test
+app.put("/createAnomalie", (request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO anomalie(rondeId, zoneId, commentaire) VALUES ("+ req.rondeId + "," + req.zoneId + ",'" + req.commentaire +"')", (err,data) => {
+    if(err) throw err;
+    response.json("OK")
+  });
+});
+
 
 //////////////////////////
 //       EQUIPE         //
