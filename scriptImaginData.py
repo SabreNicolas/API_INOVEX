@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
+hierRondier = f'{hier:%d/%m/%Y}'
 
 #récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3102/sites"
@@ -58,3 +59,24 @@ for site in listeSites['data'] :
 # Fermeture du curseur et de la connexion
 curseur.close()
 connexion.close()
+
+#Rondier
+#Boucle sur les sites pour insérer les valeur site par site
+for site in listeSites['data'] :
+    print(str(site['id']))
+    #Récupération de la liste des produits avec un element de récupération rondier dans chaque usine
+    req = "https://fr-couvinove301:3102/getProductsWithElementRondier?idUsine=" + str(site['id'])
+    response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+    listProductsRondier = response.json()
+    listProductsRondier = listProductsRondier["data"]
+
+    #On boucle sur les produits et les données imagine data
+    for product in listProductsRondier :
+        req = "https://fr-couvinove301:3102/valueElementDay?id=" + str(product['idElementRondier']) + "&date=" + str(hierRondier)
+        response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+        value = response.json()
+        value = value['data']
+        for val in value :
+            print(val['value'])
+            req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+            # response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)

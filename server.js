@@ -392,6 +392,19 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
   });
 });
 
+//get ALL Products with type param
+//?Name=dgdgd&idUsine=1
+app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  
+  });
+});
+
+
 app.get("/getProductsWithTag", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + req.idUsine, (err,data) => {
@@ -401,6 +414,14 @@ app.get("/getProductsWithTag", middleware,(request, response) => {
   });
 });
 
+app.get("/getProductsWithElementRondier", middleware,(request, response) => {
+  const req=request.query
+  pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});;
+  });
+});
 //get Container DASRI
 app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   const req=request.query
@@ -1207,9 +1228,10 @@ app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
 });
 
 //Update nom
-app.put("/zoneNom/:id/:nom", middleware,(request, response) => {
+//?nom=test
+app.put("/zoneNom/:id", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE zonecontrole SET nom = '" + request.params.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  pool.query("UPDATE zonecontrole SET nom = '" + req.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du nom OK")
   });
@@ -1272,6 +1294,17 @@ app.delete("/deleteElement", middleware,(request, response) => {
     response.json("Suppression de l'élément OK")
   });
 });
+
+//Récupérer l'ensemble des élements d'une usine
+app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
+  const req=request.query
+  pool.query("select e.* from elementcontrole e JOIN zonecontrole z on z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + "order by e.nom asc", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
@@ -1443,10 +1476,7 @@ app.get("/LastRonde/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    if(data.length>0){
-      response.json(data[0].Id)
-    }
-    else response.json(0)
+    response.json(data[0].Id)
   });
 });
 
@@ -1469,10 +1499,10 @@ app.get("/LastRondeOpen/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    if(data.length>0){
-      response.json(data[0])
+    if(data.length < 1){
+      response.json(0)
     }
-    else response.json(0)
+    else response.json(data[0].id)
   });
 });
 
@@ -1488,10 +1518,10 @@ app.get("/Rondes", (request, response) => {
 });
 
 //Récupérer le nombre de rondes cloturées (pour fonctionnement avec équipes)
-//?idRonde=1
+//?id=1
 app.get("/nbRondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT nbRondes FROM ronde WHERE Id =" + req.idRonde, (err,data) => {
+  pool.query("SELECT nbRondes FROM ronde WHERE Id =" + req.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json(data[0].nbRondes);    
@@ -1499,20 +1529,20 @@ app.get("/nbRondes", (request, response) => {
 });
 
 //Incrémenter de 1 le nombre de rondes cloturées (pour fonctionnement avec équipes)
-//?idRonde=1
+//?id=1
 app.put("/updateNbRondes",(request, response) => {
   const req=request.query
-  pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +req.idRonde, (err,data) => {
+  pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +req.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de la valeur OK")
   });
 });
 
 //Récupère le nombre de rondes cloturées pour une ronde (pour fonctionnement avec équipes)
-//?idRondier=1
+//?userId=1
 app.get("/nbRondiersEquipe", (request, response) => {
   const req=request.query
-  pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.idRondier, (err,data) => {
+  pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.userId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe  JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE equipe.id = " + data[0].id, (err,data) => {
@@ -1568,7 +1598,7 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
 
 //Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
 //?id=111&date=dhdhdh
-app.get("/valueElementDay", middleware,(request, response) => {
+app.get("/valueElementDay",(request, response) => {
   const req=request.query
   pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
     if(err) throw err;
@@ -2002,7 +2032,20 @@ app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
 //?TAG=123
 app.put("/productTAG/:id", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = null WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du TAG OK")
+  });
+});
+
+//UPDATE Product, set TAG
+//?id=1&idElementRondier=123
+app.put("/productElementRondier", middleware,(request, response) => {
+  const req=request.query
+  var idElem;
+  if(req.idElementRondier == 0) idElem = null 
+  else idElem = req.idElementRondier
+  pool.query("UPDATE products_new SET TAG = '', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = " + idElem + " WHERE Id = "+req.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du TAG OK")
   });
@@ -2018,6 +2061,15 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   });
 });
 
+//UPDATE Product, set Code
+//?CodeEquipement=123
+app.put("/productCodeEquipement/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du Code OK")
+  });
+});
 
 
 //////////////////////////
@@ -2126,10 +2178,33 @@ app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
   });
 });
 
+//Requête permettant de récupérer les moral entities d'une usine sans correspondance
+//?idUsine=1
+app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new p FULL OUTER JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +req.idUsine + "and p.Code LIKE '" +req.Code +"%'"
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+
+
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
 app.put("/import_tonnage",middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"','"+req.productImport+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+//?ProductId=5&idUsine=7
+app.put("/import_tonnageSortant",middleware,(request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO import_tonnageSortants (ProductId,idUsine, productImport) VALUES ("+req.ProductId+","+req.idUsine+",'"+req.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -2144,8 +2219,7 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
   });
 });
 
-//UPDATE Product, set Code
-//?CodeEquipement=123
+
 app.put("/updateCorrespondance",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE import_tonnage SET nomImport='"+ req.nomImport+"', productImport ='"+ req.productImport+"' WHERE ProducerId =" +req.ProducerId, (err,data) => {
@@ -2154,9 +2228,27 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
   });
 });
 
-//Requête permettant de récupérer tout les tokens non autorisés
+app.put("/updateCorrespondanceSortant",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnageSortants SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+
+//Requête permettant de récupérer toutes les correspondance pour l'import csv des entrants
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//Requête permettant de récupérer toutes les correspondance pour l'import csv des sortants
+app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => {
+  pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
