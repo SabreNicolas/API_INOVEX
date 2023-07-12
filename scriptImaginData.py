@@ -9,7 +9,7 @@ hierRondier = f'{hier:%d/%m/%Y}'
 
 
 #récupération de la liste des sites CAP Exploitation
-req = "https://fr-couvinove301:3102/sites"
+req = "https://fr-couvinove301:3100/sites"
 response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
 listeSites = response.json()
 
@@ -33,7 +33,7 @@ for site in listeSites['data'] :
     listData = curseur.fetchall()
 
     #Récupération de la liste des produits avec un TAG dans chaque usine
-    req = "https://fr-couvinove301:3102/getProductsWithTag?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
     response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
@@ -54,7 +54,7 @@ for site in listeSites['data'] :
                                 recup = data[3]
                             else :
                                 recup = data[5] - data[4]
-                    req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                    req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
 
 # Fermeture du curseur et de la connexion
@@ -67,19 +67,19 @@ connexion.close()
 for site in listeSites['data'] :
     print(str(site['id']))
     #Récupération de la liste des produits avec un element de récupération rondier dans chaque usine
-    req = "https://fr-couvinove301:3102/getProductsWithElementRondier?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithElementRondier?idUsine=" + str(site['id'])
     response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     listProductsRondier = response.json()
     listProductsRondier = listProductsRondier["data"]
 
     #On boucle sur les produits et les données imagine data
     for product in listProductsRondier :
-        req = "https://fr-couvinove301:3102/valueElementDay?id=" + str(product['idElementRondier']) + "&date=" + str(hierRondier)
+        req = "https://fr-couvinove301:3100/valueElementDay?id=" + str(product['idElementRondier']) + "&date=" + str(hierRondier)
         response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
         value = response.json()
         value = value['data']
         for val in value :
             print(val['value'])
-            req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
             # response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
 
