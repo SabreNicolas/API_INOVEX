@@ -1071,7 +1071,7 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
 
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
-  ElementsOfZone = [];
+  BadgeAndElementsOfZone = [];
   let previousId = 0;
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+request.params.idUsine+" and e.idRondier = "+request.params.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
     if(err) throw err;
@@ -1082,7 +1082,7 @@ app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
       //On récupère les éléments de la zone
       await getElementsHorsLigneUser(data,previousId);
       
-      response.json({ElementsOfZone});
+      response.json({BadgeAndElementsOfZone});
     }
   });
 });
@@ -1411,10 +1411,7 @@ app.get("/LastRonde/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    if(data.length>0){
-      response.json(data[0].Id)
-    }
-    else response.json(0)
+    response.json(data[0].Id)
   });
 });
 
@@ -1434,13 +1431,13 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
 //Récupérer la ronde encore en cours => permettre au rondier de la reprendre
 app.get("/LastRondeOpen/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    if(data.length>0){
-      response.json(data[0])
+    if(data.length < 1){
+      response.json(0)
     }
-    else response.json(0)
+    else response.json(data[0].id)
   });
 });
 
@@ -1452,6 +1449,42 @@ app.get("/Rondes", (request, response) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});    
+  });
+});
+
+//Récupérer le nombre de rondes cloturées (pour fonctionnement avec équipes)
+//?id=1
+app.get("/nbRondes", (request, response) => {
+  const req=request.query
+  pool.query("SELECT nbRondes FROM ronde WHERE Id =" + req.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json(data[0].nbRondes);    
+  });
+});
+
+//Incrémenter de 1 le nombre de rondes cloturées (pour fonctionnement avec équipes)
+//?id=1
+app.put("/updateNbRondes",(request, response) => {
+  const req=request.query
+  pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour de la valeur OK")
+  });
+});
+
+//Récupère le nombre de rondes cloturées pour une ronde (pour fonctionnement avec équipes)
+//?userId=1
+app.get("/nbRondiersEquipe", (request, response) => {
+  const req=request.query
+  pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.userId, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe  JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE equipe.id = " + data[0].id, (err,data) => {
+      if(err) throw err;
+      data = data['recordset'];
+      response.json(data[0].nbRondesACloturer);    
+    });   
   });
 });
 
