@@ -1101,6 +1101,24 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
     }
   });
 });
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
+app.get("/elementsOfUsine/:idUsine", (request, response) => {
+  BadgeAndElementsOfZone = [];
+  let previousId = 0;
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+    if(err) throw err;
+    else {
+      data = data['recordset'];
+      //On récupère l'Id de la ronde précedente
+      previousId = getPreviousId(request.params.idUsine);
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const zone of data) {
+        await getElementsHorsLigne(zone,previousId);
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
+  });
+});
 
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/elementsOfUsine/:idUsine", (request, response) => {
@@ -1355,7 +1373,7 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 //?zoneId=220
 app.get("/getGroupements", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * from groupement WHERE zoneId ="+ req.zoneId, (err,data) => {
+  pool.query("SELECT * from groupement WHERE zoneId = "+ req.zoneId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1496,7 +1514,7 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
 //Récupérer la ronde encore en cours => permettre au rondier de la reprendre
 app.get("/LastRondeOpen/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 * from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length < 1){
@@ -1552,7 +1570,6 @@ app.get("/nbRondiersEquipe", (request, response) => {
     });   
   });
 });
-
 
 
 //Suppression ronde

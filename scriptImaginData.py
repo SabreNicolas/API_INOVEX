@@ -7,6 +7,7 @@ aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 hierRondier = f'{hier:%d/%m/%Y}'
 
+
 #récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3102/sites"
 response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
@@ -58,6 +59,7 @@ for site in listeSites['data'] :
 
 # Fermeture du curseur et de la connexion
 curseur.close()
+
 connexion.close()
 
 #Rondier
@@ -80,3 +82,4 @@ for site in listeSites['data'] :
             print(val['value'])
             req = "https://fr-couvinove301:3102/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
             # response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+
