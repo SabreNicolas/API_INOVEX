@@ -1068,7 +1068,6 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
   });
 });
 
-
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   BadgeAndElementsOfZone = [];
@@ -1109,7 +1108,7 @@ function getElementsHorsLigneUser(zone,previousId) {
       if(err) throw err;
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + " ORDER BY e.ordre ASC"
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.id, e.ordre ASC"
         , (err,data) => {
           if(err) throw err;
           else{
