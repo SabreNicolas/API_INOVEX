@@ -62,7 +62,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
-
+let tabEquipes = [];
 //create sql connection
 const sql = require('mssql');
 const { response } = require("express");
@@ -392,10 +392,40 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
   });
 });
 
-//get Container DASRI
-app.get("/Container/:idUsine", middleware,(request, response) => {
+//get ALL Products with type param
+//?Name=dgdgd&idUsine=1
+app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND Code LIKE '301010201' ", (err,data) => {
+  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  
+  });
+});
+
+
+app.get("/getProductsWithTag", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});;
+  });
+});
+
+app.get("/getProductsWithElementRondier", middleware,(request, response) => {
+  const req=request.query
+  pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});;
+  });
+});
+//get Container DASRI
+app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * from products_new WHERE idUsine = " + request.params.idUsine + " AND typeId = 1 AND Code NOT LIKE '2%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -427,6 +457,18 @@ app.put("/productUnit/:id",middleware, (request, response) => {
   pool.query("UPDATE products_new SET Unit = '" + req.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'unité OK")
+  });
+});
+
+//Update le type de récup emonitoring
+//?id=1&typeRecup=tifMax
+app.put("/updateRecupEMonitoring",middleware, (request, response) => {
+  const req=request.query
+  var update = "UPDATE products_new SET typeRecupEMonitoring = '" + req.typeRecup + "' WHERE Id = "+req.id;
+  if(req.typeRecup == "null") update = "UPDATE products_new SET typeRecupEMonitoring = NULL WHERE Id = "+req.id;
+  pool.query(update, (err,data) => {
+    if(err) throw err;
+    response.json("Changement du type de récupération OK")
   });
 });
 
@@ -1020,6 +1062,16 @@ app.put("/zone", middleware,(request, response) => {
   });
 });
 
+//?Id=1
+app.delete("/deleteZone", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM zonecontrole WHERE Id = "+req.Id, (err,result,fields) => {
+      if(err) response.json("Création de la zone KO");
+      else response.json("Suppression OK");
+  });
+});
+
+
 //Récupérer l'ensemble des zones de controle
 app.get("/zones/:idUsine", middleware,(request, response) => {
   const req=request.query
@@ -1067,6 +1119,26 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
     }
   });
 });
+
+//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
+app.get("/elementsOfUsine/:idUsine", (request, response) => {
+  BadgeAndElementsOfZone = [];
+  let previousId = 0;
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+    if(err) throw err;
+    else {
+      data = data['recordset'];
+      //On récupère l'Id de la ronde précedente
+      previousId = getPreviousId(request.params.idUsine);
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const zone of data) {
+        await getElementsHorsLigne(zone,previousId);
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
+  });
+});
+
 
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
@@ -1141,7 +1213,7 @@ function getElementsHorsLigne(zone,previousId) {
       else{
         modesOp = data['recordset'];
 
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + " ORDER BY e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
           if(err) throw err;
           else{
             data = data['recordset'];
@@ -1174,9 +1246,10 @@ app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
 });
 
 //Update nom
-app.put("/zoneNom/:id/:nom", middleware,(request, response) => {
+//?nom=test
+app.put("/zoneNom/:id", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE zonecontrole SET nom = '" + request.params.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  pool.query("UPDATE zonecontrole SET nom = '" + req.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du nom OK")
   });
@@ -1239,6 +1312,17 @@ app.delete("/deleteElement", middleware,(request, response) => {
     response.json("Suppression de l'élément OK")
   });
 });
+
+//Récupérer l'ensemble des élements d'une usine
+app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
+  const req=request.query
+  pool.query("select e.* from elementcontrole e JOIN zonecontrole z on z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + "order by e.nom asc", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
@@ -1361,7 +1445,6 @@ app.put("/ronde", (request, response) => {
   });
 });
 
-
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/rondeCalce", (request, response) => {
   const req=request.query;
@@ -1391,6 +1474,7 @@ app.put("/closeRondeEnCours", (request, response) => {
     response.json("Cloture de la ronde OK")
   });
 });
+
 
 
 //Récupérer l'auteur d'une ronde
@@ -1444,7 +1528,7 @@ app.get("/LastRondeOpen/:idUsine", (request, response) => {
 //?date=07/02/2022&idUsine=1
 app.get("/Rondes", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
+  pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});    
@@ -1486,6 +1570,7 @@ app.get("/nbRondiersEquipe", (request, response) => {
     });   
   });
 });
+
 
 //Suppression ronde
 //?id=12
@@ -1530,7 +1615,7 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
 
 //Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
 //?id=111&date=dhdhdh
-app.get("/valueElementDay", middleware,(request, response) => {
+app.get("/valueElementDay",(request, response) => {
   const req=request.query
   pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
     if(err) throw err;
@@ -1704,6 +1789,26 @@ app.get("/anomalies/:id",(request, response) => {
     response.json({data});
   });
 });
+//UpdateAnomalie
+//?rondeId=12&zoneId=5&commentaire=test
+app.put("/updateAnomalie", (request, response) => {
+  const req=request.query
+  pool.query("UPDATE anomalie SET commentaire = '" + req.commentaire + "' WHERE rondeId ="+ req.rondeId +" AND zoneId =" + req.zoneId, (err,data) => {
+    if(err) throw err;
+    response.json("OK")
+  });
+});
+
+//UpdateAnomalie
+//?rondeId=1&zoneId=12&commentaire=test
+app.put("/createAnomalie", (request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO anomalie(rondeId, zoneId, commentaire) VALUES ("+ req.rondeId + "," + req.zoneId + ",'" + req.commentaire +"')", (err,data) => {
+    if(err) throw err;
+    response.json("OK")
+  });
+});
+
 
 //////////////////////////
 //       EQUIPE         //
@@ -1735,23 +1840,50 @@ app.put("/affectationEquipe",middleware, (request, response) => {
 //?idUsine=1
 app.get("/usersRondierSansEquipe", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe)", (err,data) => {
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
   });
 });
 
-//Récupérer les équipe d'une usine
+//Récupérer les équipes d'une usine
 //?idUsine=1
-app.get("/equipes", middleware,(request, response) => {
+app.get("/equipes", middleware,async (request, response) => {
   const req=request.query
-  pool.query("SELECT equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine, (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-    response.json({data});
-  });
+  pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + req.idUsine,
+    async (err, data) => {
+      if (err)
+        throw err;
+      data = data['recordset'];
+      for await (const equipe of data) {
+        await getUsersEquipe(equipe);
+      };
+      response.json({tabEquipes});
+      tabEquipes= [];
+    });
 });
+
+function getUsersEquipe(equipe) {
+  return new Promise((resolve) => {
+    //Récupération des users d'une équipe
+    pool.query("SELECT u.Nom, u.Prenom, z.nom as nomZone, a.poste FROM affectation_equipe a JOIN users u ON u.Id = a.idRondier JOIN zonecontrole z on z.Id = a.idZone WHERE a.idEquipe = " + equipe.id, (err, data) => {
+      if (err)
+        throw err;
+      data = data['recordset'];
+      let OneEquipe = {
+        id: equipe.id,
+        quart: equipe.quart,
+        equipe: equipe.equipe,
+        nomChefQuart: equipe.Nom,
+        prenomChefQuart: equipe.Prenom,
+        rondiers: data
+      };
+      resolve();
+      tabEquipes.push(OneEquipe);
+    });
+  });
+}
 
 //Récupérer une seule équipe
 //?idUsine=1&idEquipe=28
@@ -1917,7 +2049,20 @@ app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
 //?TAG=123
 app.put("/productTAG/:id", middleware,(request, response) => {
   const req=request.query
-  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = null WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du TAG OK")
+  });
+});
+
+//UPDATE Product, set TAG
+//?id=1&idElementRondier=123
+app.put("/productElementRondier", middleware,(request, response) => {
+  const req=request.query
+  var idElem;
+  if(req.idElementRondier == 0) idElem = null 
+  else idElem = req.idElementRondier
+  pool.query("UPDATE products_new SET TAG = '', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = " + idElem + " WHERE Id = "+req.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du TAG OK")
   });
@@ -1933,6 +2078,15 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   });
 });
 
+//UPDATE Product, set Code
+//?CodeEquipement=123
+app.put("/productCodeEquipement/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour du Code OK")
+  });
+});
 
 
 //////////////////////////
@@ -2041,10 +2195,33 @@ app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
   });
 });
 
+//Requête permettant de récupérer les moral entities d'une usine sans correspondance
+//?idUsine=1
+app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new p FULL OUTER JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +req.idUsine + "and p.Code LIKE '" +req.Code +"%'"
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+
+
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
 app.put("/import_tonnage",middleware,(request, response) => {
   const req=request.query
   pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"','"+req.productImport+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+//?ProductId=5&idUsine=7
+app.put("/import_tonnageSortant",middleware,(request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO import_tonnageSortants (ProductId,idUsine, productImport) VALUES ("+req.ProductId+","+req.idUsine+",'"+req.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -2059,8 +2236,7 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
   });
 });
 
-//UPDATE Product, set Code
-//?CodeEquipement=123
+
 app.put("/updateCorrespondance",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE import_tonnage SET nomImport='"+ req.nomImport+"', productImport ='"+ req.productImport+"' WHERE ProducerId =" +req.ProducerId, (err,data) => {
@@ -2069,9 +2245,27 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
   });
 });
 
-//Requête permettant de récupérer tout les tokens non autorisés
+app.put("/updateCorrespondanceSortant",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnageSortants SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+
+//Requête permettant de récupérer toutes les correspondance pour l'import csv des entrants
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//Requête permettant de récupérer toutes les correspondance pour l'import csv des sortants
+app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => {
+  pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
