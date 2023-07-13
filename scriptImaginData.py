@@ -50,10 +50,10 @@ for site in listeSites['data'] :
                         if product['typeRecupEMonitoring'] == "tafMax" :
                             recup = data[5]
                         else :
-                            if product['typeRecupEMonitoring'] == "tafVal" :
-                                recup = data[3]
-                            else :
+                            if product['typeRecupEMonitoring'] == "cumul" :
                                 recup = data[5] - data[4]
+                            else :
+                                recup = data[3]
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
 
