@@ -396,7 +396,13 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
 //?Name=dgdgd&idUsine=1
 app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+  let type;
+  //pour tout récupérer sans prendre en compte le type
+  if (request.params.TypeId == '_'){
+    type = "typeId > 0 AND ";
+  }
+  else type = "typeId = "+request.params.TypeId+" AND ";
+  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+req.idUsine+" AND "+type+"Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -840,8 +846,10 @@ app.get("/UsersRondier", (request, response) => {
 
 //Récupérer l'utilisateur qui est connecté et Connexion
 app.get("/User/:login/:pwd", (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM users WHERE login = '"+request.params.login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
+  const req=request.query;
+  //pour protéger la connexion tablette des users avec un apostrophe
+  let login = request.params.login.replace("'","''");
+  pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     //Si on a une valeur de retour on génère un token
@@ -869,7 +877,7 @@ app.get("/User/:login", middleware,(request, response) => {
 
 //Update du mdp utilisateur
 app.put("/User/:login/:pwd", middleware,(request, response) => {
-  const req=request.query
+  const req=request.query;
   pool.query("UPDATE users SET pwd = '" + request.params.pwd + "' WHERE login = '"+request.params.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du mot de passe OK")
@@ -1316,7 +1324,7 @@ app.delete("/deleteElement", middleware,(request, response) => {
 //Récupérer l'ensemble des élements d'une usine
 app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
   const req=request.query
-  pool.query("select e.* from elementcontrole e JOIN zonecontrole z on z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + "order by e.nom asc", (err,data) => {
+  pool.query("select e.* from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1328,7 +1336,9 @@ app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+request.params.zoneId +" ORDER BY idGroupement asc, ordre ASC", (err,data) => {
-    if(err) throw err;
+    //if(err) throw err;
+    //TODO : bug ici => à debug
+    if(err) console.log(err);
     data = data['recordset'];
     response.json({data});
   });
@@ -1494,7 +1504,12 @@ app.get("/LastRonde/:idUsine", (request, response) => {
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0].Id)
+    if(data[0] != undefined){
+      response.json(data[0].Id)
+    }
+    else {
+      response.json(0);
+    }
   });
 });
 
@@ -1511,16 +1526,19 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
   });
 });
 
-//Récupérer la ronde encore en cours => permettre au rondier de la reprendre
-app.get("/LastRondeOpen/:idUsine", (request, response) => {
+//Récupérer la ronde encore en cours sur le même quart et la même date => permettre au rondier de la reprendre
+//TODO : gérer le cas ou le gars du quart nuit, se log le lendemain matin => création ronde nuit le jour suivant (conflit pour insert valeur)
+//?date=01/01/2023
+app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
   const req=request.query
-  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
+  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" AND quart = "+request.params.quart+" AND dateHeure = '"+req.date+"' ORDER BY Id DESC", (err,data) => {
+    console.log("date : "+req.date);
     if(err) throw err;
     data = data['recordset'];
     if(data.length < 1){
-      response.json(0)
+      response.json(0);
     }
-    else response.json(data[0].id)
+    else response.json(data[0].id);
   });
 });
 
