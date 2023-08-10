@@ -46,6 +46,8 @@ const swaggerDocument = require('./swagger.json');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 /**Documentation avec Swagger UI**/
 
+const dateFormat = require('date-and-time')
+
 //Gestion des fichiers avec multer
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -318,7 +320,7 @@ app.get("/CategoriesSortants",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
-  "WHERE cat.Code LIKE '50%' ORDER BY cat.Name ASC", (err,data) => {
+  "WHERE cat.Code LIKE '50%' AND cat.Name NOT LIKE 'Résidus de Traitement' ORDER BY cat.Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -688,7 +690,7 @@ app.put("/SaisieMensuelle", middleware,(request, response) => {
     "UPDATE saisiemensuelle SET Value = "+req.Value+" WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+
     " END;"
   pool.query(queryOnDuplicate,(err,result,fields) => {
-      if(err) throw err;
+      if(err) console.log(err);
       response.json("Création du saisiemensuelle OK");
   });
 });
@@ -1527,12 +1529,10 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
 });
 
 //Récupérer la ronde encore en cours sur le même quart et la même date => permettre au rondier de la reprendre
-//TODO : gérer le cas ou le gars du quart nuit, se log le lendemain matin => création ronde nuit le jour suivant (conflit pour insert valeur)
 //?date=01/01/2023
 app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
-  const req=request.query
+  const req=request.query;
   pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" AND quart = "+request.params.quart+" AND dateHeure = '"+req.date+"' ORDER BY Id DESC", (err,data) => {
-    console.log("date : "+req.date);
     if(err) throw err;
     data = data['recordset'];
     if(data.length < 1){
