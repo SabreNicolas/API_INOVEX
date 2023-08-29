@@ -830,7 +830,7 @@ app.get("/Users", middleware,(request, response) => {
   pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-      response.json({data});
+    response.json({data});
   });
 });
 
