@@ -106,6 +106,11 @@ app.get("/", (req, res) => {
   res.json({ message: "Welcome to CAP EXPLOITATION's API REST for SQL Server" });
 });
 
+// Permet de vérifier que l'API est bien atteignable
+app.get("/helloworld", (req, res) => {
+  res.json("Hello World !");
+});
+
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
@@ -1259,6 +1264,7 @@ app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
 //?nom=test
 app.put("/zoneNom/:id", middleware,(request, response) => {
   const req=request.query
+  req.nom = req.nom.replace("'"," ");
   pool.query("UPDATE zonecontrole SET nom = '" + req.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du nom OK")
@@ -1560,7 +1566,10 @@ app.get("/nbRondes", (request, response) => {
   pool.query("SELECT nbRondes FROM ronde WHERE Id =" + req.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    response.json(data[0].nbRondes);    
+    if(data.length > 0){
+      response.json(data[0].nbRondes);
+    }
+    else response.json(0);
   });
 });
 
@@ -2023,6 +2032,21 @@ app.get("/typeImport/:id",middleware, (request, response) => {
     response.json({data});
   });
 });
+
+
+//Récupérer le type de l'aapli rondier d'un site avec une réponse au format string
+app.get("/typeRondier/:id",(request, response) => {
+  const req=request.params
+  pool.query("SELECT typeRondier FROM site WHERE id = "+req.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    if(data.length>0){
+      response.json(data[0].typeRondier)
+    }
+    else response.json('')
+  });
+});
+
 
 /*
 ******* FIN SITES
