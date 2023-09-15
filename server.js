@@ -1191,31 +1191,34 @@ function getElementsHorsLigneUser(zone,previousId) {
   return new Promise((resolve) => {
     let modesOp;
     //Récupération des modesOP
-    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone[0]['zoneId'], (err,data) => {
-      if(err) throw err;
-      else{
-        modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.id, e.ordre ASC"
-        , (err,data) => {
-          if(err) throw err;
-          else{
-            data = data['recordset'];
-            // console.log(data);
-            let OneElementOfZone = {
-              zoneId : zone[0]['zoneId'],
-              zone : zone[0]['nomZone'],
-              commentaire : zone[0]['commentaire'],
-              four : zone[0]['four'],
-              modeOP : modesOp,
-              groupement : zone[0]['groupement'],
-              elements : data
-            };
-            resolve();
-            BadgeAndElementsOfZone.push(OneElementOfZone);
-          }
-        });
-      }
-    });
+    if(zone[0] != undefined){
+      pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone[0]['zoneId'], (err,data) => {
+        if(err) throw err;
+        else{
+          modesOp = data['recordset'];
+          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.id, e.ordre ASC"
+          , (err,data) => {
+            if(err) throw err;
+            else{
+              data = data['recordset'];
+              // console.log(data);
+              let OneElementOfZone = {
+                zoneId : zone[0]['zoneId'],
+                zone : zone[0]['nomZone'],
+                commentaire : zone[0]['commentaire'],
+                four : zone[0]['four'],
+                modeOP : modesOp,
+                groupement : zone[0]['groupement'],
+                elements : data
+              };
+              resolve();
+              BadgeAndElementsOfZone.push(OneElementOfZone);
+            }
+          });
+        }
+      });
+    }
+    else resolve();
   });
 }
 
@@ -1590,7 +1593,7 @@ app.get("/nbRondiersEquipe", (request, response) => {
   pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.userId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe  JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE equipe.id = " + data[0].id, (err,data) => {
+    pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE affectation_equipe.idZone > 0 AND equipe.id = " + data[0].id, (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json(data[0].nbRondesACloturer);    
@@ -1894,7 +1897,7 @@ app.get("/equipes", middleware,async (request, response) => {
 function getUsersEquipe(equipe) {
   return new Promise((resolve) => {
     //Récupération des users d'une équipe
-    pool.query("SELECT u.Nom, u.Prenom, z.nom as nomZone, a.poste FROM affectation_equipe a JOIN users u ON u.Id = a.idRondier JOIN zonecontrole z on z.Id = a.idZone WHERE a.idEquipe = " + equipe.id, (err, data) => {
+    pool.query("SELECT u.Nom, u.Prenom, z.nom as nomZone, a.poste FROM affectation_equipe a JOIN users u ON u.Id = a.idRondier LEFT OUTER JOIN zonecontrole z on z.Id = a.idZone WHERE a.idEquipe = " + equipe.id, (err, data) => {
       if (err)
         throw err;
       data = data['recordset'];
@@ -1916,7 +1919,7 @@ function getUsersEquipe(equipe) {
 //?idUsine=1&idEquipe=28
 app.get("/getOneEquipe", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine +"and equipe.id ="+req.idEquipe, (err,data) => {
+  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe INNER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE users.idUsine ="+ req.idUsine +" and equipe.id ="+req.idEquipe, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2081,6 +2084,17 @@ app.get("/rapports/:id",middleware, (request, response) => {
 app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +request.params.id+ " ORDER BY Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+
+//Get products avec un TAG EVELER
+app.get("/ProductEveler", middleware, (request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new WHERE TAG LIKE 'EVELER%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
