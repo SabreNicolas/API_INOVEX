@@ -2,6 +2,7 @@ import requests
 import json
 from pprint import pprint
 from datetime import datetime, timedelta
+import time
 import warnings
 #Disable warnings
 warnings.filterwarnings("ignore")
@@ -19,7 +20,7 @@ if r.status_code == 200 and r.json()["success"] is True:
     #print("Requete HTTP OK : API Token = ", api_token)
     headers["Authorization"] = api_token
 else:
-    print("Error : code retour HTTP = {}".format(r.status_code))
+    print("**************************Error : code retour HTTP = {}".format(r.status_code))
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
@@ -73,12 +74,14 @@ for p in listeProducts:
         #print("total : ",valueToInsert)
 
     else:
-        print("Error : code retour HTTP = {}".format(r.status_code))
+        print("***********************Error : code retour HTTP = {}".format(r.status_code))
 
     #On insére la valeur dans CAP Exploitation
     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     print(response)
+
+    time.sleep(2)
     
 
 
