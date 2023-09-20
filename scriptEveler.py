@@ -68,9 +68,13 @@ for p in listeProducts:
         #pprint(listValuesPoint5min)
         #On boucle sur les point 5 min pour faire la somme
         for data in listValuesPoint5min:
-            valueToInsert = valueToInsert + data['value']
+            #valueToInsert = valueToInsert + data['value']
+            #Conversion kw vers khW
+            valueToInsert = valueToInsert + (data['value'] * (5 / 60))
         #On divise ensuite la valeur par 12 000 pour avoir la conversion en Mwh ou Mvarh
-        valueToInsert = valueToInsert / 12000
+        #valueToInsert = valueToInsert / 12000
+        #Conversion khW en Mwh
+        valueToInsert = valueToInsert / 1000
         #print("total : ",valueToInsert)
 
     else:
@@ -81,7 +85,7 @@ for p in listeProducts:
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     print(response)
 
-    time.sleep(2)
+    time.sleep(3)
     
 
 

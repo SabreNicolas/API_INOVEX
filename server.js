@@ -857,6 +857,7 @@ app.get("/User/:login/:pwd", (request, response) => {
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = request.params.login.replace("'","''");
   pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
+    console.log("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'");
     if(err) throw err;
     data = data['recordset'];
     //Si on a une valeur de retour on génère un token
@@ -1702,7 +1703,7 @@ app.get("/PermisFeuVerification",middleware, (request, response) => {
 /*Mode opératoire*/
 //?nom=dggd&zoneId=1
 //passage du fichier dans un formData portant le nom 'fichier'
-app.post("/modeOP", multer({storage: storage}).single('fichier'),middleware, (request, response) => {
+app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
   const req=request.query;
   //création de l'url de stockage du fichier
   const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
