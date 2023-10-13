@@ -51,7 +51,8 @@ for site in listeSites['data'] :
                             recup = data[5]
                         else :
                             if product['typeRecupEMonitoring'] == "cumul" :
-                                recup = data[5] - data[4]
+                                #recup = data[5] - data[4]
+                                recup = data[6]
                             else :
                                 recup = data[3]
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
