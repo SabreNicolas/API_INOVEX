@@ -65,6 +65,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
 let tabEquipes = [];
+var valueElementDay;
 //create sql connection
 const sql = require('mssql');
 const { response } = require("express");
@@ -1696,16 +1697,48 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
   });
 });
 
-//Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
+//Récupérer la valeur pour un élément de contrôle et une date (dernière valeur enregistrée sur la journée)
 //?id=111&date=dhdhdh
-app.get("/valueElementDay",(request, response) => {
+app.get("/valueElementDay", async (request, response) =>  {
   const req=request.query
-  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
+  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, async (err,data) => {
     if(err) throw err;
+    valueElementDay = data['recordset'];
     data = data['recordset'];
-    response.json({data});
+    if(valueElementDay.length == 0){
+      await valueElementDayAprem(req.date, req.id);
+      data = valueElementDay
+      response.json({data});
+    }
+    else response.json({data});
   });
 });
+
+//fonction pour récupérer la valeur de la ronde de l'après-midi
+async function valueElementDayAprem(date, id){
+  return new Promise((resolve) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 2 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+      if(err) throw err;
+      valueElementDay = data['recordset'];
+      if(valueElementDay.length == 0){
+        await valueElementDayMatin(date, id);
+      }
+      resolve()
+    });
+    
+  });
+}
+
+//fonction pour récupérer la valeur de la ronde du matin
+async function valueElementDayMatin(date, id){
+  return new Promise((resolve) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 1 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+      if(err) throw err;
+      valueElementDay = data['recordset'];
+      resolve()
+    }); 
+  });
+}
 
 /*Permis de feu et zone de consignation*/
 //?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
@@ -1984,7 +2017,7 @@ app.get("/getOneEquipe", middleware,(request, response) => {
 //?nomEquipe=test&quart=1&idEquipe=1
 app.put("/updateEquipe",middleware, (request, response) => {
   const req = request.query
-  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" where id = "+req.idEquipe, (err,data) => {
+  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" , idChefQuart = "+ req.idChefQuart  +"where id = "+req.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Update ok");
   });
