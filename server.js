@@ -65,6 +65,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
 let tabEquipes = [];
+var valueElementDay;
 //create sql connection
 const sql = require('mssql');
 const { response } = require("express");
@@ -486,10 +487,10 @@ app.put("/updateRecupEMonitoring",middleware, (request, response) => {
 });
 
 //get ALL Compteurs
-//?Code=ddhdhhd&idUsine=1
+//?Code=ddhdhhd&idUsine=1&name=fff
 app.get("/Compteurs",middleware, (request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'HEURES D''ARRET%' AND Name NOT LIKE 'BAISSE DE CHARGE%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'HEURES D''ARRET%' AND Name NOT LIKE 'BAISSE DE CHARGE%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND NAME LIKE '%" + req.name + "%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1117,11 +1118,16 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
     }
   });
 });
-//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
-app.get("/elementsOfUsine/:idUsine", (request, response) => {
+
+//Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
+app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
   BadgeAndElementsOfZone = [];
   let previousId = 0;
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+  if(request.params.idUsine == 7){
+    var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
+  }
+  else var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
+  pool.query(requete, async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
@@ -1129,12 +1135,47 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
       previousId = getPreviousId(request.params.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsHorsLigne(zone,previousId);
+        await getElementsWithValues(zone,request.params.idRonde);
       };
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
+
+//récupère les éléments pour lesquelle on a des valeurs pour une ronde donnée.
+function getElementsWithValues(zone,idRonde) {
+  return new Promise((resolve) => {
+    let modesOp;
+    //Récupération des modesOP
+    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
+      if(err) throw err;
+      else{
+        modesOp = data['recordset'];
+
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id =" + idRonde +" and e.zoneId =" + zone.zoneId +" ORDER BY z.nom ASC", (err,data) => {
+          if(err) throw err;
+          else{
+            data = data['recordset'];
+            let OneBadgeAndElementsOfZone = {
+              zoneId : zone.zoneId,
+              zone : zone.nomZone,
+              commentaire : zone.commentaire,
+              badge : zone.uidBadge,
+              four : zone.four,
+              groupement : zone.groupement,
+              modeOP : modesOp,
+              elements : data
+            };
+            resolve();
+            if(data.length != 0)
+              BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+          }
+        });
+      }
+    });
+  });
+}
+
 
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/elementsOfUsine/:idUsine", (request, response) => {
@@ -1563,6 +1604,18 @@ app.get("/Rondes", (request, response) => {
   });
 });
 
+//Récupérer les rondes et leurs infos pour une date et un quart donnée
+//?date=07/02/2022&idUsine=7&quart=1
+app.get("/RondesQuart", (request, response) => {
+  const req=request.query
+  pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.quart = "+req.quart+" AND r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});    
+  });
+});
+
+
 //Récupérer le nombre de rondes cloturées (pour fonctionnement avec équipes)
 //?id=1
 app.get("/nbRondes", (request, response) => {
@@ -1644,16 +1697,48 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
   });
 });
 
-//Récupérer la valeur pour un élément de contrôle et une date (quart de nuit => dernier de la journée)
+//Récupérer la valeur pour un élément de contrôle et une date (dernière valeur enregistrée sur la journée)
 //?id=111&date=dhdhdh
-app.get("/valueElementDay",(request, response) => {
+app.get("/valueElementDay", async (request, response) =>  {
   const req=request.query
-  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, (err,data) => {
+  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, async (err,data) => {
     if(err) throw err;
+    valueElementDay = data['recordset'];
     data = data['recordset'];
-    response.json({data});
+    if(valueElementDay.length == 0){
+      await valueElementDayAprem(req.date, req.id);
+      data = valueElementDay
+      response.json({data});
+    }
+    else response.json({data});
   });
 });
+
+//fonction pour récupérer la valeur de la ronde de l'après-midi
+async function valueElementDayAprem(date, id){
+  return new Promise((resolve) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 2 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+      if(err) throw err;
+      valueElementDay = data['recordset'];
+      if(valueElementDay.length == 0){
+        await valueElementDayMatin(date, id);
+      }
+      resolve()
+    });
+    
+  });
+}
+
+//fonction pour récupérer la valeur de la ronde du matin
+async function valueElementDayMatin(date, id){
+  return new Promise((resolve) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 1 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+      if(err) throw err;
+      valueElementDay = data['recordset'];
+      resolve()
+    }); 
+  });
+}
 
 /*Permis de feu et zone de consignation*/
 //?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
@@ -1764,10 +1849,11 @@ app.put("/modeOP/:id", middleware,(request, response) => {
 
 
 /*Consignes*/
-//?commentaire=dggd&dateFin=fff&type=1&idUsine=1
+//?commentaire=dggd&dateDebut=fff&c=fff&type=1&idUsine=1
 app.put("/consigne", middleware,(request, response) => {
   const req=request.query
-  pool.query("INSERT INTO consigne (commentaire, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
+  console.log("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine)
+  pool.query("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la consigne KO");
       else response.json("Création de la consigne OK");
@@ -1777,7 +1863,7 @@ app.put("/consigne", middleware,(request, response) => {
 //Récupérer les consignes en cours
 app.get("/consignes/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1871,8 +1957,9 @@ app.put("/affectationEquipe",middleware, (request, response) => {
 //?idUsine=1
 app.get("/usersRondierSansEquipe", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
-    if(err) throw err;
+  //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + " ORDER BY Nom", (err,data) => {
+  if(err) throw err;
     data = data['recordset'];
     response.json({data});
   });
@@ -1931,7 +2018,7 @@ app.get("/getOneEquipe", middleware,(request, response) => {
 //?nomEquipe=test&quart=1&idEquipe=1
 app.put("/updateEquipe",middleware, (request, response) => {
   const req = request.query
-  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" where id = "+req.idEquipe, (err,data) => {
+  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" , idChefQuart = "+ req.idChefQuart  +"where id = "+req.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Update ok");
   });
@@ -1960,6 +2047,17 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 app.get("/getEquipeUser", (request, response) => {
   const req=request.query
   pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +req.idRondier, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'équipe d'un quart d'une usine
+//?idUsine=7&quart=1
+app.get("/getEquipeQuart", (request, response) => {
+  const req=request.query
+  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2256,7 +2354,7 @@ app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
 //?idUsine=1
 app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new p FULL OUTER JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +req.idUsine + "and p.Code LIKE '" +req.Code +"%'"
+  pool.query("SELECT * FROM products_new p JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +req.idUsine + "and p.Code LIKE '" +req.Code +"%'"
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2293,6 +2391,15 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
   });
 });
 
+//DELETE correspondance
+app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM import_tonnageSortants WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de la correspondance OK")
+  });
+});
+
 
 app.put("/updateCorrespondance",middleware, (request, response) => {
   const req=request.query
@@ -2302,7 +2409,9 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
   });
 });
 
-app.put("/updateCorrespondanceSortant",middleware, (request, response) => {
+//mettre à jour le nom dans le logiciel de pesée d'une correspondance sortant
+//?productImport=1&ProductId=&
+app.put("/updateNomImportCorrespondanceSortant",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE import_tonnageSortants SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
     if(err) throw err;
@@ -2310,6 +2419,15 @@ app.put("/updateCorrespondanceSortant",middleware, (request, response) => {
   });
 });
 
+//mettre à jour le nom de produit cap exploitation d'une correspondance sortant
+//?idCorrespondance=1&ProductId=&
+app.put("/updateProductImportCorrespondanceSortant",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnageSortants SET ProductId =" +req.ProductId +"WHERE id =" + req.idCorrespondance, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
 
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des entrants
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
