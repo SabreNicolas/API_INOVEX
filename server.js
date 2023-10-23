@@ -1852,6 +1852,7 @@ app.put("/modeOP/:id", middleware,(request, response) => {
 //?commentaire=dggd&dateDebut=fff&c=fff&type=1&idUsine=1
 app.put("/consigne", middleware,(request, response) => {
   const req=request.query
+  console.log("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine)
   pool.query("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la consigne KO");
@@ -1862,7 +1863,7 @@ app.put("/consigne", middleware,(request, response) => {
 //Récupérer les consignes en cours
 app.get("/consignes/:idUsine", (request, response) => {
   const req=request.query
-  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2046,6 +2047,17 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 app.get("/getEquipeUser", (request, response) => {
   const req=request.query
   pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +req.idRondier, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'équipe d'un quart d'une usine
+//?idUsine=7&quart=1
+app.get("/getEquipeQuart", (request, response) => {
+  const req=request.query
+  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
