@@ -1508,6 +1508,16 @@ app.put("/ronde", (request, response) => {
   });
 });
 
+//Cloture des rondes encore en cours Calce pour mode auto
+//?idUsine=7
+app.put("/clotureRondesCalceAuto",(request,response) => {
+  const req=request.query;
+  pool.query('UPDATE ronde SET isFinished = 1 WHERE idUsine =' + req.idUsine,(err,data) => {
+    if(err) console.log(err);
+    response.json("Cloture des rondes auto OK");
+  })
+})
+
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/rondeCalce", (request, response) => {
   const req=request.query;
@@ -1852,7 +1862,6 @@ app.put("/modeOP/:id", middleware,(request, response) => {
 //?commentaire=dggd&dateDebut=fff&c=fff&type=1&idUsine=1
 app.put("/consigne", middleware,(request, response) => {
   const req=request.query
-  console.log("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine)
   pool.query("INSERT INTO consigne (commentaire, date_heure_debut, date_heure_fin, type, idUsine) VALUES ('"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la consigne KO");
@@ -1864,6 +1873,16 @@ app.put("/consigne", middleware,(request, response) => {
 app.get("/consignes/:idUsine", (request, response) => {
   const req=request.query
   pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les consignes
+app.get("/allConsignes/:idUsine", (request, response) => {
+  const req=request.query
+  pool.query("SELECT CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE idUsine = "+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});

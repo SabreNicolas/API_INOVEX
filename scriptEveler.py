@@ -8,8 +8,10 @@ import warnings
 warnings.filterwarnings("ignore")
 
 URL = "https://api.eveler.pro/api/client"
-TOKEN = "QrdNdoeyFcTVnrj0zWFR3DsiGuH3POuzIRzOZm2Sezk"
-SECRET = "6HBSgxtvYRYWHEDgcuhH75v1U8OnkY9RLQwAhCVhQG8"
+#TOKEN = "QrdNdoeyFcTVnrj0zWFR3DsiGuH3POuzIRzOZm2Sezk"
+#SECRET = "6HBSgxtvYRYWHEDgcuhH75v1U8OnkY9RLQwAhCVhQG8"
+TOKEN = "PiCweghvdpYKvCEoFQNfCDfCejaoQH-DJHJvYWmUIA8"
+SECRET = "Cq1RyRyOtRVWXksgsvURIcf_Xm5tPVCLjOgHMCy740w"
 headers = {"accept": "application/json"}
 
 #Connexion : récupération du token pour l'API EVELER
@@ -75,7 +77,7 @@ for p in listeProducts:
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
         valueToInsert = valueToInsert / 1000
-        #print("total : ",valueToInsert)
+        print("total : ",valueToInsert)
 
     else:
         print("***********************Error : code retour HTTP = {}".format(r.status_code))
@@ -85,7 +87,7 @@ for p in listeProducts:
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     print(response)
 
-    time.sleep(3)
+    time.sleep(10)
     
 
 
