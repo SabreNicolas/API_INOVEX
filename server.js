@@ -2465,3 +2465,12 @@ app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => 
     response.json({data}) 
   });
 });
+
+//Requête permettant de récupérer toutes les conversion de mesure disponibles
+app.get("/getConversions",middleware,(request, response) => {
+  pool.query("SELECT * FROM conversion", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
