@@ -1657,11 +1657,14 @@ app.get("/nbRondiersEquipe", (request, response) => {
   pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.userId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
-    pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE affectation_equipe.idZone > 0 AND equipe.id = " + data[0].id, (err,data) => {
-      if(err) throw err;
-      data = data['recordset'];
-      response.json(data[0].nbRondesACloturer);    
-    });   
+    if(data.length >0){
+      pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE affectation_equipe.idZone > 0 AND equipe.id = " + data[0].id, (err,data) => {
+        if(err) throw err;
+        data = data['recordset'];
+        response.json(data[0].nbRondesACloturer);    
+      });  
+    }
+    else response.json(0);
   });
 });
 

@@ -51,13 +51,13 @@ for site in listeSites['data'] :
                     else :
                         recup = listData['value'][0]['Average']
 
-            #Si l'unité Imagin data est différente de l'unité CAP Exploitation
+            #Si l'unité Aveva est différente de l'unité CAP Exploitation
             if product['Unit'] != listData['value'][0]['Unit'] :
                 print(listData['value'][0]['Unit'])
                 print(product['Unit'])
                 #On parcourt la liste des conversion de CAP Exploitation
                 for conversion in listConversions :
-                    #Si on a une conversion dont l'unité de base est celle d'imaginData et dont l'unité cible est celle de CAP Exploitation
+                    #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
                     if listData['value'][0]['Unit'] == conversion['uniteBase'] and product['Unit'] == conversion['uniteCible'] :
                         #On récupère l'opérateur de la conversion qui est le premier caractère
                         operateur = conversion['conversion'][0]
