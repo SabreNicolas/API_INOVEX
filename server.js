@@ -555,6 +555,18 @@ app.get("/Sortants", middleware,(request, response) => {
   });
 });
 
+//get ALL reactifs livraison
+//?idUsine=1
+app.get("/reactifs", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE 'LIVRAISON%'", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  
+  });
+});
+
 //get ALL conso & others
 app.get("/Consos/:idUsine", middleware,(request, response) => {
   const req=request.query
@@ -1991,7 +2003,7 @@ app.get("/usersRondierSansEquipe", middleware,(request, response) => {
 //?idUsine=1
 app.get("/equipes", middleware,async (request, response) => {
   const req=request.query
-  pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + req.idUsine,
+  pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + req.idUsine + " order by equipe.quart asc",
     async (err, data) => {
       if (err)
         throw err;
@@ -2384,6 +2396,19 @@ app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
   });
 });
 
+//Requête permettant de récupérer les moral entities d'une usine sans correspondance
+//?idUsine=1
+app.get("/getReactifsAndCorrespondance",middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new p JOIN import_tonnageReactifs i ON i.ProductId = p.Id WHERE p.idUsine = " +req.idUsine 
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+
 
 
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
@@ -2404,6 +2429,16 @@ app.put("/import_tonnageSortant",middleware,(request, response) => {
   });
 });
 
+//?ProductId=5&idUsine=7
+app.put("/import_tonnageReactif",middleware,(request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO import_tonnageReactifs (ProductId,idUsine, productImport) VALUES ("+req.ProductId+","+req.idUsine+",'"+req.productImport+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+
 //Requête permettant de récupérer tout les tokens non autorisés
 app.get("/correspondance/:Id",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where ProducerId ="+request.params.Id, (err,data) => {
@@ -2417,6 +2452,15 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
 app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM import_tonnageSortants WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de la correspondance OK")
+  });
+});
+
+//DELETE correspondance
+app.delete("/deleteCorrespondanceReactif/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM import_tonnageReactifs WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la correspondance OK")
   });
@@ -2451,6 +2495,26 @@ app.put("/updateProductImportCorrespondanceSortant",middleware, (request, respon
   });
 });
 
+//mettre à jour le nom dans le logiciel de pesée d'une correspondance réactif
+//?productImport=1&ProductId=&
+app.put("/updateNomImportCorrespondanceReactif",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnageReactifs SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
+//mettre à jour le nom de produit cap exploitation d'une correspondance réactif
+//?idCorrespondance=1&ProductId=&
+app.put("/updateProductImportCorrespondanceReactif",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE import_tonnageReactifs SET ProductId =" +req.ProductId +"WHERE id =" + req.idCorrespondance, (err,data) => {
+    if(err) throw err;
+    response.json("Mise à jour OK")
+  });
+});
+
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des entrants
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
@@ -2463,6 +2527,15 @@ app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des sortants
 app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => {
   pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+request.params.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data}) 
+  });
+});
+
+//Requête permettant de récupérer toutes les correspondance pour l'import csv des réactifs
+app.get("/getCorrespondanceReactifs/:idUsine",middleware,(request, response) => {
+  pool.query("SELECT * FROM import_tonnageReactifs where idUsine ="+request.params.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 

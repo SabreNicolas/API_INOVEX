@@ -12,7 +12,7 @@ URL = "https://api.eveler.pro/api/client"
 #SECRET = "6HBSgxtvYRYWHEDgcuhH75v1U8OnkY9RLQwAhCVhQG8"
 TOKEN = "PiCweghvdpYKvCEoFQNfCDfCejaoQH-DJHJvYWmUIA8"
 SECRET = "Cq1RyRyOtRVWXksgsvURIcf_Xm5tPVCLjOgHMCy740w"
-headers = {"accept": "application/json"}
+headers = {"accept": "application/json", 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'}
 
 #Connexion : récupération du token pour l'API EVELER
 #Le token est valable 1h donc on le génére à chaque fois
@@ -27,6 +27,8 @@ else:
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
+
+print("Debut du script Eveler Le " + str(aujourdhui))
 
 #RECUPERATION de la liste des produits CAP Exploitation avec un TAG EVELER
 req = "https://fr-couvinove301:3100/ProductEveler"
@@ -89,7 +91,7 @@ for p in listeProducts:
 
     time.sleep(10)
     
-
+print("Fin du script Eveler")
 
 ## Cette API permet de lister tous les compteurs de votre périmètre
 ## l'information meta.computed.last_data indique la date de la dernière
