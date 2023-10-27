@@ -1,7 +1,8 @@
 import requests
-import mysql.connector
 from datetime import datetime, timedelta
 import warnings
+
+headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
 #Disable warnings
 warnings.filterwarnings("ignore")
 
@@ -11,14 +12,16 @@ hier = aujourdhui - timedelta (days=1)
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:00Z"
 
+print("Debut du script Aveva Le " + str(aujourdhui))
+
 # récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3100/sites"
-response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+response = requests.get(req, headers = headers, verify=False)
 listeSites = response.json()
 
 #récupération de la liste des conversion dans CAP Exploitation
 req = "https://fr-couvinove301:3100/getConversions"
-response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+response = requests.get(req, headers = headers, verify=False)
 listConversions = response.json()
 listConversions = listConversions["data"]
 
@@ -27,7 +30,7 @@ for site in listeSites['data'] :
 
     #Récupération de la liste des produits avec un TAG dans chaque usine
     req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
-    response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+    response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
 
@@ -53,16 +56,16 @@ for site in listeSites['data'] :
 
             #Si l'unité Aveva est différente de l'unité CAP Exploitation
             if product['Unit'] != listData['value'][0]['Unit'] :
-                print(listData['value'][0]['Unit'])
-                print(product['Unit'])
                 #On parcourt la liste des conversion de CAP Exploitation
                 for conversion in listConversions :
+                    count = 0
                     #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
                     if listData['value'][0]['Unit'] == conversion['uniteBase'] and product['Unit'] == conversion['uniteCible'] :
                         #On récupère l'opérateur de la conversion qui est le premier caractère
                         operateur = conversion['conversion'][0]
                         #On récupère la valeur en int du calcul
                         valeur = int(conversion['conversion'][1:])
+                        count = count + 1
                         print(recup)
                         #On regarde quel opérateur est utilisé et on fait le calcul
                         if operateur == "*" :
@@ -71,7 +74,12 @@ for site in listeSites['data'] :
                             if operateur == "/" :
                                 recup = recup / valeur
                         print(recup)
+                if count == 0 :
+                    print("Unite Aveva : " +listData['value'][0]['Unit'])
+                    print("Unite CAP : " + product['Unit'])
+                    print("*******************************")
+
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
+            response = requests.put(req, headers = headers, verify=False)
 
-
+print("Fin du script !")
