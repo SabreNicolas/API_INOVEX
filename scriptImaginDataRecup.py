@@ -6,7 +6,8 @@ headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tl
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
-hier = aujourdhui - timedelta (days=1)
+hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
+hier = datetime.strptime(hier, "%d/%m/%Y").date()
 hierRondier = f'{hier:%d/%m/%Y}'
 
 print("Début du script ImaginData Le " + str(aujourdhui))

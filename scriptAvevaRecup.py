@@ -8,7 +8,8 @@ warnings.filterwarnings("ignore")
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
-hier = aujourdhui - timedelta (days=1)
+hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
+hier = datetime.strptime(hier, "%d/%m/%Y").date()
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:00Z"
 
@@ -66,14 +67,14 @@ for site in listeSites['data'] :
                         #On récupère la valeur en int du calcul
                         valeur = int(conversion['conversion'][1:])
                         count = count + 1
-                        print(recup)
+                        # print(recup)
                         #On regarde quel opérateur est utilisé et on fait le calcul
                         if operateur == "*" :
                             recup = recup * valeur
                         else :
                             if operateur == "/" :
                                 recup = recup / valeur
-                        print(recup)
+                        # print(recup)
                 if count == 0 :
                     print("Unite Aveva : " +listData['value'][0]['Unit'])
                     print("Unite CAP : " + product['Unit'])
