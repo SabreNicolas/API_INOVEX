@@ -169,6 +169,28 @@ app.get("/moralEntities", middleware,(request, response) => {
     });
 });
 
+//DELETE MoralEntitie
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
+app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"
+  , (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du client OK")
+  });
+});
+
+//DELETE MoralEntitie
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
+app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId where idUsine = 7 AND typeId = 5 AND Enabled = 1 AND idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"
+  , (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du client OK")
+  });
+});
+
 //get all MoralEntities
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", middleware,(request, response) => {
