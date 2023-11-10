@@ -169,25 +169,34 @@ app.get("/moralEntities", middleware,(request, response) => {
     });
 });
 
-//DELETE MoralEntitie
+//Supprimer les mesures des entrants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
 app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response) => {
   const req=request.query
   pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"
   , (err,data) => {
     if(err) throw err;
-    response.json("Suppression du client OK")
+    response.json("Suppression des mesures OK")
   });
 });
 
-//DELETE MoralEntitie
-//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
+//Supprimer les mesures des sortants entre deux dates pour une usine
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response) => {
   const req=request.query
-  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId where idUsine = 7 AND typeId = 5 AND Enabled = 1 AND idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"
-  , (err,data) => {
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ req.name +"'", (err,data) => {
     if(err) throw err;
-    response.json("Suppression du client OK")
+    response.json("Suppression des mesures OK")
+  });
+});
+
+//Supprimer les mesures des sortants entre deux dates pour une usine
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
+app.delete("/deleteMesuresReactifsEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ req.name +"'", (err,data) => {
+    if(err) throw err;
+    response.json("Suppression des mesures OK")
   });
 });
 
@@ -436,11 +445,11 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
-  
   });
 });
 
-
+//get product avec un tag pour une usine
+//?idUsine=?
 app.get("/getProductsWithTag", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + req.idUsine, (err,data) => {
@@ -450,6 +459,8 @@ app.get("/getProductsWithTag", middleware,(request, response) => {
   });
 });
 
+//get products avec un élément rondier (pour récupération auto des valeurs rondier)
+//?idUsine=?
 app.get("/getProductsWithElementRondier", middleware,(request, response) => {
   const req=request.query
   pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + req.idUsine, (err,data) => {
@@ -458,6 +469,7 @@ app.get("/getProductsWithElementRondier", middleware,(request, response) => {
     response.json({data});;
   });
 });
+
 //get Container DASRI
 app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   const req=request.query
@@ -747,7 +759,6 @@ app.put("/Depassement", middleware,(request, response) => {
   });
 });
 
-
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
@@ -787,8 +798,6 @@ app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, resp
   });
 });
 
-
-
 /*ARRETS*/
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/Arrets", middleware,(request, response) => {
@@ -819,7 +828,6 @@ app.delete("/DeleteArret/:id", middleware,(request, response) => {
   });
 });
 
-
 //Récupérer le total des arrêts par groupe
 app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
@@ -829,7 +837,6 @@ app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, respo
       response.json({data});
   });
 });
-
 
 //Récupérer le total des arrêts
 app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
@@ -850,7 +857,6 @@ app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware,(reques
       response.json({data});
   });
 });
-
 
 /*USERS*/
 //?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isChefQuart=1&isAdmin=01idUsine=1
@@ -885,14 +891,12 @@ app.get("/UsersRondier", (request, response) => {
   });
 });
 
-
 //Récupérer l'utilisateur qui est connecté et Connexion
 app.get("/User/:login/:pwd", (request, response) => {
   const req=request.query;
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = request.params.login.replace("'","''");
   pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
-    console.log("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'");
     if(err) throw err;
     data = data['recordset'];
     //Si on a une valeur de retour on génère un token
@@ -916,7 +920,6 @@ app.get("/User/:login", middleware,(request, response) => {
     response.json({data});
   });
 });
-
 
 //Update du mdp utilisateur
 app.put("/User/:login/:pwd", middleware,(request, response) => {
@@ -1103,6 +1106,8 @@ app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
 });
 
 /*Zone de controle*/
+
+//Créer une zone de contrôle
 //?nom=dggd&commentaire=fff&four=1&idUsine=1
 app.put("/zone", middleware,(request, response) => {
   const req=request.query
@@ -1113,6 +1118,7 @@ app.put("/zone", middleware,(request, response) => {
   });
 });
 
+//Supprimer une zone de controle
 //?Id=1
 app.delete("/deleteZone", middleware,(request, response) => {
   const req=request.query
@@ -1121,7 +1127,6 @@ app.delete("/deleteZone", middleware,(request, response) => {
       else response.json("Suppression OK");
   });
 });
-
 
 //Récupérer l'ensemble des zones de controle
 app.get("/zones/:idUsine", middleware,(request, response) => {
@@ -1153,6 +1158,57 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   });
 });
 
+//Récupérer l'ensemble des zones, les modes OPs associés et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
+app.get("/elementsOfUsine/:idUsine", (request, response) => {
+  BadgeAndElementsOfZone = [];
+  let previousId = 0;
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+    if(err) throw err;
+    else {
+      data = data['recordset'];
+      //On récupère l'Id de la ronde précedente
+      previousId = getPreviousId(request.params.idUsine);
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const zone of data) {
+        await getElementsHorsLigne(zone,previousId);
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
+  });
+});
+
+function getElementsHorsLigne(zone,previousId) {
+  return new Promise((resolve) => {
+    let modesOp;
+    //Récupération des modesOP
+    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
+      if(err) throw err;
+      else{
+        modesOp = data['recordset'];
+
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
+          if(err) throw err;
+          else{
+            data = data['recordset'];
+            let OneBadgeAndElementsOfZone = {
+              zoneId : zone.zoneId,
+              zone : zone.nomZone,
+              commentaire : zone.commentaire,
+              badge : zone.uidBadge,
+              four : zone.four,
+              groupement : zone.groupement,
+              modeOP : modesOp,
+              elements : data
+            };
+            resolve();
+            BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
+          }
+        });
+      }
+    });
+  });
+}
+
 //Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
 app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
   BadgeAndElementsOfZone = [];
@@ -1160,7 +1216,7 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
   if(request.params.idUsine == 7){
     var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
   }
-  else var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
+  else var requete = "SELECT distinct z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
   pool.query(requete, async (err,data) => {
     if(err) throw err;
     else {
@@ -1171,6 +1227,7 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
       for await (const zone of data) {
         await getElementsWithValues(zone,request.params.idRonde);
       };
+      // console.log(BadgeAndElementsOfZone)
       response.json({BadgeAndElementsOfZone});
     }
   });
@@ -1210,27 +1267,6 @@ function getElementsWithValues(zone,idRonde) {
   });
 }
 
-
-//Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
-app.get("/elementsOfUsine/:idUsine", (request, response) => {
-  BadgeAndElementsOfZone = [];
-  let previousId = 0;
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
-    if(err) throw err;
-    else {
-      data = data['recordset'];
-      //On récupère l'Id de la ronde précedente
-      previousId = getPreviousId(request.params.idUsine);
-      //On boucle sur chaque zone et son badge pour récupérer ses éléments
-      for await (const zone of data) {
-        await getElementsHorsLigne(zone,previousId);
-      };
-      response.json({BadgeAndElementsOfZone});
-    }
-  });
-});
-
-
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   BadgeAndElementsOfZone = [];
@@ -1249,20 +1285,6 @@ app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   });
 });
 
-//Fonction qui renvoie l'id de la dernière ronde
-function getPreviousId(id){
-  var previousId = 0;
-  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+id+" ORDER BY Id DESC", (err,data) => {
-    if(err) throw err;
-    else {
-      data = data['recordset'];
-      if(data.length > 1){
-        previousId = data[1].Id;
-      } else previousId = 0;
-    }
-  });
-  return previousId;
-}
 function getElementsHorsLigneUser(zone,previousId) {
   return new Promise((resolve) => {
     let modesOp;
@@ -1298,36 +1320,19 @@ function getElementsHorsLigneUser(zone,previousId) {
   });
 }
 
-function getElementsHorsLigne(zone,previousId) {
-  return new Promise((resolve) => {
-    let modesOp;
-    //Récupération des modesOP
-    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
-      if(err) throw err;
-      else{
-        modesOp = data['recordset'];
-
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
-          if(err) throw err;
-          else{
-            data = data['recordset'];
-            let OneBadgeAndElementsOfZone = {
-              zoneId : zone.zoneId,
-              zone : zone.nomZone,
-              commentaire : zone.commentaire,
-              badge : zone.uidBadge,
-              four : zone.four,
-              groupement : zone.groupement,
-              modeOP : modesOp,
-              elements : data
-            };
-            resolve();
-            BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
-          }
-        });
-      }
-    });
+//Fonction qui renvoie l'id de la dernière ronde
+function getPreviousId(id){
+  var previousId = 0;
+  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+id+" ORDER BY Id DESC", (err,data) => {
+    if(err) throw err;
+    else {
+      data = data['recordset'];
+      if(data.length > 1){
+        previousId = data[1].Id;
+      } else previousId = 0;
+    }
   });
+  return previousId;
 }
 
 //Update commentaire
@@ -1962,6 +1967,24 @@ app.get("/anomalies/:id",(request, response) => {
     response.json({data});
   });
 });
+
+//Récupérer les anomalies d'une usine entre deux dates
+//?idUsine=7?detaDeb=01/01/2023&dateFin=01/09/2023
+app.get("/anomaliesEntreDeuxDates",(request, response) => {
+  const req=request.query
+  const [day,month, year]= req.dateDeb.split('/') 
+  var dateDeDebut = `${year}-${month}-${day}`
+
+  const [day2,month2, year2]= req.dateFin.split('/') 
+  var dateDeFin = `${year2}-${month2}-${day2}`
+  pool.query("select a.*, r.dateHeure, r.quart from anomalie a join ronde r on r.Id = a.rondeId where r.IdUsine = " + req.idUsine +" and (convert(datetime, r.dateHeure, 103)) BETWEEN '"+ dateDeDebut +"' and '"+ dateDeFin +"'"
+    , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //UpdateAnomalie
 //?rondeId=12&zoneId=5&commentaire=test
 app.put("/updateAnomalie", (request, response) => {

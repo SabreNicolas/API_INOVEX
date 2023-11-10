@@ -1831,6 +1831,51 @@
               }
             }
           },
+          "/anomaliesEntreDeuxDates": {
+            "get": {
+              "security": [
+                {
+                  "BearerAuth": []
+                }
+              ],
+              "summary": "Liste les anomalies d'une usine entre deux dates.",
+              "description": "La requête retourne les anomalies d'une usine entre deux dates. L'id de l'usine et les deux dates sont passées dans la query string.",
+              "parameters": [
+                {
+                  "name": "idUsine",
+                  "in": "query",
+                  "description": "Id de l'usine.",
+                  "required": true,
+                  "type": "number"
+                },
+                {
+                  "name": "dateDeb",
+                  "in": "query",
+                  "description": "Date de début de la recherche format dd/mm/yyyy",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "dateFin",
+                  "in": "query",
+                  "description": "Date de fin de la recherche format dd/mm/yyyy",
+                  "required": true,
+                  "type": "string"
+                }
+              ], 
+              "tags": [
+                "Anomalie"
+              ],
+              "responses": {
+                "200": {
+                  "description": "Un tableau contenant les anomalies d'une usine.",
+                  "examples" : {
+                    "application/json" : "{  \"data\": [    {     \"id\": 123,     \"rondeId\": 3955,      \"zoneId\": 220,      \"commentaire\": \"resau injoinable sur 2 camera\",     \"photo\": \"https:\/\/fr-couvinove301.prod.paprec.fr:3100\/fichiers\/1697751178592photo2497397387795352358.jpg\",     \"dateHeure\": \"19\/10\/2023\",      \"quart\": 3    },    {     \"id\": 124,      \"rondeId\": 3960,      \"zoneId\": 224,      \"commentaire\": \"1 cam\u00e9ra r\u00e9seau injoignable\",      \"photo\": \"https:\/\/fr-couvinove301.prod.paprec.fr:3100\/fichiers\/1697831639628photo4212638540025850065.jpg\",      \"dateHeure\": \"20\/10\/2023\",      \"quart\": 3    }  ]}"
+                  }
+                }
+              }
+            }
+          },
           "/rapports/{id}": {
             "get": {
               "security": [
