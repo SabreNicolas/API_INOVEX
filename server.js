@@ -625,7 +625,8 @@ app.get("/pci/:idUsine", middleware,(request, response) => {
 //create Product
 //?Name=c&Code=f&typeId=g&Unit=j&idUsine=1&TAG=sdhdhdh
 app.put("/Product", middleware,(request, response) => {
-  const req=request.query
+  const req=request.query;
+  req.Name = req.Name.replace("'"," ");
   const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
