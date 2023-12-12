@@ -627,7 +627,7 @@ app.get("/pci/:idUsine", middleware,(request, response) => {
 app.put("/Product", middleware,(request, response) => {
   const req=request.query;
   req.Name = req.Name.replace("'"," ");
-  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 0, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
@@ -1844,7 +1844,9 @@ app.get("/PermisFeuVerification",middleware, (request, response) => {
 app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
   const req=request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //on utilise l'url publique
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
   var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
   pool.query(query,(err,result,fields) => {
@@ -2596,3 +2598,41 @@ app.get("/getConversions",middleware,(request, response) => {
     response.json({data}) 
   });
 });
+
+
+
+//////////////////////////
+//FIN Import tonnage    //
+//////////////////////////
+
+
+//////////////////////////
+//    Formulaire        //
+//////////////////////////
+
+
+//?nom=journalier&type=1&idUsine=1
+app.put("/formulaire", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("INSERT INTO formulaire (nom, type, idUsine) VALUES ('"+req.nom+"', "+req.type+", "+req.idUsine+")"
+  ,(err,result,fields) => {
+      if(err) response.json("Création du formulaire KO");
+      else response.json("Création du formulaire OK");
+  });
+});
+
+//Récupérer les formulaires d'un site
+//?idUsine=7
+app.get("/formulaires", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM formulaire WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+//////////////////////////
+//    FIN Formulaire    //
+//////////////////////////
