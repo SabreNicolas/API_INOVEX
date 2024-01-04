@@ -7,6 +7,16 @@ import warnings
 #Disable warnings
 warnings.filterwarnings("ignore")
 
+#Création d'un fichier de log
+dateActuelle = datetime.now()
+format_date = "%d %B %Y à %Hh%M"
+dateFormatee = dateActuelle.strftime(format_date)
+
+dateHeure = "logEveler" + str(dateFormatee)  + ".txt"
+dateHeure = dateHeure.replace(" ","_").replace(":","-")
+
+f = open(dateHeure, "x")
+
 URL = "https://api.eveler.pro/api/client"
 #TOKEN = "QrdNdoeyFcTVnrj0zWFR3DsiGuH3POuzIRzOZm2Sezk"
 #SECRET = "6HBSgxtvYRYWHEDgcuhH75v1U8OnkY9RLQwAhCVhQG8"
@@ -19,16 +29,16 @@ headers = {"accept": "application/json", 'User-Agent': 'Mozilla/5.0 (Windows NT 
 r = requests.post(URL + "/auth/login", params={"token": TOKEN, "secret": SECRET}, headers=headers, verify=False)
 if r.status_code == 200 and r.json()["success"] is True:
     api_token = r.json()["data"]["token"]
-    #print("Requete HTTP OK : API Token = ", api_token)
+    #f.write("Requete HTTP OK : API Token = ", api_token)
     headers["Authorization"] = api_token
 else:
-    print("**************************Error : code retour HTTP = {}".format(r.status_code))
+    f.write("**************************Error : code retour HTTP = {}".format(r.status_code))
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 
-print("Debut du script Eveler Le " + str(aujourdhui))
+f.write("Debut du script Eveler Le " + str(aujourdhui) + "\n")
 
 #RECUPERATION de la liste des produits CAP Exploitation avec un TAG EVELER
 req = "https://fr-couvinove301:3100/ProductEveler"
@@ -51,7 +61,8 @@ for p in listeProducts:
     else:
         typeEnergie = "reactive+"
     
-    print("**************", idProduct, p["Name"], idCompteur, typeEnergie)
+    if idProduct != "/" :
+        f.write("**************", idProduct, p["Name"], idCompteur, typeEnergie  + "\n")
 
     #REQ EVELER pour récupérer les points 5 min du compteurs entre 2 points
     _id_human = idCompteur
@@ -65,11 +76,11 @@ for p in listeProducts:
         json_data = r.json()['data']
         listValuesPoint5min = json_data['values']
         unit = json_data['unit']
-        #print("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-        #pprint(json_data)
-        #pprint(unit)
+        #f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
+        #pf.write(json_data)
+        #pf.write(unit)
         #boucle ici pour avoir la valeur
-        #pprint(listValuesPoint5min)
+        #pf.write(listValuesPoint5min)
         #On boucle sur les point 5 min pour faire la somme
         for data in listValuesPoint5min:
             #valueToInsert = valueToInsert + data['value']
@@ -79,19 +90,19 @@ for p in listeProducts:
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
         valueToInsert = valueToInsert / 1000
-        print("total : ",valueToInsert)
+        f.write("total : ",valueToInsert  + "\n")
 
     else:
-        print("***********************Error : code retour HTTP = {}".format(r.status_code))
+        f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
 
     #On insére la valeur dans CAP Exploitation
     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
-    print(response)
+    f.write(response  + "\n")
 
     time.sleep(10)
     
-print("Fin du script Eveler")
+f.write("Fin du script Eveler")
 
 ## Cette API permet de lister tous les compteurs de votre périmètre
 ## l'information meta.computed.last_data indique la date de la dernière
@@ -101,11 +112,11 @@ print("Fin du script Eveler")
 ##si retour OK de la req
 #if r.status_code == 200 and r.json()["success"] is True:
 #    json_data = r.json()['data']
-#    print("Requete HTTP OK : nombre de compteurs = ", len(json_data))
+#    f.write("Requete HTTP OK : nombre de compteurs = ", len(json_data))
 
 ##On boucle sur les compteurs et on affiche les infos
 #    for m in json_data:
-#        print(
+#        f.write(
 #            "Meter ",
 #            m["_id_human"],
 #            m["name"],
@@ -118,35 +129,35 @@ print("Fin du script Eveler")
 #            ) else "?"
 #        )
 #else:
-#    print("Error : code retour HTTP = {}".format(r.status_code))
+#    f.write("Error : code retour HTTP = {}".format(r.status_code))
 
-#print("//*********************SAINT SAULVE*************************//")
+#f.write("//*********************SAINT SAULVE*************************//")
 
 ##Récupérer les compteurs par rapport au RAE du site => Saint Saulve
 #filters = {"actif": True, "rae": "30000120589384"}
 #r = requests.get(URL + "/meters", params={"filter": json.dumps(filters)}, headers=headers)
 #if r.status_code == 200 and r.json()["success"] is True:
 #    json_data = r.json()["data"]
-#    print("Requete HTTP OK : nombre de compteurs = ", len(json_data))
+#    f.write("Requete HTTP OK : nombre de compteurs = ", len(json_data))
 
 #    for m in json_data:
-#        print("Meter ", m["_id_human"], m["name"])
+#        f.write("Meter ", m["_id_human"], m["name"])
 #else:
-#    print("Error : code retour HTTP = {}".format(r.status_code))
+#    f.write("Error : code retour HTTP = {}".format(r.status_code))
 
-#print("//*********************SAINT SAULVE - soutirage*************************//")
+#f.write("//*********************SAINT SAULVE - soutirage*************************//")
 
 ##Récupérer les attributs d'un compteur par rapport à son id
 #_id_human = 35236
 #r = requests.get(URL + "/meter/" + str(_id_human), headers=headers)
 #if r.status_code == 200 and r.json()["success"] is True:
 #    json_data = r.json()["data"]
-#    print("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-#    pprint(json_data["meta"]["runtime_computed"])
+#    f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
+#    pf.write(json_data["meta"]["runtime_computed"])
 #else:
-#    print("Error : code retour HTTP = {}".format(r.status_code))
+#    f.write("Error : code retour HTTP = {}".format(r.status_code))
 
-#print("//*********************SAINT SAULVE - injection - relevé*************************//")
+#f.write("//*********************SAINT SAULVE - injection - relevé*************************//")
 
 ## /meter/{meter_id}/data/{channel}/{start_date}/{end_date}
 #Récupérer les valeurs d'un compteur entre 2 dates
@@ -160,7 +171,7 @@ print("Fin du script Eveler")
 #r = requests.get(complete_url, headers=headers, verify=False)
 #if r.status_code == 200 and r.json()['success'] is True:
 #    json_data = r.json()['data']
-#    print("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-#    pprint(json_data)
+#    f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
+#    pf.write(json_data)
 #else:
-#    print("Error : code retour HTTP = {}".format(r.status_code))
+#    f.write("Error : code retour HTTP = {}".format(r.status_code))

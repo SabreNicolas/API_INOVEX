@@ -590,6 +590,15 @@ app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   });
 });
  
+//UPDATE Product, change name
+app.put("/updateProductName", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET Name = '"+req.newName +"' WHERE Name = '" +req.lastName +"'", (err,data) => {
+    if(err) throw err;
+    response.json("Changement du nom du produit OK")
+  });
+});
+
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
   const req=request.query
@@ -870,10 +879,31 @@ app.put("/Depassement", middleware,(request, response) => {
   });
 });
 
+//Modifier un dépassement
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/updateDepassement/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("update depassements set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  ,(err,result,fields) => {
+      if(err) throw err;
+      else response.json("Modif du dep ok");
+  });
+});
+
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+//Récupérer un dépassement
+app.get("/getOneDepassement/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -920,10 +950,31 @@ app.put("/Arrets", middleware,(request, response) => {
   });
 });
 
+//Modifier un arrêt
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/updateArret/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("update arrets set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  ,(err,result,fields) => {
+      if(err) throw err
+      else response.json("Modif de l'arret OK");
+  });
+});
+
 //Récupérer l'historique des arrêts pour un mois
 app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+//Récupérer un arrêt
+app.get("/getOneArret/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
