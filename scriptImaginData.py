@@ -5,6 +5,15 @@ import warnings
 #Disable warnings
 warnings.filterwarnings("ignore")
 
+#Création d'un fichier de log
+dateActuelle = datetime.now()
+format_date = "%d %B %Y à %Hh%M"
+dateFormatee = dateActuelle.strftime(format_date)
+
+dateHeure = "logImaginData" + str(dateFormatee)  + ".txt"
+dateHeure = dateHeure.replace(" ","_").replace(":","-")
+
+f = open(dateHeure, "x")
 headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
 
 #Récupération de la date de la veille
@@ -12,7 +21,7 @@ aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 hierRondier = f'{hier:%d/%m/%Y}'
 
-print("Début du script ImaginData Le " + str(aujourdhui))
+f.write("Début du script ImaginData Le " + str(aujourdhui)  + "\n")
 
 #récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3100/sites"
@@ -93,10 +102,10 @@ for site in listeSites['data'] :
                                     if operateur == "/" :
                                         recup = recup / valeur
                         if count == 0 :
-                            print("Unite ImaginData : " +unit)
-                            print("Unite CAP : " + product['Unit'])
-                            print(product['Name'])
-                            print("*******************************")
+                            f.write("Unite ImaginData : " +unit)  + "\n"
+                            f.write("Unite CAP : " + product['Unit']  + "\n")
+                            f.write(product['Name']  + "\n")
+                            f.write("*******************************"  + "\n")
                     #On insère ensuite la valeur en base de donnée
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = headers, verify=False)
@@ -106,12 +115,12 @@ curseur.close()
 
 connexion.close()
 
-print("Fin du script Imagindata !")
-print("\n\n\nDébut du script Rondier!")
+f.write("Fin du script Imagindata !"  + "\n")
+f.write("\n\n\nDébut du script Rondier!" + "\n")
 #Rondier
 #Boucle sur les sites pour insérer les valeur site par site
 for site in listeSites['data'] :
-    print(str(site['id']))
+    f.write(str(site['id'])  + "\n")
     #Récupération de la liste des produits avec un element de récupération rondier dans chaque usine
     req = "https://fr-couvinove301:3100/getProductsWithElementRondier?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
@@ -125,8 +134,8 @@ for site in listeSites['data'] :
         value = response.json()
         value = value['data']
         for val in value :
-            print(val['value'])
+            f.write(val['value'] + "\n")
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
             response = requests.put(req, headers = headers, verify=False)
 
-print("Fin du script Rondier !")
+f.write("Fin du script Rondier !")

@@ -66,6 +66,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 let BadgeAndElementsOfZone = [];
 let tabEquipes = [];
 var valueElementDay;
+var previousId = 0;
 //create sql connection
 const sql = require('mssql');
 const { response } = require("express");
@@ -431,6 +432,115 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
   });
 });
 
+//Créer un formulaire
+//?nom=zlfhe&idUsine=1
+app.put("/createFormulaire",middleware, (request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO formulaire(nom,idUsine) OUTPUT INSERTED.idFormulaire VALUES('" + req.nom + "',"+req.idUsine+")", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});  });
+});
+
+//Modifier un formulaire
+//?nom=zlfhe&idFormulaire=1
+app.put("/updateFormulaire",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE formulaire SET nom ='" + req.nom + "' WHERE idFormulaire ="+req.idFormulaire, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});  });
+});
+
+//Supprimer les produits d'un formulaire
+//?idFormulaire=????
+app.delete("/deleteProduitFormulaire", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire , (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du produit OK");
+  });
+});
+
+//Supprimer un formulaire
+//?idFormulaire=????
+app.delete("/deleteFormulaire", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM formulaire WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du produit OK");
+  });
+});
+
+//Créer un formulaire affectation
+//?alias=zlfhe&idFormiualire=1&idProduit=1234
+app.put("/createFormulaireAffectation",middleware, (request, response) => {
+  const req=request.query
+  pool.query("INSERT INTO formulaire_affectation(idFormulaire,idProduct,alias) VALUES(" + req.idFormulaire + ","+ req.idProduit + ",'"+req.alias+"')", (err,data) => {
+    if(err) throw err;
+    response.json("Affectation OK");
+  });
+});
+
+//get formulaires d'une usine
+//?idUsine=1
+app.get("/getFormulaires", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM formulaire WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    // console.log(data)
+    response.json({data});
+  });
+});
+
+//get un formulaire d'une usine
+//?idFormulaire=1
+app.get("/getOneFormulaire", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM formulaire WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//get les produits d'un formulaire
+//?idFormulaire=1
+app.get("/getProduitsFormulaire", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    // console.log(data)
+    response.json({data});
+  });
+});
+
+//get one Products 
+//?idUsine=1
+app.get("/getOneProduct/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT id,Name FROM products_new WHERE idUsine = "+req.idUsine+" AND id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    // console.log(data)
+      response.json({data});
+  });
+});
+
+//get ALL Products 
+//?idUsine=1
+app.get("/AllProducts", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Enabled = 1 and CODE not LIKE '2%' ORDER BY Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+
 //get ALL Products with type param
 //?Name=dgdgd&idUsine=1
 app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => {
@@ -480,6 +590,15 @@ app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   });
 });
  
+//UPDATE Product, change name
+app.put("/updateProductName", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET Name = '"+req.newName +"' WHERE Name = '" +req.lastName +"'", (err,data) => {
+    if(err) throw err;
+    response.json("Changement du nom du produit OK")
+  });
+});
+
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
   const req=request.query
@@ -627,7 +746,7 @@ app.get("/pci/:idUsine", middleware,(request, response) => {
 app.put("/Product", middleware,(request, response) => {
   const req=request.query;
   req.Name = req.Name.replace("'"," ");
-  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 0, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
@@ -760,10 +879,31 @@ app.put("/Depassement", middleware,(request, response) => {
   });
 });
 
+//Modifier un dépassement
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/updateDepassement/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("update depassements set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  ,(err,result,fields) => {
+      if(err) throw err;
+      else response.json("Modif du dep ok");
+  });
+});
+
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+//Récupérer un dépassement
+app.get("/getOneDepassement/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -810,10 +950,31 @@ app.put("/Arrets", middleware,(request, response) => {
   });
 });
 
+//Modifier un arrêt
+//?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
+app.put("/updateArret/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("update arrets set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  ,(err,result,fields) => {
+      if(err) throw err
+      else response.json("Modif de l'arret OK");
+  });
+});
+
 //Récupérer l'historique des arrêts pour un mois
 app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+//Récupérer un arrêt
+app.get("/getOneArret/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1143,16 +1304,15 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
-  let previousId = 0;
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      previousId = getPreviousId(request.params.idUsine);
+      await getPreviousId(request.params.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsHorsLigne(zone,previousId);
+        await getElementsHorsLigne(zone);
       };
       response.json({BadgeAndElementsOfZone});
     }
@@ -1162,23 +1322,22 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
 //Récupérer l'ensemble des zones, les modes OPs associés et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/elementsOfUsine/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
-  let previousId = 0;
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      previousId = getPreviousId(request.params.idUsine);
+      await getPreviousId(request.params.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsHorsLigne(zone,previousId);
+        await getElementsHorsLigne(zone);
       };
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
 
-function getElementsHorsLigne(zone,previousId) {
+function getElementsHorsLigne(zone) {
   return new Promise((resolve) => {
     let modesOp;
     //Récupération des modesOP
@@ -1186,7 +1345,6 @@ function getElementsHorsLigne(zone,previousId) {
       if(err) throw err;
       else{
         modesOp = data['recordset'];
-
         pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
           if(err) throw err;
           else{
@@ -1213,7 +1371,6 @@ function getElementsHorsLigne(zone,previousId) {
 //Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
 app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
   BadgeAndElementsOfZone = [];
-  let previousId = 0;
   if(request.params.idUsine == 7){
     var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
   }
@@ -1223,7 +1380,7 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      previousId = getPreviousId(request.params.idUsine);
+      getPreviousId(request.params.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsWithValues(zone,request.params.idRonde);
@@ -1244,7 +1401,7 @@ function getElementsWithValues(zone,idRonde) {
       else{
         modesOp = data['recordset'];
 
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id =" + idRonde +" and e.zoneId =" + zone.zoneId +" ORDER BY z.nom ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id =" + idRonde +" and e.zoneId =" + zone.zoneId +" ORDER BY z.nom,g.groupement,e.ordre", (err,data) => {
           if(err) throw err;
           else{
             data = data['recordset'];
@@ -1271,22 +1428,21 @@ function getElementsWithValues(zone,idRonde) {
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   BadgeAndElementsOfZone = [];
-  let previousId = 0;
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+request.params.idUsine+" and e.idRondier = "+request.params.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
     if(err) throw err;
     else {
       //On récupère l'Id de la ronde précedente
       data = data['recordset'];
-      previousId = getPreviousId(request.params.idUsine);
+      await getPreviousId(request.params.idUsine);
       //On récupère les éléments de la zone
-      await getElementsHorsLigneUser(data,previousId);
+      await getElementsHorsLigneUser(data);
       
       response.json({BadgeAndElementsOfZone});
     }
   });
 });
 
-function getElementsHorsLigneUser(zone,previousId) {
+function getElementsHorsLigneUser(zone) {
   return new Promise((resolve) => {
     let modesOp;
     //Récupération des modesOP
@@ -1323,17 +1479,18 @@ function getElementsHorsLigneUser(zone,previousId) {
 
 //Fonction qui renvoie l'id de la dernière ronde
 function getPreviousId(id){
-  var previousId = 0;
-  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+id+" ORDER BY Id DESC", (err,data) => {
-    if(err) throw err;
-    else {
-      data = data['recordset'];
-      if(data.length > 1){
-        previousId = data[1].Id;
-      } else previousId = 0;
-    }
-  });
-  return previousId;
+  return new Promise((resolve) => {
+    pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = " + id + " ORDER BY Id DESC", (err, data) => {
+      if (err) throw err;
+      else {
+        data = data['recordset'];
+        if (data.length > 1) {
+          previousId = data[1].Id;
+        } else previousId = 0;
+      };
+      resolve();
+    });
+  })
 }
 
 //Update commentaire
@@ -1844,7 +2001,9 @@ app.get("/PermisFeuVerification",middleware, (request, response) => {
 app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
   const req=request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //on utilise l'url publique
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
   var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
   pool.query(query,(err,result,fields) => {
@@ -2323,7 +2482,16 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   });
 });
 
-
+//UPDATE Product, set Code
+//?CodeEquipement=123
+app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    console.log("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id)
+    response.json("Mise à jour du Coeff OK")
+  });
+});
 //////////////////////////
 // FIN eMonitoring
 //////////////////////////
@@ -2596,3 +2764,41 @@ app.get("/getConversions",middleware,(request, response) => {
     response.json({data}) 
   });
 });
+
+
+
+//////////////////////////
+//FIN Import tonnage    //
+//////////////////////////
+
+
+//////////////////////////
+//    Formulaire        //
+//////////////////////////
+
+
+//?nom=journalier&type=1&idUsine=1
+app.put("/formulaire", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("INSERT INTO formulaire (nom, type, idUsine) VALUES ('"+req.nom+"', "+req.type+", "+req.idUsine+")"
+  ,(err,result,fields) => {
+      if(err) response.json("Création du formulaire KO");
+      else response.json("Création du formulaire OK");
+  });
+});
+
+//Récupérer les formulaires d'un site
+//?idUsine=7
+app.get("/formulaires", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM formulaire WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+//////////////////////////
+//    FIN Formulaire    //
+//////////////////////////
