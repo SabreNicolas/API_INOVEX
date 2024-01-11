@@ -533,7 +533,7 @@ app.get("/getOneProduct/:id", middleware,(request, response) => {
 //?idUsine=1
 app.get("/AllProducts", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Enabled = 1 and CODE not LIKE '2%' ORDER BY Name ASC", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Enabled = 1 and CODE not LIKE '2%' and name NOT LIKE '%arret%' and name NOT LIKE '%depassement%' and name not like 'baisse de charge%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
