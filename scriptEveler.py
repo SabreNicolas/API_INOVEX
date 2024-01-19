@@ -12,10 +12,10 @@ dateActuelle = datetime.now()
 format_date = "%d %B %Y à %Hh%M"
 dateFormatee = dateActuelle.strftime(format_date)
 
-dateHeure = "logEveler" + str(dateFormatee)  + ".txt"
-dateHeure = dateHeure.replace(" ","_").replace(":","-")
+# dateHeure = "logEveler" + str(dateFormatee)  + ".txt"
+# dateHeure = dateHeure.replace(" ","_").replace(":","-")
 
-f = open(dateHeure, "x")
+# f = open(dateHeure, "x")
 
 URL = "https://api.eveler.pro/api/client"
 #TOKEN = "QrdNdoeyFcTVnrj0zWFR3DsiGuH3POuzIRzOZm2Sezk"
@@ -31,14 +31,14 @@ if r.status_code == 200 and r.json()["success"] is True:
     api_token = r.json()["data"]["token"]
     #f.write("Requete HTTP OK : API Token = ", api_token)
     headers["Authorization"] = api_token
-else:
-    f.write("**************************Error : code retour HTTP = {}".format(r.status_code))
+# else:
+    # f.write("**************************Error : code retour HTTP = {}".format(r.status_code))
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 
-f.write("Debut du script Eveler Le " + str(aujourdhui) + "\n")
+# f.write("Debut du script Eveler Le " + str(aujourdhui) + "\n")
 
 #RECUPERATION de la liste des produits CAP Exploitation avec un TAG EVELER
 req = "https://fr-couvinove301:3100/ProductEveler"
@@ -61,8 +61,8 @@ for p in listeProducts:
     else:
         typeEnergie = "reactive+"
     
-    if idProduct != "/" :
-        f.write("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
+    # if idProduct != "/" :
+        # f.write("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
 
     #REQ EVELER pour récupérer les points 5 min du compteurs entre 2 points
     _id_human = idCompteur
@@ -90,20 +90,20 @@ for p in listeProducts:
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
         valueToInsert = valueToInsert / 1000
-        f.write("total : " + str(valueToInsert)  + "\n")
+        # f.write("total : " + str(valueToInsert)  + "\n")
 
-    else:
-        f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
+    # else:
+        # f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
 
     #On insére la valeur dans CAP Exploitation
     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
-    f.write(str(response)  + "\n")
+    # f.write(str(response)  + "\n")
 
     time.sleep(10)
     
-f.write("Fin du script Eveler")
-
+# f.write("Fin du script Eveler")
+# 
 ## Cette API permet de lister tous les compteurs de votre périmètre
 ## l'information meta.computed.last_data indique la date de la dernière
 ## données du compteur

@@ -7,10 +7,10 @@ dateActuelle = datetime.now()
 format_date = "%d %B %Y à %Hh%M"
 dateFormatee = dateActuelle.strftime(format_date)
 
-dateHeure = "logAveva" + str(dateFormatee)  + ".txt"
-dateHeure = dateHeure.replace(" ","_").replace(":","-")
+# dateHeure = "logAveva" + str(dateFormatee)  + ".txt"
+# dateHeure = dateHeure.replace(" ","_").replace(":","-")
 
-f = open(dateHeure, "x")
+# f = open(dateHeure, "x")
 
 headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
 #Disable warnings
@@ -22,7 +22,7 @@ hier = aujourdhui - timedelta (days=1)
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:00Z"
 
-f.write("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
+# f.write("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
 # récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3100/sites"
@@ -77,21 +77,21 @@ for site in listeSites['data'] :
                         #On récupère la valeur en int du calcul
                         valeur = int(conversion['conversion'][1:])
                         count = count + 1
-                        f.write(str(recup)  + "\n")
+                        # f.write(str(recup)  + "\n")
                         #On regarde quel opérateur est utilisé et on fait le calcul
                         if operateur == "*" :
                             recup = recup * valeur
                         else :
                             if operateur == "/" :
                                 recup = recup / valeur
-                        f.write(str(recup)  + "\n")
-                if count == 0 :
-                    f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
-                    f.write("Unite CAP : " + product['Unit']  + "\n")
-                    f.write(product['Name']  + "\n")
-                    f.write("*******************************"  + "\n")
+                        # f.write(str(recup)  + "\n")
+                # if count == 0 :
+                    # f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
+                    # f.write("Unite CAP : " + product['Unit']  + "\n")
+                    # f.write(product['Name']  + "\n")
+                    # f.write("*******************************"  + "\n")
 
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
             response = requests.put(req, headers = headers, verify=False)
 
-f.write("Fin du script !"  + "\n")
+# f.write("Fin du script !"  + "\n")
