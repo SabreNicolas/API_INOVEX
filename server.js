@@ -146,7 +146,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
     transporter.sendMail(message, function(err, info) {
       if (err) {
         console.log(err);
-        throw err;
+        // throw err;
       } else {
         console.log('Email sent: ' + info.response);
         res.json("mail OK");
@@ -509,7 +509,7 @@ app.get("/getOneFormulaire", middleware,(request, response) => {
 //?idFormulaire=1
 app.get("/getProduitsFormulaire", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire + 'order by id', (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     // console.log(data)
@@ -799,7 +799,7 @@ app.put("/Measure", middleware,(request, response) => {
     "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
-      if(err) throw err;
+      if(err) console.log(err)
       response.json("Création du Measures OK");
   });
 });

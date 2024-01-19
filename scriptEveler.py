@@ -62,7 +62,7 @@ for p in listeProducts:
         typeEnergie = "reactive+"
     
     if idProduct != "/" :
-        f.write("**************", idProduct, p["Name"], idCompteur, typeEnergie  + "\n")
+        f.write("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
 
     #REQ EVELER pour récupérer les points 5 min du compteurs entre 2 points
     _id_human = idCompteur
@@ -90,7 +90,7 @@ for p in listeProducts:
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
         valueToInsert = valueToInsert / 1000
-        f.write("total : ",valueToInsert  + "\n")
+        f.write("total : " + str(valueToInsert)  + "\n")
 
     else:
         f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
@@ -98,7 +98,7 @@ for p in listeProducts:
     #On insére la valeur dans CAP Exploitation
     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
-    f.write(response  + "\n")
+    f.write(str(response)  + "\n")
 
     time.sleep(10)
     

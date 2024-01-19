@@ -81,7 +81,9 @@ for site in listeSites['data'] :
                     requete = "SELECT * FROM tags WHERE TagName = '" + data[1] + "'"
                     curseur.execute(requete)
                     rep = curseur.fetchall()
-                    unit = rep[0][2]
+                    if rep != [] :
+                        unit = rep[0][2]
+                    else : unit = product['Unit']
 
                     #Si l'unité Imagin data est différente de l'unité CAP Exploitation
                     if product['Unit'] != unit :
@@ -102,7 +104,7 @@ for site in listeSites['data'] :
                                     if operateur == "/" :
                                         recup = recup / valeur
                         if count == 0 :
-                            f.write("Unite ImaginData : " +unit)  + "\n"
+                            f.write("Unite ImaginData : " +unit  + "\n")
                             f.write("Unite CAP : " + product['Unit']  + "\n")
                             f.write(product['Name']  + "\n")
                             f.write("*******************************"  + "\n")
@@ -134,8 +136,9 @@ for site in listeSites['data'] :
         value = response.json()
         value = value['data']
         for val in value :
-            f.write(val['value'] + "\n")
-            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            response = requests.put(req, headers = headers, verify=False)
+            if val['value'] != '/' :
+                f.write(val['value'] + "\n")
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                response = requests.put(req, headers = headers, verify=False)
 
 f.write("Fin du script Rondier !")
