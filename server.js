@@ -509,7 +509,7 @@ app.get("/getOneFormulaire", middleware,(request, response) => {
 //?idFormulaire=1
 app.get("/getProduitsFormulaire", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire + 'order by id', (err,data) => {
+  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire + 'order by alias', (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     // console.log(data)
@@ -712,7 +712,7 @@ app.get("/Sortants", middleware,(request, response) => {
 //?idUsine=1
 app.get("/reactifs", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE 'LIVRAISON%'", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE 'LIVRAISON%' order by Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -893,7 +893,7 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const req=request.query
-  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -964,7 +964,7 @@ app.put("/updateArret/:id", middleware,(request, response) => {
 //Récupérer l'historique des arrêts pour un mois
 app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY a.date_heure_debut, p.Name ASC", (err,data) => {
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -2358,6 +2358,16 @@ app.get("/nbLigneChiffre/:id",(request, response) => {
 app.get("/nbGTA/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("SELECT nbGTA FROM site WHERE id ="+request.params.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer le nombre de RCU d'un site
+app.get("/nbRCU/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT nbReseauChaleur FROM site WHERE id ="+request.params.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});

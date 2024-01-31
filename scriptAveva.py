@@ -22,7 +22,7 @@ hier = aujourdhui - timedelta (days=1)
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:00Z"
 
-# f.write("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
+print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
 # récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3100/sites"
@@ -77,14 +77,14 @@ for site in listeSites['data'] :
                         #On récupère la valeur en int du calcul
                         valeur = int(conversion['conversion'][1:])
                         count = count + 1
-                        # f.write(str(recup)  + "\n")
+                        print(str(recup)  + "\n")
                         #On regarde quel opérateur est utilisé et on fait le calcul
                         if operateur == "*" :
                             recup = recup * valeur
                         else :
                             if operateur == "/" :
                                 recup = recup / valeur
-                        # f.write(str(recup)  + "\n")
+                        print(str(recup)  + "\n")
                 # if count == 0 :
                     # f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
                     # f.write("Unite CAP : " + product['Unit']  + "\n")
@@ -94,4 +94,4 @@ for site in listeSites['data'] :
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
             response = requests.put(req, headers = headers, verify=False)
 
-# f.write("Fin du script !"  + "\n")
+print("Fin du script !"  + "\n")

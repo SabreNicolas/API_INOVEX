@@ -38,7 +38,7 @@ if r.status_code == 200 and r.json()["success"] is True:
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 
-# f.write("Debut du script Eveler Le " + str(aujourdhui) + "\n")
+print("Debut du script Eveler Le " + str(aujourdhui) + "\n")
 
 #RECUPERATION de la liste des produits CAP Exploitation avec un TAG EVELER
 req = "https://fr-couvinove301:3100/ProductEveler"
@@ -62,7 +62,7 @@ for p in listeProducts:
         typeEnergie = "reactive+"
     
     # if idProduct != "/" :
-        # f.write("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
+        print("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
 
     #REQ EVELER pour récupérer les points 5 min du compteurs entre 2 points
     _id_human = idCompteur
@@ -90,7 +90,7 @@ for p in listeProducts:
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
         valueToInsert = valueToInsert / 1000
-        # f.write("total : " + str(valueToInsert)  + "\n")
+        print("total : " + str(valueToInsert)  + "\n")
 
     # else:
         # f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
@@ -100,9 +100,9 @@ for p in listeProducts:
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     # f.write(str(response)  + "\n")
 
-    time.sleep(10)
+    time.sleep(2)
     
-# f.write("Fin du script Eveler")
+pprint("Fin du script Eveler")
 # 
 ## Cette API permet de lister tous les compteurs de votre périmètre
 ## l'information meta.computed.last_data indique la date de la dernière
