@@ -116,12 +116,19 @@ app.get("/helloworld", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: process.env.SERVICE_SMTP,
   host: process.env.HOST_SMTP,
+  port: process.env.PORT_SMTP,
+  secure: false,
+  ignoreTLS: true,
   auth: {
     user: process.env.USER_SMTP,
     pass: process.env.PWD_SMTP
-  }
+  },
+  tls: {
+    secureProtocol: "TLSv1_method"
+  },
+  debug: true,
+  logger: true
 }));
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
@@ -143,10 +150,11 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
       '<h2>'+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'.</h2>'+ 
       '<h3>Voici le commentaire : '+req.params.commentaire+'</h3>'//Cors du mail en HTML
     };
+
     transporter.sendMail(message, function(err, info) {
       if (err) {
         console.log(err);
-        // throw err;
+        //throw err;
       } else {
         console.log('Email sent: ' + info.response);
         res.json("mail OK");
@@ -712,7 +720,7 @@ app.get("/Sortants", middleware,(request, response) => {
 //?idUsine=1
 app.get("/reactifs", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE 'LIVRAISON%' order by Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE '%LIVRAISON%' and Enabled = 1 order by Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -892,7 +900,7 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
 
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
-  const req=request.query
+  const req=request.query;
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -1574,7 +1582,7 @@ app.delete("/deleteElement", middleware,(request, response) => {
 //Récupérer l'ensemble des élements d'une usine
 app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
   const req=request.query
-  pool.query("select e.* from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
+  pool.query("select e.*, z.nom as nomZone from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2329,6 +2337,18 @@ app.get("/sites", middleware,(request, response) => {
     response.json({data});
   });
 });
+
+//Récupérer la liste des sites avec une ip Aveva
+//sauf le global
+app.get("/sitesAveva", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' and ipAveva !='' ORDER BY localisation ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 
 //Récupérer le nombre de ligne d'un site
 app.get("/nbLigne/:id", middleware,(request, response) => {
