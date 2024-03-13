@@ -26,8 +26,8 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/server-decrypted.key','utf8');
-var certificate = fs.readFileSync('E:/INOVEX/server.crt','utf8');
+var privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/serverV2.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
@@ -64,6 +64,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 
 //Tableau pour le mode hors ligne de la ronde
 let BadgeAndElementsOfZone = [];
+let listZones = [];
 let tabEquipes = [];
 var valueElementDay;
 var previousId = 0;
@@ -712,7 +713,7 @@ app.get("/Sortants", middleware,(request, response) => {
 //?idUsine=1
 app.get("/reactifs", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE 'LIVRAISON%' order by Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE '%LIVRAISON%' AND Enabled = 1 order by Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1267,6 +1268,15 @@ app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
   });
 });
 
+//Update affectation => retirer les affectations
+app.put("/deleteBadge/:id", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete from badge where Id = '"+request.params.id+"'", (err,data) => {
+    if(err) throw err;
+    response.json("Suppression du badge OK")
+  });
+});
+
 /*Zone de controle*/
 
 //Créer une zone de contrôle
@@ -1299,6 +1309,91 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
     response.json({data});
   });
 });
+
+//Récupérer l'ensemble des zones de controle
+app.get("/zones/:idUsine", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" ORDER BY nom ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des zones de controle
+//?quart=1
+app.get("/getZonesAndAnomaliesOfDay/:idUsine/:date", middleware,(request, response) => {
+  listZones = [];
+  const req=request.query
+  if(req.quart == 0){
+    var query = "SELECT * from ronde where dateHeure = '"+request.params.date+"' and idUsine ="+request.params.idUsine
+  }
+  else{
+    var query = "SELECT * from ronde where dateHeure = '"+request.params.date+"' and idUsine ="+request.params.idUsine +'and quart=' + req.quart
+  }
+  pool.query(query, async (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    //On boucle sur chaque zone et son badge pour récupérer ses éléments
+    for await (const ronde of data) {
+      await getZonesAndAnomaliesOfRonde(ronde);
+    };
+    response.json({listZones});
+  });
+});
+
+//Récupérer l'ensemble des zones de controle
+app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) => {
+  listZones = [];
+  const req=request.query
+  if(req.quart==0){
+    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+request.params.date+"' and ronde.idUsine = "+request.params.idUsine  
+  }
+  else{
+    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+request.params.date+"' and ronde.idUsine = "+request.params.idUsine +" and ronde.quart = "+req.quart 
+  }
+  pool.query(query, async (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des zones de controle
+app.get("/getElementsAndValuesOfDay/:idUsine/:date", middleware,(request, response) => {
+  listZones = [];
+  const req=request.query
+  if(req.quart == 0){
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+  }
+  else{
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" and r.quart = "+ req.quart+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+  }
+  pool.query(query, async (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+function getZonesAndAnomaliesOfRonde(ronde){
+  return new Promise((resolve) => {
+    //Récupération des zones
+        pool.query("select DISTINCT z.*, a.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id =e.zoneId full outer join anomalie a on (a.rondeId=" + ronde["Id"] + " and a.zoneId=z.id)where m.rondeId=" + ronde["Id"] + "order by z.nom", async (err, data) => {
+          if (err) throw err;
+          zones = data['recordset'];
+          let oneZone = {
+            IdRonde : ronde["Id"],
+            listZones: zones
+          };
+          listZones.push(oneZone)
+          resolve();
+          // console.log(oneRonde)
+        });
+
+  });
+}
 
 //POUR MODE HORS LIGNE
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
@@ -1367,6 +1462,96 @@ function getElementsHorsLigne(zone) {
     });
   });
 }
+
+// //Récupérer l'ensemble des zones de controle
+// //?dateHeure
+// app.get("/reporting/:idUsine",(request, response) => {
+//   const req=request.query
+//   var test
+//   pool.query("select r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, users.Nom as 'nomUser', users.Prenom as 'prenomUser', chefQuart.Nom as 'nomChefQuart', chefQuart.Prenom as 'prenomChefQuart'"
+//   +"from ronde r join users on users.Id = userId join users chefQuart on chefQuart.Id = r.chefQuartId  where r.dateHeure='15/02/2024' and r.idUsine = "
+//    +request.params.idUsine, async (err,data) => {
+//     if(err) throw err;
+//     listeRondes = data['recordset'];
+//     for await(const ronde of listeRondes){
+//       let oneRonde = {
+//         Id : ronde["Id"],
+//         dateHeure: ronde["dateHeure"],
+//         quart: ronde["quart"],
+//         commentaire: ronde["commentaire"],
+//         isFinished: ronde["isFinished"],
+//         fonctFour1: ronde["fonctFour1"],
+//         fonctFour2: ronde["fonctFour2"],
+//         fonctFour3: ronde["fonctFour3"],
+//         fonctFour4: ronde["fonctFour4"],
+//         nomUser: ronde["nomUser"],
+//         prenomUser: ronde["prenomUser"],
+//         nomChefQuart: ronde["nomChefQuart"],
+//         prenomChefQuart: ronde["prenomChefQuart"],
+//         listZones: []
+//       };
+//       await getZonesAndAnomalies(ronde, oneRonde.listZones);
+//     }
+//     response.json({infosRondes});
+//   });
+// });
+
+// function getZonesAndAnomalies(ronde, listZones){
+//   return new Promise(async (resolve) => {
+//     // console.log(ronde)
+//     let modesOp;
+//     //Récupération des zones
+//     pool.query("select DISTINCT z.*, a.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id =e.zoneId full outer join anomalie a on (a.rondeId=" + ronde["Id"] + " and a.zoneId=z.id)where m.rondeId=" + ronde["Id"], async (err, data) => {
+//       if (err) throw err;
+//       listZones = data['recordset'];
+//       for await(const zone of listZones){
+//         await getGroupementsZone(ronde, zone);
+//       }
+      
+//       // console.log(oneRonde)
+//     });
+//     resolve();
+//   });
+// }
+
+// function getGroupementsZone(ronde, zone){
+//   return new Promise(async (resolve) => {
+//     //Récupération des groupements
+//     pool.query("SELECT * from groupement where zoneId = " + zone["Id"], async (err, data) => {
+//       if (err) throw err;
+//       listGrouepements = data['recordset'];
+//       for await(const groupement of listGrouepements){
+//         await getGroupementsElementsWithValue(ronde, zone, groupement);
+//       }
+//     });
+//     resolve();
+//   });
+// }
+
+// function getGroupementsElementsWithValue(ronde, zone, groupement){
+//   return new Promise(async (resolve) => {
+//     //Récupération des groupements
+//     pool.query("SELECT e.Id, e.zoneId, e.nom, m.value, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id ="+ronde["Id"]+" and e.zoneId ="+zone["Id"]+" and g.groupement="+groupement["Id"]+" ORDER BY z.nom,g.groupement,e.ordre", async (err, data) => {
+//       listElementDuGroupement = data['recordset']
+//       if (err) throw err;
+//       listGrouepements = data['recordset'];
+//       await getElementsWithValueWithoutGroupement(ronde, zone, groupement, listElementDuGroupement)
+//     });
+//     resolve();
+//   });
+// }
+
+// function getElementsWithValueWithoutGroupement(ronde, zone, groupement, listElementDuGroupement){
+//   return new Promise(async (resolve) => {
+//     //Récupération des groupements
+//     pool.query("SELECT e.Id, e.zoneId, e.nom, m.value, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id ="+ronde["Id"]+" and e.zoneId ="+zone["Id"]+" and g.groupement IS NULL ORDER BY z.nom,g.groupement,e.ordre", async (err, data) => {
+//       if (err) throw err;
+//       listElementsSansGroupements = data['recordset'];
+      
+//     });
+//     resolve();
+//   });
+// }
 
 //Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
 app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
@@ -1574,7 +1759,7 @@ app.delete("/deleteElement", middleware,(request, response) => {
 //Récupérer l'ensemble des élements d'une usine
 app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
   const req=request.query
-  pool.query("select e.* from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
+  pool.query("select e.*, z.nom as nomZone from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1642,6 +1827,23 @@ app.get("/getGroupements", middleware,(request, response) => {
 
 //Récupérer l'ensemble des groupements d'une usine
 //?idUsine=1
+app.get("/getGroupementsOfOneDay/:idUsine/:date",middleware, (request, response) => {
+  const req=request.query
+  if(req.quart == 0){
+    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" ORDER BY g.groupement" 
+  }
+  else{
+    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.quart="+req.quart+" and r.idUsine = "+request.params.idUsine+" ORDER BY g.groupement" 
+  }
+  pool.query( query , async (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des groupements d'une usine
+//?idUsine=1
 app.get("/getAllGroupements",middleware, (request, response) => {
   const req=request.query
   pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+req.idUsine + "order by groupement.zoneId asc", (err,data) => {
@@ -1650,7 +1852,6 @@ app.get("/getAllGroupements",middleware, (request, response) => {
     response.json({data});
   });
 });
-
 //Récupérer un groupement
 //?idGroupement=1
 app.get("/getOneGroupement",middleware, (request, response) => {
@@ -1815,7 +2016,13 @@ app.get("/Rondes", (request, response) => {
 //?date=07/02/2022&idUsine=7&quart=1
 app.get("/RondesQuart", (request, response) => {
   const req=request.query
-  pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.quart = "+req.quart+" AND r.dateHeure LIKE '"+req.date+"%'", (err,data) => {
+  if(req.quart == 0){
+    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%'"
+  }
+  else{
+    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.quart = "+req.quart+" AND r.dateHeure LIKE '"+req.date+"%'"
+  }
+  pool.query(query, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});    
@@ -2068,6 +2275,17 @@ app.put("/consigne", middleware,(request, response) => {
   ,(err,result,fields) => {
       if(err) response.json("Création de la consigne KO");
       else response.json("Création de la consigne OK");
+  });
+});
+
+//mettre a jour une consigne
+//?commentaire=dggd&dateDebut=fff&c=fff&type=1&id=1
+app.put("/updateConsigne", middleware,(request, response) => {
+  const req=request.query
+  pool.query("UPDATE consigne SET commentaire ='"+req.commentaire+"', date_heure_debut = '"+req.dateDebut+"', date_heure_fin ='"+req.dateFin+"', type="+req.type+" where id = "+req.id
+  ,(err,result,fields) => {
+      if(err) response.json("Modification de la consigne KO");
+      else response.json("Modification de la consigne OK");
   });
 });
 
@@ -2329,6 +2547,18 @@ app.get("/sites", middleware,(request, response) => {
     response.json({data});
   });
 });
+
+//Récupérer la liste des sites avec une ip Aveva
+//sauf le global
+app.get("/sitesAveva", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' and ipAveva !='' ORDER BY localisation ASC", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 
 //Récupérer le nombre de ligne d'un site
 app.get("/nbLigne/:id", middleware,(request, response) => {
@@ -2812,3 +3042,291 @@ app.get("/formulaires", middleware,(request, response) => {
 //////////////////////////
 //    FIN Formulaire    //
 //////////////////////////
+
+
+//////////////////////////
+//    Cahier de quart   //
+//////////////////////////
+
+//Récupérer une consigne
+//?idConsigne=7
+app.get("/getOneConsigne", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM consigne WHERE id = "+req.idConsigne, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Créer une actu
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30
+app.put("/actu", middleware,(request, response) => {
+  const req=request.query;
+  const titre = req.titre.replace(/'/g, "''");
+  pool.query("INSERT INTO quart_actualite(idUsine,titre,importance,date_heure_debut,date_heure_Fin,isValide)"
+            +"VALUES("+req.idUsine+",'"+titre+"',"+req.importance+",'"+req.dateDeb+"','"+req.dateFin+"',0)"
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Création de l'actu OK !");
+  });
+});
+
+//Modifier une actu
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1
+app.put("/updateActu", middleware,(request, response) => {
+  const req=request.query;
+  const titre = req.titre.replace(/'/g, "''");
+  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+req.importance+",date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"' WHERE id="+req.idActu
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modif de l'actu OK !");
+  });
+});
+
+//Récupérer une actualité
+//?idActu=7
+app.get("/getOneActu", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM quart_actualite WHERE id = "+req.idActu, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les actualités
+//?idUsine=7
+app.get("/getAllActu", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 105)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 105)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Terminer une actu
+//?idActu=1
+app.put("/validerActu", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("UPDATE quart_actualite SET isValide = 1 WHERE id="+req.idActu
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modif de l'actu OK !");
+  });
+});
+
+//Terminer une actu
+//?idActu=1
+app.put("/invaliderActu", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("UPDATE quart_actualite SET isValide = 0 WHERE id="+req.idActu
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modif de l'actu OK !");
+  });
+});
+
+
+//**  evenements  **/
+//Créer un évènement
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&groupementGMAO=&equipementGMAO=&cause=&description
+app.put("/evenement",multer({storage: storage}).single('fichier'),(request, response) => {
+  const req=request.query;
+  const titre = req.titre.replace(/'/g, "''");
+  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
+  const cause = req.cause.replace(/'/g, "''");
+  const description = req.description.replace(/'/g, "''");
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  pool.query("INSERT INTO quart_evenement(idUsine,titre,importance,date_heure_debut,date_heure_Fin,groupementGMAO, equipementGMAO, description, cause, consigne, demande_travaux,url)"
+            +"VALUES("+req.idUsine+",'"+titre+"',"+req.importance+",'"+req.dateDeb+"','"+req.dateFin+"','"+groupementGMAO+"','"+equipementGMAO+"','"+description+"','"+cause+"',"+req.consigne+","+req.demandeTravaux+",'"+url+"')"
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Création de l'evenement OK !");
+  });
+});
+
+//Modifier un évènement
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idEvenement=30&groupementGMAO=&equipementGMAO=&cause=&description
+app.put("/updateEvenement",middleware,(request, response) => {
+  const req=request.query;
+  const titre = req.titre.replace(/'/g, "''");
+  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
+  const cause = req.cause.replace(/'/g, "''");
+  const description = req.description.replace(/'/g, "''");
+  pool.query("UPDATE quart_evenement SET titre = '"+titre+"',importance = "+req.importance+",date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"',groupementGMAO='"+groupementGMAO+"', equipementGMAO='"+equipementGMAO+"', description='"+description+"', cause='"+cause+"', consigne="+req.consigne+", demande_travaux="+req.demandeTravaux+" where id="+req.idEvenement
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modification de l'evenement OK !");
+  });
+});
+
+//Récupérer un évènement
+//?idEvenement=7
+app.get("/getOneEvenement", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM quart_evenement WHERE id = "+req.idEvenement, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les évènements
+//?idUsine=7
+app.get("/getAllEvenement", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 105)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 105)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//DELETE évènement
+app.delete("/deleteEvenement/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM quart_evenement WHERE id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de l'evenement OK")
+  });
+});
+
+
+//////////////////////////
+//  Fin Cahier de quart //
+//////////////////////////
+
+//////////////////////////
+//    Registre DNDTS    //
+//////////////////////////
+
+app.put("/registreDNDTS", middleware,(request, response) => {
+  const req=request.query;
+  for(var i=0; i<request.body.data.length;i++){
+   
+    pool.query("IF NOT EXISTS (SELECT * FROM registre_DNDTS WHERE numDePesee = '"+request.body.data[i].numDePesee+"')"
+    +" BEGIN "
+    +"INSERT INTO [dbo].[registre_DNDTS] ([numDePesee],[type],[date1],[codeBadge],[codeVehicule],[codeClient],[nomClient],[poids1],[poids1DSD],[poids1DateHeure],[pontBasculeP1],[Date2],[poids2],[poids2DSD],[poids2DateHeure],[pontBasculeP2],[net],[tempsDeRetenue],[codeSociete],[nomSociete],[codeFamilleVehicule],[nomFamilleVehicule],[codeFamilleTransporteur],[nomFamilleTransporteur],[codeTransporteur],[nomTransporteur],[codeFamilleClient] ,[nomFamilleClient],[codeFamilleProduit],[nomFamilleProduit],[codeProduit],[nomProduit],[codeCollecte],[nomCollecte],[codeDestination],[nomDestination],[codeChantier],[nomChantier],[codeChauffeur],[nomChauffeur],[codeFamilleBenne],[nomFamilleBenne],[codeBenne],[nomBenne],[codeZoneDeStockage],[nomZoneDeStockage],[codeFichier1],[nomFichier1],[codeFichier2],[nomFichier2],[codeFichier3],[nomFichier3],[codeFichier4],[nomFichier4],[terminee],[supprimee],[modifie],[humidite],[proteine],[impurete],[poidsSpecifique],[parcelle],[calibration],[numeroCommande],[numeroDeBSB],[adresse1Societe],[adresse2Societe],[codePostalSociete],[villeSociete],[mobileSociete],[telephoneSociete],[faxSociete],[modeDegrade],[borne],[numeroDePeseeBorne],[creeLe],[creePar],[creeSur],[modifieLe],[modifiePar],[modifieSur],[idUsine], [adresseClient], [codePostalClient], [villeClient], [siret]) VALUES("
+    +"'"+request.body.data[i].numDePesee+"',"
+    +"'"+request.body.data[i].type+"',"
+    +"'"+request.body.data[i].date1+"',"
+    +"'"+request.body.data[i].codeBadge+"',"
+    +"'"+request.body.data[i].codeVehicule+"',"
+    +"'"+request.body.data[i].codeClient+"',"
+    +"'"+request.body.data[i].nomClient+"',"
+    +"'"+request.body.data[i].poids1+"',"
+    +"'"+request.body.data[i].poids1DSD+"',"
+    +"'"+request.body.data[i].poids1DateHeure+"',"
+    +"'"+request.body.data[i].pontBasculeP1+"',"
+    +"'"+request.body.data[i].Date2+"',"
+    +"'"+request.body.data[i].poids2+"',"
+    +"'"+request.body.data[i].poids2DSD+"',"
+    +"'"+request.body.data[i].poids2DateHeure+"',"
+    +"'"+request.body.data[i].pontBasculeP2+"',"
+    +"'"+request.body.data[i].net+"',"
+    +"'"+request.body.data[i].tempsDeRetenue+"',"
+    +"'"+request.body.data[i].codeSociete+"',"
+    +"'"+request.body.data[i].nomSociete+"',"
+    +"'"+request.body.data[i].codeFamilleVehicule+"',"
+    +"'"+request.body.data[i].nomFamilleVehicule+"',"
+    +"'"+request.body.data[i].codeFamilleTransporteur+"',"
+    +"'"+request.body.data[i].nomFamilleTransporteur+"',"
+    +"'"+request.body.data[i].codeTransporteur+"',"
+    +"'"+request.body.data[i].nomTransporteur+"',"
+    +"'"+request.body.data[i].codeFamilleClient+"',"
+    +"'"+request.body.data[i].nomFamilleClient+"',"
+    +"'"+request.body.data[i].codeFamilleProduit+"',"
+    +"'"+request.body.data[i].nomFamilleProduit+"',"
+    +"'"+request.body.data[i].codeProduit+"',"
+    +"'"+request.body.data[i].nomProduit+"',"
+    +"'"+request.body.data[i].codeCollecte+"',"
+    +"'"+request.body.data[i].nomCollecte+"',"
+    +"'"+request.body.data[i].codeDestination+"',"
+    +"'"+request.body.data[i].nomDestination+"',"
+    +"'"+request.body.data[i].codeChantier+"',"
+    +"'"+request.body.data[i].nomChantier+"',"
+    +"'"+request.body.data[i].codeChauffeur+"',"
+    +"'"+request.body.data[i].nomChauffeur+"',"
+    +"'"+request.body.data[i].codeFamilleBenne+"',"
+    +"'"+request.body.data[i].nomFamilleBenne+"',"
+    +"'"+request.body.data[i].codeBenne+"',"
+    +"'"+request.body.data[i].nomBenne+"',"
+    +"'"+request.body.data[i].codeZoneDeStockage+"',"
+    +"'"+request.body.data[i].nomZoneDeStockage+"',"
+    +"'"+request.body.data[i].codeFichier1+"',"
+    +"'"+request.body.data[i].nomFichier1+"',"
+    +"'"+request.body.data[i].codeFichier2+"',"
+    +"'"+request.body.data[i].nomFichier2+"',"
+    +"'"+request.body.data[i].codeFichier3+"',"
+    +"'"+request.body.data[i].nomFichier3+"',"
+    +"'"+request.body.data[i].codeFichier4+"',"
+    +"'"+request.body.data[i].nomFichier4+"',"
+    +"'"+request.body.data[i].terminee+"',"
+    +"'"+request.body.data[i].supprimee+"',"
+    +"'"+request.body.data[i].modifie+"',"
+    +"'"+request.body.data[i].humidite+"',"
+    +"'"+request.body.data[i].proteine+"',"
+    +"'"+request.body.data[i].impurete+"',"
+    +"'"+request.body.data[i].poidsSpecifique+"',"
+    +"'"+request.body.data[i].parcelle+"',"
+    +"'"+request.body.data[i].calibration+"',"
+    +"'"+request.body.data[i].numeroCommande+"',"
+    +"'"+request.body.data[i].numeroDeBSB+"',"
+    +"'"+request.body.data[i].adresse1Societe+"',"
+    +"'"+request.body.data[i].adresse2Societe+"',"
+    +"'"+request.body.data[i].codePostalSociete+"',"
+    +"'"+request.body.data[i].villeSociete+"',"
+    +"'"+request.body.data[i].mobileSociete+"',"
+    +"'"+request.body.data[i].telephoneSociete+"',"
+    +"'"+request.body.data[i].faxSociete+"',"
+    +"'"+request.body.data[i].modeDegrade+"',"
+    +"'"+request.body.data[i].borne+"',"
+    +"'"+request.body.data[i].numeroDePeseeBorne+"',"
+    +"'"+request.body.data[i].creeLe+"',"
+    +"'"+request.body.data[i].creePar+"',"
+    +"'"+request.body.data[i].creeSur+"',"
+    +"'"+request.body.data[i].modifieLe+"',"
+    +"'"+request.body.data[i].modifiePar+"',"
+    +"'"+request.body.data[i].modifieSur+"',"
+    +""+request.body.data[i].idUsine+","
+    +"'"+request.body.data[i].adresseClient+"',"
+    +"'"+request.body.data[i].codePostalClient+"',"
+    +"'"+request.body.data[i].villeClient+"',"
+    +"'"+request.body.data[i].siret+"')"
+    +"END;"
+    ,(err,result) => {
+        if(err) throw(err)
+    });
+  }
+  response.json("Insertiojn");
+});
+
+//Générer les colonnes pour dnd-entrant
+//?idUsine=7
+app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
+  const req=request.query;
+  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception',RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', net as 'quantite', 'kg' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Générer les colonnes pour dnd-sortant
+//?idUsine=7
+app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
+  const req=request.query;
+  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', net as 'quantite', 'kg' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
