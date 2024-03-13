@@ -26,6 +26,33 @@ response = requests.get(req, headers = headers, verify=False)
 listConversions = response.json()
 listConversions = listConversions["data"]
 
+print("\n\n\nDébut du script Rondier!")
+#Rondier
+#Boucle sur les sites pour insérer les valeur site par site
+for site in listeSites['data'] :
+    print(str(site['id']))
+    #Récupération de la liste des produits avec un element de récupération rondier dans chaque usine
+    req = "https://fr-couvinove301:3100/getProductsWithElementRondier?idUsine=" + str(site['id'])
+    response = requests.get(req, headers = headers, verify=False)
+    listProductsRondier = response.json()
+    listProductsRondier = listProductsRondier["data"]
+
+    #On boucle sur les produits et les données rondier
+    for product in listProductsRondier :
+        req = "https://fr-couvinove301:3100/valueElementDay?id=" + str(product['idElementRondier']) + "&date=" + str(hierRondier)
+        response = requests.get(req, headers = headers, verify=False)
+        value = response.json()
+        value = value['data']
+        for val in value :
+            if val['value'] != '/' :
+                print(val['value'] + "\n")
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                response = requests.put(req, headers = headers, verify=False)
+
+print("Fin du script Rondier !")
+
+
+
 #Connexion à la base de données ImagineData
 connexion = mysql.connector.connect(
     host="imagindata.com",
@@ -110,27 +137,3 @@ curseur.close()
 connexion.close()
 
 print("Fin du script Imagindata !")
-print("\n\n\nDébut du script Rondier!")
-#Rondier
-#Boucle sur les sites pour insérer les valeur site par site
-for site in listeSites['data'] :
-    print(str(site['id']))
-    #Récupération de la liste des produits avec un element de récupération rondier dans chaque usine
-    req = "https://fr-couvinove301:3100/getProductsWithElementRondier?idUsine=" + str(site['id'])
-    response = requests.get(req, headers = headers, verify=False)
-    listProductsRondier = response.json()
-    listProductsRondier = listProductsRondier["data"]
-
-    #On boucle sur les produits et les données rondier
-    for product in listProductsRondier :
-        req = "https://fr-couvinove301:3100/valueElementDay?id=" + str(product['idElementRondier']) + "&date=" + str(hierRondier)
-        response = requests.get(req, headers = headers, verify=False)
-        value = response.json()
-        value = value['data']
-        for val in value :
-            if val['value'] != '/' :
-                print(val['value'] + "\n")
-                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-                response = requests.put(req, headers = headers, verify=False)
-
-print("Fin du script Rondier !")
