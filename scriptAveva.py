@@ -25,7 +25,7 @@ hierAvevaFin = f'{hier}' + "T23:59:00Z"
 print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
 # récupération de la liste des sites CAP Exploitation
-req = "https://fr-couvinove301:3100/sites"
+req = "https://fr-couvinove301:3100/sitesAveva"
 response = requests.get(req, headers = headers, verify=False)
 listeSites = response.json()
 
