@@ -175,8 +175,14 @@ app.get("/moralEntities", middleware,(request, response) => {
 //Supprimer les mesures des entrants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
 app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query
-  pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"
+  const req=request.query;
+  let condDasri = "";
+  //Si le site est NSL, on ne supprime pas les DASRIs lors de l'import
+  if(req.idUsine == 1){
+    condDasri = " AND mr.Code NOT LIKE '203%'";
+  }
+
+  pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"+condDasri
   , (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
@@ -790,7 +796,7 @@ app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
 //?EntryDate=1&Value=1&ProductId=1&ProducerId=1
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", middleware,(request, response) => {
-  const req=request.query
+  const req=request.query;
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId = "+req.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
@@ -801,7 +807,7 @@ app.put("/Measure", middleware,(request, response) => {
     "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
-      if(err) console.log(err)
+      if(err) console.log(err);
       response.json("Création du Measures OK");
   });
 });
@@ -3657,7 +3663,7 @@ app.put("/registreDNDTS", middleware,(request, response) => {
 app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
   const req=request.query;
   // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception',RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale',  net/1000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception',RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3670,10 +3676,15 @@ app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
 app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
   const req=request.query;
   // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', net /1000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='EXPEDITION' and idUsine ="+req.idUsine
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='EXPEDITION' and idUsine ="+req.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
   });
 });
+
+
+//////////////////////////
+//    FIN Registre DNDTS    //
+//////////////////////////
