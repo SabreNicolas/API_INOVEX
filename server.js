@@ -66,6 +66,7 @@ app.use('/fichiers', express.static(path.join(__dirname, 'fichiers')));
 let BadgeAndElementsOfZone = [];
 let listZones = [];
 let tabEquipes = [];
+let tabEnregistrementEquipes = [];
 var valueElementDay;
 var previousId = 0;
 //create sql connection
@@ -188,8 +189,6 @@ app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response
   if(req.idUsine == 1){
     condDasri = " AND mr.Code NOT LIKE '203%'";
   }
-  console.log("Suppresion des entrants pour l'idUsine : "+req.idUsine+" entre "+req.dateDeb+" et "+req.dateFin);
-  console.log(condDasri);
   pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"+condDasri
   , (err,data) => {
     if(err) throw err;
@@ -806,7 +805,7 @@ app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
 //?EntryDate=1&Value=1&ProductId=1&ProducerId=1
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", middleware,(request, response) => {
-  const req=request.query
+  const req=request.query;
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId = "+req.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
@@ -817,7 +816,7 @@ app.put("/Measure", middleware,(request, response) => {
     "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
-      if(err) console.log(err)
+      if(err) console.log(err);
       response.json("Création du Measures OK");
   });
 });
@@ -1168,8 +1167,10 @@ app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
 app.delete("/user/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM users WHERE Id = "+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression du user OK")
+    if(err) {
+      response.json("Suppression du user KO")
+    }
+    else response.json("Suppression du user OK")
   });
 });
 
@@ -2326,6 +2327,17 @@ app.get("/allConsignes/:idUsine", (request, response) => {
   });
 });
 
+//Récupérer toutes les consignes
+app.get("/getConsignesEntreDeuxDates", (request, response) => {
+  const req=request.query
+  pool.query("SELECT 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where  date_heure_debut < '"+req.dateFin+"' and date_heure_fin > '"+req.dateDeb+"' and commentaire like '%"+req.titre+"%' and idUsine = "+req.idUsine
+  , (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //DELETE consigne
 app.delete("/consigne/:id",middleware, (request, response) => {
   const req=request.query
@@ -2410,7 +2422,8 @@ app.put("/createAnomalie", (request, response) => {
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/equipe",middleware, (request, response) => {
   const req = request.query
-  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart) OUTPUT INSERTED.Id VALUES('"+req.nomEquipe+"',"+req.quart+","+req.idChefQuart+")", (err,data) => {
+  const nomEquipe = req.nomEquipe.replace(/'/g, "''");
+  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+nomEquipe+"',"+req.quart+","+req.idChefQuart+",'"+req.date+"')", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2528,10 +2541,10 @@ app.get("/getEquipeUser", (request, response) => {
 });
 
 //Récupérer l'équipe d'un quart d'une usine
-//?idUsine=7&quart=1
+//?idUsine=7&quart=1?date=2024-01-01
 app.get("/getEquipeQuart", (request, response) => {
   const req=request.query
-  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart, (err,data) => {
+  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2541,6 +2554,119 @@ app.get("/getEquipeQuart", (request, response) => {
 //////////////////////////
 //   FIN EQUIPE         //
 //////////////////////////
+
+
+//////////////////////////
+//   ENREGISTREMENT d'EQUIPE         //
+//////////////////////////
+
+//Créer un nouvel enregistrement d'équipe
+//?equipe=test
+app.put("/enregistrementEquipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO enregistrement_equipe(equipe) OUTPUT INSERTED.Id VALUES('"+req.nomEquipe+"')", (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//DELETE enregistrement_affectation_equipe
+app.delete("/deleteEnregistrementAffectationEquipe/:idEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM enregistrement_affectation_equipe WHERE idEquipe = "+request.params.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression des Rondiers OK")
+  });
+});
+
+
+//DELETE enregistremen_equipe
+app.delete("/deleteEnregistrementEquipe/:idEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM enregistrement_equipe WHERE id = "+request.params.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression des Rondiers OK")
+  });
+});
+
+
+//Mise à jour des information d'un enregistrement d'équipe
+//?nomEquipe=test&idEquipe=1
+app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("update enregistrement_equipe set equipe = '"+req.nomEquipe+"' where id = "+req.idEquipe, (err,data) => {
+    if(err) throw err;
+    response.json("Update ok");
+  });
+});
+
+//Récupérer une seule équipe enregistrée
+//idEquipe=28
+app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+req.idEquipe, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les nom des équipes enregistrée et leurs id
+//?idUsine=1
+app.get("/getNomsEquipesEnregistrees", middleware,(request, response) => {
+  const req=request.query
+  pool.query("SELECT distinct enregistrement_equipe.id, enregistrement_equipe.equipe FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE users.idUsine =" +req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les équipes enregistrées d'une usine
+//?idUsine=1
+app.get("/getEquipesEnregistrees", middleware,async (request, response) => {
+  const req=request.query
+  pool.query("SELECT distinct e.id, e.equipe from enregistrement_equipe e JOIN enregistrement_affectation_equipe a ON a.idEquipe = e.id JOIN users u on u.Id = a.idRondier WHERE u.idUsine =" + req.idUsine ,
+    async (err, data) => {
+      if (err)
+        throw err;
+      data = data['recordset'];
+      for await (const equipe of data) {
+        await getUsersEnregistrementEquipe(equipe);
+      };
+      response.json({tabEnregistrementEquipes});
+      tabEnregistrementEquipes= [];
+    });
+});
+
+function getUsersEnregistrementEquipe(equipe) {
+  return new Promise((resolve) => {
+    //Récupération des users d'une équipe
+    pool.query("SELECT u.Nom, u.Prenom FROM enregistrement_affectation_equipe a JOIN users u ON u.Id = a.idRondier WHERE a.idEquipe = " + equipe.id, (err, data) => {
+      if (err)
+        throw err;
+      data = data['recordset'];
+      let OneEquipe = {
+        id: equipe.id,
+        equipe: equipe.equipe,
+        rondiers: data
+      };
+      resolve();
+      tabEnregistrementEquipes.push(OneEquipe);
+    });
+  });
+}
+
+//Créer les nouveau rondier d'un enregistrement d'équipe
+//?idRondier=test&idEquipe=1
+app.put("/enregistrementAffectationEquipe",middleware, (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO enregistrement_affectation_equipe(idRondier,idEquipe) VALUES("+req.idRondier+","+req.idEquipe+")", (err,data) => {
+    if(err) throw err;
+    response.json("Ajout ok");
+  });
+});
 
 
 
@@ -3076,6 +3202,8 @@ app.get("/getOneConsigne", middleware,(request, response) => {
   });
 });
 
+//////////ACTU//////////
+
 //Créer une actu
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30
 app.put("/actu", middleware,(request, response) => {
@@ -3116,7 +3244,35 @@ app.get("/getOneActu", middleware,(request, response) => {
 //?idUsine=7
 app.get("/getAllActu", middleware,(request, response) => {
   const req=request.query;
-  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 105)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 105)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine, (err,data) => {
+  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine +" ORDER BY date_heure_debut desc", (err,data) => {
+    console.log("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine +" ORDER BY date_heure_debut desc")
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les actualités
+//?idUsine=7
+app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query;
+  var importance = req.importance
+  if(req.importance == 3){
+    importance = ''
+  }
+  pool.query("SELECT 'Actualité' as 'typeDonnee', a.id, a.titre as 'nom', a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a where  a.date_heure_debut < '"+req.dateFin+"' and a.date_heure_fin > '"+req.dateDeb+"' and a.titre like '%"+req.titre+"%' and a.importance like '%"+importance+"%' and a.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+//Récupérer toutes les actualités actives
+//?idUsine=7
+app.get("/getActusActives", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_fin >= GETDATE() and  idUsine = "+req.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3145,8 +3301,10 @@ app.put("/invaliderActu", middleware,(request, response) => {
   });
 });
 
+////FIN ACTU////////////
 
 //**  evenements  **/
+
 //Créer un évènement
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&groupementGMAO=&equipementGMAO=&cause=&description
 app.put("/evenement",multer({storage: storage}).single('fichier'),(request, response) => {
@@ -3156,7 +3314,10 @@ app.put("/evenement",multer({storage: storage}).single('fichier'),(request, resp
   const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
   const cause = req.cause.replace(/'/g, "''");
   const description = req.description.replace(/'/g, "''");
-  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  var url = ""
+  if(request.file != undefined){
+    url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  }
   pool.query("INSERT INTO quart_evenement(idUsine,titre,importance,date_heure_debut,date_heure_Fin,groupementGMAO, equipementGMAO, description, cause, consigne, demande_travaux,url)"
             +"VALUES("+req.idUsine+",'"+titre+"',"+req.importance+",'"+req.dateDeb+"','"+req.dateFin+"','"+groupementGMAO+"','"+equipementGMAO+"','"+description+"','"+cause+"',"+req.consigne+","+req.demandeTravaux+",'"+url+"')"
   ,(err,result) => {
@@ -3196,7 +3357,26 @@ app.get("/getOneEvenement", middleware,(request, response) => {
 //?idUsine=7
 app.get("/getAllEvenement", middleware,(request, response) => {
   const req=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 105)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 105)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE idUsine = "+req.idUsine, (err,data) => {
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les évènements entre deux dates
+//?idUsine=7
+app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query;
+  var importance = req.importance
+  if(req.importance == 3){
+    importance = ''
+  }
+  const titre = req.titre.replace(/'/g, "''");
+  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
+  pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and e.titre like '%"+titre+"%' and e.groupementGMAO like '%"+groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+equipementGMAO+"%' and e.idUsine = "+req.idUsine
+  , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3211,6 +3391,179 @@ app.delete("/deleteEvenement/:id",middleware, (request, response) => {
     response.json("Suppression de l'evenement OK")
   });
 });
+
+////FIN EVENEMENT ////
+
+///Calendrier///
+
+//Récupérer toutes les zones présentes dans la table calndrier pour une usine
+//?idUsine=
+app.get("/getAllZonesCalendrier", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les actions présentes dans la table calndrier pour une usine
+//?idUsine=
+app.get("/getAllActionsCalendrier", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select a.nom, c.* from quart_calendrier c full outer join quart_action a on a.id = c.idAction where c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Créer une instance pour les ZONES
+//?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
+app.put("/newCalendrierZone", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+req.idUsine+","+req.idRonde+",'"+req.dateDeb+"',"+req.quart+",0,'"+req.dateFin+"')"
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Création de l'instance OK !");
+  });
+});
+
+//Créer une instance pour les ACTIONS
+//?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1
+app.put("/newCalendrierAction", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+req.idUsine+","+req.idAction+",'"+req.dateDeb+"',"+req.quart+",0,'"+req.dateFin+"')"
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Création de l'instance OK !");
+  });
+});
+
+//Créer une action
+//?idUsine=1&idRonde=1&datedeb=''&dateFin=''
+app.put("/newAction", middleware,(request, response) => {
+  const req=request.query;
+  const nom = req.nom.replace(/'/g, "''");
+  pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
+            +"VALUES("+req.idUsine+",'"+nom+"','"+req.dateDeb+"','"+req.dateFin+"')"
+    ,(err,data) => {
+    if(err) throw(err)
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//DELETE évènement
+app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
+  const req=request.query
+  pool.query("DELETE FROM quart_calendrier WHERE id = "+request.params.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de l'evenement du calendrier OK")
+  });
+});
+
+
+//ACCUEIL /////
+
+//Récupérer toutes les zones présentes dans la table calndrier pour une usine
+//?idUsine=1&datedeb=''&dateFin=''
+app.get("/getEvenementsRonde", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer toutes les action présentes dans la table calndrier pour une usine
+//?idUsine=1&datedeb=''&dateFin=''
+app.get("/getActionsRonde", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select a.nom, c.* from quart_calendrier c full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+req.dateDeb+"' and a.date_heure_fin = '"+req.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les zone affectée à une ronde
+//?idUsine=1&datedeb=''&dateFin=''
+app.get("/getZonesCalendrierRonde", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+////FIN ACCUEIL///
+
+//ACTIONS////
+
+//Récupérer toutes les actions d'une usine
+//?idUsine=1
+app.get("/getAllAction", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin' from quart_action a where a.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer une action
+//?idAction=7
+app.get("/getOneAction", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("SELECT * FROM quart_action WHERE id = "+req.idAction, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Modifier une action
+//?nom=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idAction=1
+app.put("/updateAction", middleware,(request, response) => {
+  const req=request.query;
+  const nom = req.nom.replace(/'/g, "''");
+  pool.query("UPDATE quart_action SET nom ='" +nom +"',date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"' WHERE id="+req.idAction
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modif de l'actu OK !");
+  });
+});
+
+//Modifier une action dans la table calendrier
+//?nom=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idAction=1
+app.put("/updateCalendrierAction", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("UPDATE quart_calendrier SET date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"', quart="+req.quart+" WHERE idAction="+req.idAction
+  ,(err,result) => {
+      if(err) throw(err)
+      else response.json("Modif de l'actu OK !");
+  });
+});
+
+
+//Récupérer toutes les actions d'une usine
+//?idUsine=1&dateDeb=''&dateFin=''
+app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
+  const req=request.query;
+  pool.query("select 'Action' as 'typeDonnee', a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.id from quart_action a where  a.date_heure_debut < '"+req.dateFin+"' and a.date_heure_fin > '"+req.dateDeb+"' and a.nom like '%"+req.titre+"%' and a.idUsine = "+req.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
 
 
 //////////////////////////
@@ -3347,3 +3700,8 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
     response.json({data});
   });
 });
+
+
+//////////////////////////
+//    FIN Registre DNDTS    //
+//////////////////////////
