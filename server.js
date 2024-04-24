@@ -1158,8 +1158,10 @@ app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
 app.delete("/user/:id", middleware,(request, response) => {
   const req=request.query
   pool.query("DELETE FROM users WHERE Id = "+request.params.id, (err,data) => {
-    if(err) throw err;
-    response.json("Suppression du user OK")
+    if(err) {
+      response.json("Suppression du user KO")
+    }
+    else response.json("Suppression du user OK")
   });
 });
 
@@ -2411,7 +2413,8 @@ app.put("/createAnomalie", (request, response) => {
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/equipe",middleware, (request, response) => {
   const req = request.query
-  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+req.nomEquipe+"',"+req.quart+","+req.idChefQuart+",'"+req.date+"')", (err,data) => {
+  const nomEquipe = req.nomEquipe.replace(/'/g, "''");
+  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+nomEquipe+"',"+req.quart+","+req.idChefQuart+",'"+req.date+"')", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3232,7 +3235,8 @@ app.get("/getOneActu", middleware,(request, response) => {
 //?idUsine=7
 app.get("/getAllActu", middleware,(request, response) => {
   const req=request.query;
-  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine, (err,data) => {
+  pool.query("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine +" ORDER BY date_heure_debut desc", (err,data) => {
+    console.log("SELECT a.id, a.titre, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine +" ORDER BY date_heure_debut desc")
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3359,7 +3363,10 @@ app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
   if(req.importance == 3){
     importance = ''
   }
-  pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and e.titre like '%"+req.titre+"%' and e.groupementGMAO like '%"+req.groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+req.equipementGMAO+"%' and e.idUsine = "+req.idUsine
+  const titre = req.titre.replace(/'/g, "''");
+  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
+  pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and e.titre like '%"+titre+"%' and e.groupementGMAO like '%"+groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+equipementGMAO+"%' and e.idUsine = "+req.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3430,8 +3437,9 @@ app.put("/newCalendrierAction", middleware,(request, response) => {
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''
 app.put("/newAction", middleware,(request, response) => {
   const req=request.query;
+  const nom = req.nom.replace(/'/g, "''");
   pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
-            +"VALUES("+req.idUsine+",'"+req.nom+"','"+req.dateDeb+"','"+req.dateFin+"')"
+            +"VALUES("+req.idUsine+",'"+nom+"','"+req.dateDeb+"','"+req.dateFin+"')"
     ,(err,data) => {
     if(err) throw(err)
     data = data['recordset'];
