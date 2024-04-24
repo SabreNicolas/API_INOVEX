@@ -118,12 +118,19 @@ app.get("/helloworld", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
-  service: process.env.SERVICE_SMTP,
   host: process.env.HOST_SMTP,
+  port: process.env.PORT_SMTP,
+  secure: false,
+  ignoreTLS: true,
   auth: {
     user: process.env.USER_SMTP,
     pass: process.env.PWD_SMTP
-  }
+  },
+  tls: {
+    secureProtocol: "TLSv1_method"
+  },
+  debug: true,
+  logger: true
 }));
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
@@ -145,10 +152,11 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
       '<h2>'+req.params.typeArret+' pour une durée de '+req.params.duree+ ' heure(s) à partir du '+req.params.dateDeb+' à '+req.params.heureDeb+'.</h2>'+ 
       '<h3>Voici le commentaire : '+req.params.commentaire+'</h3>'//Cors du mail en HTML
     };
+
     transporter.sendMail(message, function(err, info) {
       if (err) {
         console.log(err);
-        // throw err;
+        //throw err;
       } else {
         console.log('Email sent: ' + info.response);
         res.json("mail OK");
@@ -181,7 +189,6 @@ app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response
   if(req.idUsine == 1){
     condDasri = " AND mr.Code NOT LIKE '203%'";
   }
-
   pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"+condDasri
   , (err,data) => {
     if(err) throw err;
@@ -193,7 +200,8 @@ app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response) => {
   const req=request.query
-  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ req.name +"'", (err,data) => {
+  const name = req.name.replace(/'/g, "''");
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
   });
@@ -203,7 +211,8 @@ app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteMesuresReactifsEntreDeuxDates", middleware,(request, response) => {
   const req=request.query
-  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ req.name +"'", (err,data) => {
+  const name = req.name.replace(/'/g, "''");
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
   });
@@ -720,7 +729,7 @@ app.get("/Sortants", middleware,(request, response) => {
 //?idUsine=1
 app.get("/reactifs", middleware,(request, response) => {
   const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE '%LIVRAISON%' AND Enabled = 1 order by Name", (err,data) => {
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE '%LIVRAISON%' and Enabled = 1 order by Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -900,7 +909,7 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
 
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
-  const req=request.query
+  const req=request.query;
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3663,7 +3672,7 @@ app.put("/registreDNDTS", middleware,(request, response) => {
         if(err) throw(err)
     });
   }
-  response.json("Insertiojn");
+  response.json("Insertion");
 });
 
 //Générer les colonnes pour dnd-entrant
@@ -3671,7 +3680,7 @@ app.put("/registreDNDTS", middleware,(request, response) => {
 app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
   const req=request.query;
   // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception',RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception', RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet', nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
