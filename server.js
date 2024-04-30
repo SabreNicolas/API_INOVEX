@@ -1463,6 +1463,7 @@ function getElementsHorsLigne(zone) {
           else{
             data = data['recordset'];
             let OneBadgeAndElementsOfZone = {
+              id : zone.id,
               zoneId : zone.zoneId,
               zone : zone.nomZone,
               commentaire : zone.commentaire,
@@ -2545,20 +2546,26 @@ app.get("/getEquipeUser", (request, response) => {
 app.get("/getEquipeQuart", (request, response) => {
   const req=request.query
   pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'", (err,data) => {
-    if(err) throw err;
-    data = data['recordset'];
-    response.json({data});
+    if(err) {
+      console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'");
+      console.log(err);
+      response.json("erreur");
+    }
+    else {
+      data = data['recordset'];
+      response.json({data});
+    }
   });
 });
 
-//////////////////////////
-//   FIN EQUIPE         //
-//////////////////////////
+////////////////////
+//   FIN EQUIPE   //
+////////////////////
 
 
-//////////////////////////
-//   ENREGISTREMENT d'EQUIPE         //
-//////////////////////////
+/////////////////////////////////
+//   ENREGISTREMENT D'EQUIPE   //
+/////////////////////////////////
 
 //Créer un nouvel enregistrement d'équipe
 //?equipe=test
@@ -3494,10 +3501,21 @@ app.get("/getActionsRonde", middleware,(request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getZonesCalendrierRonde", middleware,(request, response) => {
   const req=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine, (err,data) => {
+  BadgeAndElementsOfZone = [];
+  pool.query("select c.id, c.idUsine, c.idZone, c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine, async (err,data) => {
     if(err) throw err;
-    data = data['recordset'];
-    response.json({data});
+    else {
+      data = data['recordset'];
+      //On récupère l'Id de la ronde précedente
+      console.log(data)
+      await getPreviousId(req.idUsine);
+      //On boucle sur chaque zone et son badge pour récupérer ses éléments
+      for await (const zone of data) {
+        await getElementsHorsLigne(zone);
+        console.log(BadgeAndElementsOfZone)
+      };
+      response.json({BadgeAndElementsOfZone});
+    }
   });
 });
 
@@ -3702,6 +3720,6 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
 });
 
 
-//////////////////////////
+//////////////////////////////
 //    FIN Registre DNDTS    //
-//////////////////////////
+//////////////////////////////
