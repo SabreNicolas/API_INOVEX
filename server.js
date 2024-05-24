@@ -13,7 +13,6 @@ function generateAcessToken(id){
   return jwt.sign({id}, process.env.ACESS_TOKEN_SECRET)
 }
 
-
 const express = require("express");
 const bodyParser = require("body-parser");
 //pour reécupérer les fichiers envoyés via formData
@@ -4064,5 +4063,40 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
   pool.query("update quart_calendrier set termine = 1, idUser = "+req.idUser+" where quart = "+request.params.quart+" AND idUsine = "+request.params.idUsine+" AND idAction = "+req.idAction+" AND date_heure_debut = '"+req.date_heure_debut+"'" , (err,data) => {
     if(err) throw err;
     response.json("Update action du calendrier ok");
+  });
+});
+
+
+/////////////////////////
+/// REPRISE DE RONDE ////
+/////////////////////////
+//update des actions effectués sur le quart et passe en terminer = 1
+//?idUsine=1&quart=1
+app.put("/createRepriseDeRonde", (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO repriseRonde(date,quart,idUsine,termine) VALUES ('"+req.date+"',"+req.quart+","+req.idUsine+",0)" , (err,data) => {
+    if(err) throw err;
+    response.json("Update action du calendrier ok");
+  });
+});
+
+//Controler s'il y a des zones sur la ronde du quart
+app.get("/getReprisesRonde/:idUsine",(request, response) => {
+  const req=request.query
+  pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = "+request.params.idUsine
+  ,(err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Supprimer les mesures des sortants entre deux dates pour une usine
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
+app.delete("/deleteRepriseRonde", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete from repriseRonde where id =" + req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de la reprise OK")
   });
 });
