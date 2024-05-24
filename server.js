@@ -1072,7 +1072,6 @@ app.get("/UsersRondier", (request, response) => {
 
 //Récupérer l'utilisateur qui est connecté et Connexion
 app.get("/User/:login/:pwd", (request, response) => {
-  console.log("connection")
   const req=request.query;
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = request.params.login.replace("'","''");
@@ -2569,7 +2568,6 @@ app.get("/getEquipeQuart", (request, response) => {
   const req=request.query
   pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'", (err,data) => {
     if(err) {
-      console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'");
       console.log(err);
       response.json("erreur");
     }
@@ -2900,7 +2898,6 @@ app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
   const req=request.query
   pool.query("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
-    console.log("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id)
     response.json("Mise à jour du Coeff OK")
   });
 });
@@ -3528,10 +3525,8 @@ app.get("/getEvenementsRonde", middleware,(request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActionsRonde", middleware,(request, response) => {
   const req=request.query;
-  console.log("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+req.dateDeb+"' and a.date_heure_fin = '"+req.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine)
   pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+req.dateDeb+"' and a.date_heure_fin = '"+req.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine, (err,data) => {
     if(err) throw err;
-    console.log(data)
     data = data['recordset'];
     response.json({data});
   });
@@ -3542,7 +3537,6 @@ app.get("/getActionsRonde", middleware,(request, response) => {
 app.get("/getZonesCalendrierRonde",(request, response) => {
   const req=request.query;
   BadgeAndElementsOfZone = [];
-  console.log("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine)
   pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine, async (err,data) => {
     if(err) throw err;
     else {
@@ -3937,7 +3931,6 @@ app.put("/historiqueEvenementUpdate", middleware,(request, response) => {
 //?idUser=1&idEvenement=123&dateHeure=???&idUsine=1
 app.put("/historiqueEvenementDelete", middleware,(request, response) => {
   const req=request.query;
-  console.log("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")")
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
@@ -4023,9 +4016,6 @@ app.put("/historiqueConsigneDelete", middleware,(request, response) => {
 //?idUsine=1&quart=1
 app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
   const req=request.query
-  console.log("SELECT a.nom, a.id FROM [dolibarr].[dbo].[quart_calendrier] c INNER JOIN [dolibarr].[dbo].[quart_action] a ON a.id = c.idAction "
-  +"WHERE c.idUsine = "+request.params.idUsine+" AND c.quart = "+request.params.quart+" AND c.termine = 0 "
-  +"AND c.date_heure_debut = '"+req.date_heure_debut+"'")
   pool.query("SELECT a.nom, a.id FROM [dolibarr].[dbo].[quart_calendrier] c INNER JOIN [dolibarr].[dbo].[quart_action] a ON a.id = c.idAction "
   +"WHERE c.idUsine = "+request.params.idUsine+" AND c.quart = "+request.params.quart+" AND c.termine = 0 "
   +"AND c.date_heure_debut = '"+req.date_heure_debut+"'",(err,data) => {
