@@ -13,7 +13,6 @@ function generateAcessToken(id){
   return jwt.sign({id}, process.env.ACESS_TOKEN_SECRET)
 }
 
-
 const express = require("express");
 const bodyParser = require("body-parser");
 //pour reécupérer les fichiers envoyés via formData
@@ -816,6 +815,7 @@ app.put("/Measure", middleware,(request, response) => {
     "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
+      console.log(queryOnDuplicate);
       if(err) console.log(err);
       response.json("Création du Measures OK");
   });
@@ -1731,13 +1731,13 @@ app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
 });
 
 /*Element de controle*/
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10&infoSup=djdjjd
 app.put("/element", middleware,(request, response) => {
   const req=request.query
   if(req.idGroupement==0){
     req.idGroupement = null;
   }
-  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement, CodeEquipement) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +",'"+req.codeEquipement+"')"
+  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement, CodeEquipement, infoSup) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +",'"+req.codeEquipement+"', '"+req.infoSup+"')"
     ,(err,result,fields) => {
         if(err) response.json("Création de l'élément KO");
         else response.json("Création de l'élément OK");
@@ -1756,13 +1756,13 @@ app.put("/updateOrdreElement", middleware,(request, response) => {
 });
 
 //Update element
-//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5&idGroupement=1
+//?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5&idGroupement=1&infoSup=zgyzgzy
 app.put("/updateElement/:id", middleware,(request, response) => {
   const req=request.query
   if(req.idGroupement == 0 ){
     req.idGroupement = null;
   }
-  pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +", idGroupement ="+ req.idGroupement +",CodeEquipement = '"+ req.codeEquipement +"' WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +", idGroupement ="+ req.idGroupement +",CodeEquipement = '"+ req.codeEquipement +"', infoSup = '"+ req.infoSup +"' WHERE Id = "+request.params.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'element OK")
   });
@@ -4054,5 +4054,40 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
   pool.query("update quart_calendrier set termine = 1, idUser = "+req.idUser+" where quart = "+request.params.quart+" AND idUsine = "+request.params.idUsine+" AND idAction = "+req.idAction+" AND date_heure_debut = '"+req.date_heure_debut+"'" , (err,data) => {
     if(err) throw err;
     response.json("Update action du calendrier ok");
+  });
+});
+
+
+/////////////////////////
+/// REPRISE DE RONDE ////
+/////////////////////////
+//update des actions effectués sur le quart et passe en terminer = 1
+//?idUsine=1&quart=1
+app.put("/createRepriseDeRonde", (request, response) => {
+  const req = request.query
+  pool.query("INSERT INTO repriseRonde(date,quart,idUsine,termine) VALUES ('"+req.date+"',"+req.quart+","+req.idUsine+",0)" , (err,data) => {
+    if(err) throw err;
+    response.json("Update action du calendrier ok");
+  });
+});
+
+//Controler s'il y a des zones sur la ronde du quart
+app.get("/getReprisesRonde/:idUsine",(request, response) => {
+  const req=request.query
+  pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = "+request.params.idUsine
+  ,(err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Supprimer les mesures des sortants entre deux dates pour une usine
+//?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
+app.delete("/deleteRepriseRonde", middleware,(request, response) => {
+  const req=request.query
+  pool.query("delete from repriseRonde where id =" + req.id, (err,data) => {
+    if(err) throw err;
+    response.json("Suppression de la reprise OK")
   });
 });
