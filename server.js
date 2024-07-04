@@ -815,7 +815,7 @@ app.put("/Measure", middleware,(request, response) => {
     "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
-      console.log(queryOnDuplicate);
+      //console.log(queryOnDuplicate);
       if(err) console.log(err);
       response.json("Création du Measures OK");
   });

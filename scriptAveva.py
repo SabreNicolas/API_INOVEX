@@ -67,32 +67,34 @@ for site in listeSites['data'] :
                         recup = listData['value'][0]['Average']
 
             #Si l'unité Aveva est différente de l'unité CAP Exploitation
-            if product['Unit'] != listData['value'][0]['Unit'] :
-                #On parcourt la liste des conversion de CAP Exploitation
-                for conversion in listConversions :
-                    count = 0
-                    #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
-                    if listData['value'][0]['Unit'].lower() == conversion['uniteBase'].lower() and product['Unit'].lower() == conversion['uniteCible'].lower() :
-                        #On récupère l'opérateur de la conversion qui est le premier caractère
-                        operateur = conversion['conversion'][0]
-                        #On récupère la valeur en int du calcul
-                        valeur = int(conversion['conversion'][1:])
-                        count = count + 1
-                        print(str(recup)  + "\n")
-                        #On regarde quel opérateur est utilisé et on fait le calcul
-                        if operateur == "*" :
-                            recup = recup * valeur
-                        else :
-                            if operateur == "/" :
-                                recup = recup / valeur
-                        print(str(recup)  + "\n")
-                # if count == 0 :
-                    # f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
-                    # f.write("Unite CAP : " + product['Unit']  + "\n")
-                    # f.write(product['Name']  + "\n")
-                    # f.write("*******************************"  + "\n")
+            if "Unit" in listData['value'][0] :
+                if product['Unit'] != listData['value'][0]['Unit'] :
+                    #On parcourt la liste des conversion de CAP Exploitation
+                    for conversion in listConversions :
+                        count = 0
+                        #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
+                        if listData['value'][0]['Unit'].lower() == conversion['uniteBase'].lower() and product['Unit'].lower() == conversion['uniteCible'].lower() :
+                            #On récupère l'opérateur de la conversion qui est le premier caractère
+                            operateur = conversion['conversion'][0]
+                            #On récupère la valeur en int du calcul
+                            valeur = int(conversion['conversion'][1:])
+                            count = count + 1
+                            print(str(recup)  + "\n")
+                            #On regarde quel opérateur est utilisé et on fait le calcul
+                            if operateur == "*" :
+                                recup = recup * valeur
+                            else :
+                                if operateur == "/" :
+                                    recup = recup / valeur
+                            print(str(recup)  + "\n")
+                    # if count == 0 :
+                        # f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
+                        # f.write("Unite CAP : " + product['Unit']  + "\n")
+                        # f.write(product['Name']  + "\n")
+                        # f.write("*******************************"  + "\n")
 
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+            print(req)
             response = requests.put(req, headers = headers, verify=False)
 
 print("Fin du script !"  + "\n")
