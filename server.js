@@ -117,19 +117,17 @@ app.get("/helloworld", (req, res) => {
 
 /*EMAIL*/
 var transporter = nodemailer.createTransport(smtpTransport({
+  //service : process.SERVICE_SMTP,
   host: process.env.HOST_SMTP,
   port: process.env.PORT_SMTP,
-  secure: false,
-  ignoreTLS: true,
+  secureConnection: false,
   auth: {
     user: process.env.USER_SMTP,
     pass: process.env.PWD_SMTP
   },
   tls: {
-    secureProtocol: "TLSv1_method"
+    ciphers: 'SSLv3'
   },
-  debug: true,
-  logger: true
 }));
 
 // define a sendmail endpoint, which will send emails and response with the corresponding status
@@ -144,7 +142,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 
     //Envoi du mail
     const message = {
-      from: 'Noreply.Inovex@paprec.com', // Sender address
+      from: process.env.USER_SMTP, // Sender address
       to: maillist,
       subject: '['+localisation+'] Nouvel Arrêt Intempestif !!!', // Subject line
       html: '<h1>ATTENTION, un arrêt intempestif vient d\'être signalé pour le site de '+localisation+ ':</h1> '+

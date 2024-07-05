@@ -16,18 +16,19 @@ warnings.filterwarnings("ignore")
 load_dotenv()
 userSMTP = os.getenv('USER_SMTP')
 pwdSMTP = os.getenv('PWD_SMTP')
+portSMPT = os.getenv('PORT_SMTP')
+hostSMTP = os.getenv('HOST_SMTP')
 ##Fin récupération données .env
 username = userSMTP
 password = pwdSMTP
 mail_from = userSMTP
-mail_to = "nsabre@kerlan-info.fr;anthony.gourdy@paprec.com"
+mail_to = "nsabre@kerlan-info.fr;anthony.gourdy@paprec.com;mcoulon@kerlan-info.fr"
 mail_subject = "CAP EXPLOITATION - Récapitulatif du Jour"
-
 mimemsg = MIMEMultipart()
 mimemsg['From']=mail_from
 mimemsg['To']=mail_to
 mimemsg['Subject']=mail_subject
-connection = smtplib.SMTP(host='smtp.office365.com', port=587)
+connection = smtplib.SMTP(host=hostSMTP, port=portSMPT)
 connection.starttls()
 connection.login(username,password)
 #FIN Préparation du mail
@@ -95,7 +96,8 @@ for site in listeSites['data'] :
 
     body = body + "<p>****** Nombre de TAGs sur le site de "+str(site['localisation']).upper()+" -> " + str(nbTag) + "</p>\n"
 
-    body = body + "<p style='color:blue'>//*********** FIN "+str(site['localisation']).upper()+" ***********//" + "</p></div><br>\n\n"
+    #body = body + "<p style='color:blue'>//*********** FIN "+str(site['localisation']).upper()+" ***********//" + "</p></div><br>\n\n"
+    body = body + "</div><br>\n\n"
 
 #Ajout du contenu du mail
 mimemsg.attach(MIMEText(body, 'html'))
