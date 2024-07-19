@@ -169,10 +169,10 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 //get all MoralEntities where Enabled = 1
 //?Code=34343&idUsine=1
 app.get("/moralEntities", middleware,(request, response) => {
-    const req=request.query
+    const reqQ=request.query
     pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
     "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
-    "WHERE mr.idUsine = "+req.idUsine+" AND mr.Enabled = 1 AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+    "WHERE mr.idUsine = "+reqQ.idUsine+" AND mr.Enabled = 1 AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY Name ASC", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -182,13 +182,13 @@ app.get("/moralEntities", middleware,(request, response) => {
 //Supprimer les mesures des entrants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
 app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   let condDasri = "";
   //Si le site est NSL, on ne supprime pas les DASRIs lors de l'import
-  if(req.idUsine == 1){
+  if(reqQ.idUsine == 1){
     condDasri = " AND mr.Code NOT LIKE '203%'";
   }
-  pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "'"+condDasri
+  pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "'"+condDasri
   , (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
@@ -198,9 +198,9 @@ app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response
 //Supprimer les mesures des sortants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query
-  const name = req.name.replace(/'/g, "''");
-  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
+  const reqQ=request.query
+  const name = reqQ.name.replace(/'/g, "''");
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
   });
@@ -209,9 +209,9 @@ app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response
 //Supprimer les mesures des sortants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteMesuresReactifsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query
-  const name = req.name.replace(/'/g, "''");
-  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + req.idUsine +" and m.EntryDate >= '" + req.dateDeb +"' and m.EntryDate <= '"+ req.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
+  const reqQ=request.query
+  const name = reqQ.name.replace(/'/g, "''");
+  pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
     if(err) throw err;
     response.json("Suppression des mesures OK")
   });
@@ -220,10 +220,10 @@ app.delete("/deleteMesuresReactifsEntreDeuxDates", middleware,(request, response
 //get all MoralEntities
 //?Code=34343&idUsine=1
 app.get("/moralEntitiesAll", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + req.Code + "%' ORDER BY Name ASC", (err,data) => {
+  "WHERE mr.idUsine = "+reqQ.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -234,8 +234,8 @@ app.get("/moralEntitiesAll", middleware,(request, response) => {
 //?Name=c&Address=d&Code=f&UnitPrice=g&numCAP=sh&codeDechet=dg&nomClient=dg&prenomClient=fg&mailClient=dh&idUsine=1
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie", middleware,(request, response) => {
-    const req=request.query
-    const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, numCAP, codeDechet, nomClient, prenomClient, mailClient, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', '"+req.Address+"', 1, '"+req.Code+"', "+req.UnitPrice+", '"+req.numCAP+"', '"+req.codeDechet+"', '"+req.nomClient+"', '"+req.prenomClient+"','"+req.mailClient+"', "+req.idUsine+")";
+    const reqQ=request.query
+    const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, numCAP, codeDechet, nomClient, prenomClient, mailClient, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', '"+reqQ.Address+"', 1, '"+reqQ.Code+"', "+reqQ.UnitPrice+", '"+reqQ.numCAP+"', '"+reqQ.codeDechet+"', '"+reqQ.nomClient+"', '"+reqQ.prenomClient+"','"+reqQ.mailClient+"', "+reqQ.idUsine+")";
     pool.query(query,(err,result,fields) => {
         if(err) throw err;
         response.json("Création du client OK");
@@ -245,8 +245,8 @@ app.put("/moralEntitie", middleware,(request, response) => {
 //get Last Code INOVEX
 //?Code=29292&idUsine=1
 app.get("/moralEntitieLastCode", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT TOP 1 Code FROM moralentities_new WHERE CODE LIKE '" + req.Code + "%' AND idUsine = "+req.idUsine+" ORDER BY Code DESC", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT TOP 1 Code FROM moralentities_new WHERE CODE LIKE '" + reqQ.Code + "%' AND idUsine = "+reqQ.idUsine+" ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -255,20 +255,31 @@ app.get("/moralEntitieLastCode", middleware,(request, response) => {
 
 //get One MoralEntitie
 app.get("/moralEntitie/:id",middleware, (request, response) => {
-    const req=request.query
-    pool.query("SELECT * FROM moralentities_new WHERE Id = "+request.params.id, (err,data) => {
+    const reqP=request.params
+    pool.query("SELECT * FROM moralentities_new WHERE Id = "+reqP.id, (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
     });
 });
 
+//get One MoralEntitie
+app.get("/getOneUser/:id",middleware, (request, response) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM users WHERE Id = "+reqP.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //UPDATE MoralEntitie, set UnitPrice & Code
 //?UnitPrice=2.3&Code=1234
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitie/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", Code = " + req.Code + " WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET UnitPrice = " + reqQ.UnitPrice + ", Code = " + reqQ.Code + " WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du prix unitaire et code INOVEX OK")
   });
@@ -278,8 +289,9 @@ app.put("/moralEntitie/:id", middleware,(request, response) => {
 //?UnitPrice=2.3
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitieUnitPrice/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET UnitPrice = " + req.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET UnitPrice = " + reqQ.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du prix unitaire OK")
   });
@@ -289,8 +301,9 @@ app.put("/moralEntitieUnitPrice/:id", middleware,(request, response) => {
 //?Name=d&Address=d&Code=12&UnitPrice=1&numCAP=123&codeDechet=34343&nomClient=dhddg&prenomClient=dhdhdh&mailClient=dhggdgd
 //ATTENION Unit Price doit contenir un . pour les décimales
 app.put("/moralEntitieAll/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET mailClient = '" + req.mailClient + "', prenomClient = '" + req.prenomClient + "', nomClient = '" + req.nomClient + "', codeDechet = '" + req.codeDechet + "', numCAP = '" + req.numCAP + "', Code = '" + req.Code + "', Address = '" + req.Address + "', Name = '" + req.Name + "', UnitPrice = '" + req.UnitPrice + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET mailClient = '" + reqQ.mailClient + "', prenomClient = '" + reqQ.prenomClient + "', nomClient = '" + reqQ.nomClient + "', codeDechet = '" + reqQ.codeDechet + "', numCAP = '" + reqQ.numCAP + "', Code = '" + reqQ.Code + "', Address = '" + reqQ.Address + "', Name = '" + reqQ.Name + "', UnitPrice = '" + reqQ.UnitPrice + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du MR OK")
   });
@@ -299,8 +312,9 @@ app.put("/moralEntitieAll/:id", middleware,(request, response) => {
 //UPDATE MoralEntitie, set CAP
 //?cap=123
 app.put("/moralEntitieCAP/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET numCAP = '" + req.cap + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET numCAP = '" + reqQ.cap + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du CAP OK")
   });
@@ -309,8 +323,9 @@ app.put("/moralEntitieCAP/:id", middleware,(request, response) => {
 //UPDATE MoralEntitie, set Code
 //?Code=123
 app.put("/moralEntitieCode/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET Code = " + req.Code + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET Code = " + reqQ.Code + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du code OK")
   });
@@ -318,8 +333,8 @@ app.put("/moralEntitieCode/:id", middleware,(request, response) => {
 
 //UPDATE MoralEntitie, set Enabled
 app.put("/moralEntitieEnabled/:id/:enabled", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET Enabled = "+request.params.enabled+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET Enabled = "+reqP.enabled+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de visibilité du client OK")
   });
@@ -328,8 +343,9 @@ app.put("/moralEntitieEnabled/:id/:enabled", middleware,(request, response) => {
 //UPDATE MoralEntitie, set Name
 //?Name=tetet
 app.put("/moralEntitieName/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE moralentities_new SET Name = '"+req.Name+"', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE moralentities_new SET Name = '"+reqQ.Name+"', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de nom du client OK")
   });
@@ -337,8 +353,8 @@ app.put("/moralEntitieName/:id", middleware,(request, response) => {
 
 //DELETE MoralEntitie
 app.delete("/moralEntitie/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM moralentities_new WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM moralentities_new WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression du client OK")
   });
@@ -347,7 +363,7 @@ app.delete("/moralEntitie/:id", middleware,(request, response) => {
 /*CATEGORIES*/
 //get ALL Categories for compteurs
 app.get("/CategoriesCompteurs", middleware, (request, response) => {
-    const req=request.query
+    const reqQ=request.query
     pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
     "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
     "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name NOT LIKE 'Tonnage%' AND cat.Name NOT LIKE 'Cendres%' AND cat.Code NOT LIKE '701%' AND cat.Name NOT LIKE 'Mâchefers%' AND cat.Name NOT LIKE 'Arrêts%' AND cat.Name NOT LIKE 'Autres consommables%' AND cat.Name NOT LIKE 'Déchets détournés%' AND cat.Name NOT LIKE 'Ferraille et autres%' AND cat.Name NOT LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
@@ -359,7 +375,7 @@ app.get("/CategoriesCompteurs", middleware, (request, response) => {
 
 //get ALL Categories for analyses
 app.get("/CategoriesAnalyses", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
   "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
@@ -371,7 +387,7 @@ app.get("/CategoriesAnalyses", middleware,(request, response) => {
 
 //get ALL Categories for sortants
 app.get("/CategoriesSortants",middleware, (request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
   "WHERE cat.Code LIKE '50%' AND cat.Name NOT LIKE 'Résidus de Traitement' ORDER BY cat.Name ASC", (err,data) => {
@@ -384,8 +400,8 @@ app.get("/CategoriesSortants",middleware, (request, response) => {
 //create Categorie
 //?Name=c&Code=f&ParentId=g
 app.put("/Category",middleware, (request, response) => {
-  const req=request.query
-  const query="INSERT INTO categories_new (CreateDate, LastModifiedDate, Name, Enabled, Code, ParentId) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 1, '"+req.Code+"', "+req.ParentId+")";
+  const reqQ=request.query
+  const query="INSERT INTO categories_new (CreateDate, LastModifiedDate, Name, Enabled, Code, ParentId) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', 1, '"+reqQ.Code+"', "+reqQ.ParentId+")";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création de la catégorie OK");
@@ -394,8 +410,8 @@ app.put("/Category",middleware, (request, response) => {
 
 //get ONE Categorie
 app.get("/Category/:Id",middleware, (request, response) => {
-    const req=request.query
-    pool.query("SELECT * FROM categories_new WHERE Id = "+ request.params.Id, (err,data) => {
+    const reqP=request.params
+    pool.query("SELECT * FROM categories_new WHERE Id = "+ reqP.Id, (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -405,8 +421,8 @@ app.get("/Category/:Id",middleware, (request, response) => {
 
 //Get Catégories filles d'une catégorie mère
 app.get("/Categories/:ParentId",middleware, (request, response) => {
-    const req=request.query
-    pool.query("SELECT * FROM categories_new WHERE ParentId = "+ request.params.ParentId, (err,data) => {
+    const reqP=request.params
+    pool.query("SELECT * FROM categories_new WHERE ParentId = "+ reqP.ParentId, (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -417,8 +433,8 @@ app.get("/Categories/:ParentId",middleware, (request, response) => {
 //get Last Code INOVEX 
 //?Code=29292&idUsine=1 
 app.get("/productLastCode", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + req.idUsine + " AND CODE LIKE '" + req.Code + "%' ORDER BY Code DESC", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + reqQ.idUsine + " AND CODE LIKE '" + reqQ.Code + "%' ORDER BY Code DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -428,7 +444,7 @@ app.get("/productLastCode", middleware,(request, response) => {
 /*PRODUCTS*/
 //get ALL Products
 app.get("/Products", middleware,(request, response) => {
-    const req=request.query
+    const reqQ=request.query
     pool.query("SELECT * FROM products_new", (err,data) => {
       if(err) throw err;
       data = data['recordset'];
@@ -439,8 +455,9 @@ app.get("/Products", middleware,(request, response) => {
 //get ALL Products with type param
 //?Name=dgdgd&idUsine=1
 app.get("/Products/:TypeId", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = "+request.params.TypeId +" AND Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = "+reqP.TypeId +" AND Name LIKE '%"+reqQ.Name+"%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -451,8 +468,8 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
 //Créer un formulaire
 //?nom=zlfhe&idUsine=1
 app.put("/createFormulaire",middleware, (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO formulaire(nom,idUsine) OUTPUT INSERTED.idFormulaire VALUES('" + req.nom + "',"+req.idUsine+")", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO formulaire(nom,idUsine) OUTPUT INSERTED.idFormulaire VALUES('" + reqQ.nom + "',"+reqQ.idUsine+")", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});  });
@@ -461,8 +478,8 @@ app.put("/createFormulaire",middleware, (request, response) => {
 //Modifier un formulaire
 //?nom=zlfhe&idFormulaire=1
 app.put("/updateFormulaire",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE formulaire SET nom ='" + req.nom + "' WHERE idFormulaire ="+req.idFormulaire, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE formulaire SET nom ='" + reqQ.nom + "' WHERE idFormulaire ="+reqQ.idFormulaire, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});  });
@@ -471,8 +488,8 @@ app.put("/updateFormulaire",middleware, (request, response) => {
 //Supprimer les produits d'un formulaire
 //?idFormulaire=????
 app.delete("/deleteProduitFormulaire", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire , (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM formulaire_affectation WHERE idFormulaire = "+reqQ.idFormulaire , (err,data) => {
     if(err) throw err;
     response.json("Suppression du produit OK");
   });
@@ -481,8 +498,8 @@ app.delete("/deleteProduitFormulaire", middleware,(request, response) => {
 //Supprimer un formulaire
 //?idFormulaire=????
 app.delete("/deleteFormulaire", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM formulaire WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM formulaire WHERE idFormulaire = "+reqQ.idFormulaire, (err,data) => {
     if(err) throw err;
     response.json("Suppression du produit OK");
   });
@@ -491,8 +508,8 @@ app.delete("/deleteFormulaire", middleware,(request, response) => {
 //Créer un formulaire affectation
 //?alias=zlfhe&idFormiualire=1&idProduit=1234
 app.put("/createFormulaireAffectation",middleware, (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO formulaire_affectation(idFormulaire,idProduct,alias) VALUES(" + req.idFormulaire + ","+ req.idProduit + ",'"+req.alias+"')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO formulaire_affectation(idFormulaire,idProduct,alias) VALUES(" + reqQ.idFormulaire + ","+ reqQ.idProduit + ",'"+reqQ.alias+"')", (err,data) => {
     if(err) throw err;
     response.json("Affectation OK");
   });
@@ -501,8 +518,8 @@ app.put("/createFormulaireAffectation",middleware, (request, response) => {
 //get formulaires d'une usine
 //?idUsine=1
 app.get("/getFormulaires", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM formulaire WHERE idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM formulaire WHERE idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     // console.log(data)
@@ -513,8 +530,8 @@ app.get("/getFormulaires", middleware,(request, response) => {
 //get un formulaire d'une usine
 //?idFormulaire=1
 app.get("/getOneFormulaire", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM formulaire WHERE idFormulaire = "+req.idFormulaire, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM formulaire WHERE idFormulaire = "+reqQ.idFormulaire, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -524,8 +541,8 @@ app.get("/getOneFormulaire", middleware,(request, response) => {
 //get les produits d'un formulaire
 //?idFormulaire=1
 app.get("/getProduitsFormulaire", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+req.idFormulaire + 'order by alias', (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+reqQ.idFormulaire + 'order by alias', (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     // console.log(data)
@@ -536,8 +553,9 @@ app.get("/getProduitsFormulaire", middleware,(request, response) => {
 //get one Products 
 //?idUsine=1
 app.get("/getOneProduct/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT id,Name FROM products_new WHERE idUsine = "+req.idUsine+" AND id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT id,Name FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND id = "+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     // console.log(data)
@@ -548,8 +566,8 @@ app.get("/getOneProduct/:id", middleware,(request, response) => {
 //get ALL Products 
 //?idUsine=1
 app.get("/AllProducts", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Enabled = 1 and CODE not LIKE '2%' and name NOT LIKE '%arret%' and name NOT LIKE '%depassement%' and name not like 'baisse de charge%' ORDER BY Name ASC", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" and Enabled = 1 and CODE not LIKE '2%' and name NOT LIKE '%arret%' and name NOT LIKE '%depassement%' and name not like 'baisse de charge%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -560,14 +578,15 @@ app.get("/AllProducts", middleware,(request, response) => {
 //get ALL Products with type param
 //?Name=dgdgd&idUsine=1
 app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
+  const reqP=request.params
   let type;
   //pour tout récupérer sans prendre en compte le type
-  if (request.params.TypeId == '_'){
+  if (reqP.TypeId == '_'){
     type = "typeId > 0 AND ";
   }
-  else type = "typeId = "+request.params.TypeId+" AND ";
-  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+req.idUsine+" AND "+type+"Name LIKE '%"+req.Name+"%' ORDER BY Name ASC", (err,data) => {
+  else type = "typeId = "+reqP.TypeId+" AND ";
+  pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+reqQ.idUsine+" AND "+type+"Name LIKE '%"+reqQ.Name+"%' ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -577,8 +596,8 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
 //get product avec un tag pour une usine
 //?idUsine=?
 app.get("/getProductsWithTag", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + req.idUsine, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});;
@@ -588,8 +607,8 @@ app.get("/getProductsWithTag", middleware,(request, response) => {
 //get products avec un élément rondier (pour récupération auto des valeurs rondier)
 //?idUsine=?
 app.get("/getProductsWithElementRondier", middleware,(request, response) => {
-  const req=request.query
-  pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + req.idUsine, (err,data) => {
+  const reqQ=request.query
+  pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});;
@@ -598,8 +617,8 @@ app.get("/getProductsWithElementRondier", middleware,(request, response) => {
 
 //get Container DASRI
 app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * from products_new WHERE idUsine = " + request.params.idUsine + " AND typeId = 1 AND Code NOT LIKE '2%'", (err,data) => {
+  const reqP=request.params
+    pool.query("SELECT * from products_new WHERE idUsine = " + reqP.idUsine + " AND typeId = 1 AND Code NOT LIKE '2%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -608,8 +627,8 @@ app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
  
 //UPDATE Product, change name
 app.put("/updateProductName", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET Name = '"+req.newName +"' WHERE Name = '" +req.lastName +"'", (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE products_new SET Name = '"+reqQ.newName +"' WHERE Name = '" +reqQ.lastName +"'", (err,data) => {
     if(err) throw err;
     response.json("Changement du nom du produit OK")
   });
@@ -617,8 +636,8 @@ app.put("/updateProductName", middleware,(request, response) => {
 
 //UPDATE Product, change Enabled
 app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET Enabled = "+request.params.enabled +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE products_new SET Enabled = "+reqP.enabled +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de visibilité du client OK")
   });
@@ -626,8 +645,8 @@ app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
 
 //UPDATE Product, change TypeId
 app.put("/productType/:id/:type",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET TypeId = "+request.params.type +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE products_new SET TypeId = "+reqP.type +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Changement de catégorie du produit OK")
   });
@@ -636,8 +655,9 @@ app.put("/productType/:id/:type",middleware, (request, response) => {
 //UPDATE Product, set Unit
 //?Unit=123
 app.put("/productUnit/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET Unit = '" + req.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE products_new SET Unit = '" + reqQ.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'unité OK")
   });
@@ -646,9 +666,9 @@ app.put("/productUnit/:id",middleware, (request, response) => {
 //Update le type de récup emonitoring
 //?id=1&typeRecup=tifMax
 app.put("/updateRecupEMonitoring",middleware, (request, response) => {
-  const req=request.query
-  var update = "UPDATE products_new SET typeRecupEMonitoring = '" + req.typeRecup + "' WHERE Id = "+req.id;
-  if(req.typeRecup == "null") update = "UPDATE products_new SET typeRecupEMonitoring = NULL WHERE Id = "+req.id;
+  const reqQ=request.query
+  var update = "UPDATE products_new SET typeRecupEMonitoring = '" + reqQ.typeRecup + "' WHERE Id = "+reqQ.id;
+  if(reqQ.typeRecup == "null") update = "UPDATE products_new SET typeRecupEMonitoring = NULL WHERE Id = "+reqQ.id;
   pool.query(update, (err,data) => {
     if(err) throw err;
     response.json("Changement du type de récupération OK")
@@ -658,8 +678,8 @@ app.put("/updateRecupEMonitoring",middleware, (request, response) => {
 //get ALL Compteurs
 //?Code=ddhdhhd&idUsine=1&name=fff
 app.get("/Compteurs",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'HEURES D''ARRET%' AND Name NOT LIKE 'BAISSE DE CHARGE%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND NAME LIKE '%" + req.name + "%' AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'HEURES D''ARRET%' AND Name NOT LIKE 'BAISSE DE CHARGE%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND NAME LIKE '%" + reqQ.name + "%' AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -669,8 +689,8 @@ app.get("/Compteurs",middleware, (request, response) => {
 //get ALL QSE
 //&idUsine=1
 app.get("/QSE",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND Code LIKE '701%' ORDER BY Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND Code LIKE '701%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -681,8 +701,8 @@ app.get("/QSE",middleware, (request, response) => {
 //get ALL Compteurs for arrêts
 //?Code=ddhdhhd&idUsine=1
 app.get("/CompteursArrets",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -692,8 +712,8 @@ app.get("/CompteursArrets",middleware, (request, response) => {
 //get ALL Analyses
 //?Code=ddhdhhd&idUsine=1 
 app.get("/Analyses", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' AND Name NOT LIKE '%1/2%' AND Name NOT LIKE '%DEPASSEMENT%' ORDER BY Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' AND Name NOT LIKE '%1/2%' AND Name NOT LIKE '%DEPASSEMENT%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -703,8 +723,8 @@ app.get("/Analyses", middleware,(request, response) => {
 
 //get Analyses/ Dépassements 1/2 heures
 app.get("/AnalysesDep/:idUsine", middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -715,8 +735,8 @@ app.get("/AnalysesDep/:idUsine", middleware, (request, response) => {
 //get ALL Sortants
 //?Code=ddhdhhd&idUsine=1
 app.get("/Sortants", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" AND typeId = 5 AND Enabled = 1 AND Code LIKE '" + req.Code + "%' ORDER BY Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 5 AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -727,8 +747,8 @@ app.get("/Sortants", middleware,(request, response) => {
 //get ALL reactifs livraison
 //?idUsine=1
 app.get("/reactifs", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+req.idUsine+" and Name LIKE '%LIVRAISON%' and Enabled = 1 order by Name", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" and Name LIKE '%LIVRAISON%' and Enabled = 1 order by Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -738,8 +758,8 @@ app.get("/reactifs", middleware,(request, response) => {
 
 //get ALL conso & others
 app.get("/Consos/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -749,8 +769,8 @@ app.get("/Consos/:idUsine", middleware,(request, response) => {
 
 //get ALL pci
 app.get("/pci/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE idUsine = "+request.params.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -760,9 +780,9 @@ app.get("/pci/:idUsine", middleware,(request, response) => {
 //create Product
 //?Name=c&Code=f&typeId=g&Unit=j&idUsine=1&TAG=sdhdhdh
 app.put("/Product", middleware,(request, response) => {
-  const req=request.query;
-  req.Name = req.Name.replace("'"," ");
-  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+req.Name+"', 0, '"+req.Code+"', "+req.typeId+", '"+req.Unit+"', "+req.idUsine+", '"+req.TAG+"')";
+  const reqQ=request.query;
+  reqQ.Name = reqQ.Name.replace("'"," ");
+  const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', 0, '"+reqQ.Code+"', "+reqQ.typeId+", '"+reqQ.Unit+"', "+reqQ.idUsine+", '"+reqQ.TAG+"')";
   pool.query(query,(err,result,fields) => {
       if(err) throw err;
       response.json("Création du produit OK");
@@ -771,8 +791,8 @@ app.put("/Product", middleware,(request, response) => {
 
 //get ONE Product
 app.get("/Product/:Id",middleware, (request, response) => {
-    const req=request.query
-    pool.query("SELECT * FROM products_new WHERE Id = " + request.params.Id, (err,data) => {
+    const reqQ=request.query
+    pool.query("SELECT * FROM products_new WHERE Id = " + reqP.Id, (err,data) => {
       if(err) throw err;
       data = data['recordset'];
       response.json({data});
@@ -785,8 +805,8 @@ app.get("/Product/:Id",middleware, (request, response) => {
 
 //Get déchets & collecteurs pour la gestion des filtres entrants en fonction de l'idUsine
 app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT Name, Code FROM products_new WHERE Code Like '2%' AND idUsine = " +request.params.idUsine+ " ORDER BY Code ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT Name, Code FROM products_new WHERE Code Like '2%' AND idUsine = " +reqP.idUsine+ " ORDER BY Code ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -804,15 +824,15 @@ app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
 //?EntryDate=1&Value=1&ProductId=1&ProducerId=1
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", middleware,(request, response) => {
-  const req=request.query;
-  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId = "+req.ProductId+")"+
+  const reqQ=request.query;
+  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId = "+reqQ.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
-      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+req.EntryDate+"', "+req.Value+", "+req.ProductId+", "+req.ProducerId+") "+
+      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+reqQ.EntryDate+"', "+reqQ.Value+", "+reqQ.ProductId+", "+reqQ.ProducerId+") "+
     "END"+
     " ELSE"+
     " BEGIN "+
-    "UPDATE measures_new SET Value = "+req.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+req.EntryDate+"' AND ProducerId = "+req.ProducerId+" AND ProductId ="+req.ProductId+
+    "UPDATE measures_new SET Value = "+reqQ.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId ="+reqQ.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
       console.log(queryOnDuplicate);
@@ -823,8 +843,8 @@ app.put("/Measure", middleware,(request, response) => {
 
 //get Entry
 app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND ProducerId = " + request.params.ProducerId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + reqP.ProductId + " AND ProducerId = " + reqP.ProducerId + " AND EntryDate LIKE '"+reqP.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -833,8 +853,8 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware,(request, response) 
 
 //get value products
 app.get("/ValuesProducts/:ProductId/:Date", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + request.params.ProductId + " AND EntryDate LIKE '"+request.params.Date+"%'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT Value FROM measures_new WHERE ProductId = " + reqP.ProductId + " AND EntryDate LIKE '"+reqP.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -843,8 +863,8 @@ app.get("/ValuesProducts/:ProductId/:Date", middleware,(request, response) => {
 
 //get Total by day and Type
 app.get("/TotalMeasures/:Dechet/:Date/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new m INNER JOIN products_new p ON m.ProductId = p.Id WHERE p.idUsine = "+request.params.idUsine+ " AND m.EntryDate LIKE '"+request.params.Date+"%' AND m.ProducerId > 1 AND p.Code LIKE '"+request.params.Dechet+"%'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new m INNER JOIN products_new p ON m.ProductId = p.Id WHERE p.idUsine = "+reqP.idUsine+ " AND m.EntryDate LIKE '"+reqP.Date+"%' AND m.ProducerId > 1 AND p.Code LIKE '"+reqP.Dechet+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -857,8 +877,9 @@ app.get("/TotalMeasures/:Dechet/:Date/:idUsine", middleware,(request, response) 
 //get value compteurs
 //?idUsine=1
 app.get("/Compteurs/:Code/:Date", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT Value FROM saisiemensuelle WHERE idUsine = "+req.idUsine+" AND Code = '" + request.params.Code + "' AND Date LIKE '"+request.params.Date+"%'", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT Value FROM saisiemensuelle WHERE idUsine = "+reqQ.idUsine+" AND Code = '" + reqP.Code + "' AND Date LIKE '"+reqP.Date+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -869,14 +890,14 @@ app.get("/Compteurs/:Code/:Date", middleware,(request, response) => {
 //?Date=1&Value=1&Code=aaa&idUsine=1
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/SaisieMensuelle", middleware,(request, response) => {
-  const req=request.query
-  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM saisiemensuelle WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+")"+
+  const reqQ=request.query
+  queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM saisiemensuelle WHERE Date = '"+reqQ.Date+"' AND Code = "+reqQ.Code+" AND idUsine = "+reqQ.idUsine+")"+
     " BEGIN "+
-      "INSERT INTO saisiemensuelle (Date, Code, Value, idUsine) VALUES ('"+req.Date+"', "+req.Code+", "+req.Value+", "+req.idUsine+") "+
+      "INSERT INTO saisiemensuelle (Date, Code, Value, idUsine) VALUES ('"+reqQ.Date+"', "+reqQ.Code+", "+reqQ.Value+", "+reqQ.idUsine+") "+
     "END"+
     " ELSE"+
     " BEGIN "+
-    "UPDATE saisiemensuelle SET Value = "+req.Value+" WHERE Date = '"+req.Date+"' AND Code = "+req.Code+" AND idUsine = "+req.idUsine+
+    "UPDATE saisiemensuelle SET Value = "+reqQ.Value+" WHERE Date = '"+reqQ.Date+"' AND Code = "+reqQ.Code+" AND idUsine = "+reqQ.idUsine+
     " END;"
   pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err) console.log(err);
@@ -888,8 +909,8 @@ app.put("/SaisieMensuelle", middleware,(request, response) => {
 /*DEPASSEMENT*/
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/Depassement", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+") "
+  const reqQ=request.query
+  pool.query("INSERT INTO depassements (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.duree+", "+reqQ.user+", '"+reqQ.dateSaisie+"', '"+reqQ.description+"', "+reqQ.productId+") "
   ,(err,result,fields) => {
       if(err) response.json("Création du DEP KO");
       else response.json("Création du DEP OK");
@@ -899,8 +920,9 @@ app.put("/Depassement", middleware,(request, response) => {
 //Modifier un dépassement
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/updateDepassement/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("update depassements set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("update depassements set date_heure_debut = '"+ reqQ.dateDebut +"', date_heure_fin = '"+reqQ.dateFin+"', duree ="+reqQ.duree+", date_saisie='"+reqQ.dateSaisie+"', description='"+reqQ.description+"', productId="+reqQ.productId+" WHERE id = " + reqP.id 
   ,(err,result,fields) => {
       if(err) throw err;
       else response.json("Modif du dep ok");
@@ -909,8 +931,8 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
 
 //Récupérer l'historique des dépassements pour un mois
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
-  const req=request.query;
-  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -919,8 +941,8 @@ app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, respons
 
 //Récupérer un dépassement
 app.get("/getOneDepassement/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -929,8 +951,8 @@ app.get("/getOneDepassement/:id",middleware, (request, response) => {
 
 //Supprimer Dépassement
 app.delete("/DeleteDepassement/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM depassements WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM depassements WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression du DEP OK");
   });
@@ -938,8 +960,8 @@ app.delete("/DeleteDepassement/:id", middleware,(request, response) => {
 
 //Récupérer le total des dépassements pour 1 ligne
 app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total Ligne "+request.params.numLigne+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Code LIKE '601040"+request.params.numLigne+"01'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT 'Total Ligne "+reqP.numLigne+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' AND p.Code LIKE '601040"+reqP.numLigne+"01'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -948,8 +970,8 @@ app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne",middleware, 
 
 //Récupérer le total des dépassements
 app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -959,8 +981,9 @@ app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, resp
 /*ARRETS*/
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/Arrets", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+req.dateDebut+"', '"+req.dateFin+"', "+req.duree+", "+req.user+", '"+req.dateSaisie+"', '"+req.description+"', "+req.productId+")"
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("INSERT INTO arrets (date_heure_debut, date_heure_fin, duree, [user], date_saisie, description, productId) VALUES ('"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.duree+", "+reqQ.user+", '"+reqQ.dateSaisie+"', '"+reqQ.description+"', "+reqQ.productId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de l'arret KO");
       else response.json("Création de l'arret OK");
@@ -970,8 +993,9 @@ app.put("/Arrets", middleware,(request, response) => {
 //Modifier un arrêt
 //?dateDebut=dd&dateFin=dd&duree=zz&user=0&dateSaisie=zz&description=erre&productId=2
 app.put("/updateArret/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("update arrets set date_heure_debut = '"+ req.dateDebut +"', date_heure_fin = '"+req.dateFin+"', duree ="+req.duree+", date_saisie='"+req.dateSaisie+"', description='"+req.description+"', productId="+req.productId+" WHERE id = " + request.params.id 
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("update arrets set date_heure_debut = '"+ reqQ.dateDebut +"', date_heure_fin = '"+reqQ.dateFin+"', duree ="+reqQ.duree+", date_saisie='"+reqQ.dateSaisie+"', description='"+reqQ.description+"', productId="+reqQ.productId+" WHERE id = " + reqP.id 
   ,(err,result,fields) => {
       if(err) throw err
       else response.json("Modif de l'arret OK");
@@ -980,8 +1004,8 @@ app.put("/updateArret/:id", middleware,(request, response) => {
 
 //Récupérer l'historique des arrêts pour un mois
 app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -990,8 +1014,8 @@ app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => 
 
 //Récupérer un arrêt
 app.get("/getOneArret/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1000,8 +1024,8 @@ app.get("/getOneArret/:id",middleware, (request, response) => {
 
 //Supprimer Arret
 app.delete("/DeleteArret/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM arrets WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM arrets WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de l'arrêt OK");
   });
@@ -1009,8 +1033,8 @@ app.delete("/DeleteArret/:id", middleware,(request, response) => {
 
 //Récupérer le total des arrêts par groupe
 app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' GROUP BY p.Name", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' GROUP BY p.Name", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1019,8 +1043,8 @@ app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, respo
 
 //Récupérer le total des arrêts
 app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1029,8 +1053,8 @@ app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) 
 
 //Récupérer le total des arrêts pour 1 four
 app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT 'Total Four "+request.params.numFour+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+request.params.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+request.params.dateDeb+"' AND '"+request.params.dateFin+"' AND p.Name LIKE '%"+request.params.numFour+"%'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT 'Total Four "+reqP.numFour+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' AND p.Name LIKE '%"+reqP.numFour+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
       response.json({data});
@@ -1040,8 +1064,8 @@ app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware,(reques
 /*USERS*/
 //?nom=dd&prenom=dd&login=zz&pwd=0&isRondier=1&isSaisie=0&isQSE=0&isRapport=0&isChefQuart=1&isAdmin=01idUsine=1
 app.put("/User", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isChefQuart, isAdmin, idUsine) VALUES ('"+req.nom+"', '"+req.prenom+"', '"+req.login+"', '"+req.pwd+"', "+req.isRondier+", "+req.isSaisie+", "+req.isQSE+", "+req.isRapport+", "+req.isChefQuart+", "+req.isAdmin+", "+req.idUsine+") "
+  const reqQ=request.query
+  pool.query("INSERT INTO users (Nom, Prenom, login, pwd, isRondier, isSaisie, isQSE, isRapport, isChefQuart, isAdmin, idUsine) VALUES ('"+reqQ.nom+"', '"+reqQ.prenom+"', '"+reqQ.login+"', '"+reqQ.pwd+"', "+reqQ.isRondier+", "+reqQ.isSaisie+", "+reqQ.isQSE+", "+reqQ.isRapport+", "+reqQ.isChefQuart+", "+reqQ.isAdmin+", "+reqQ.idUsine+") "
   ,(err,result,fields) => {
       if(err) response.json("Création de l'utilisateur KO");
       else response.json("Création de l'utilisateur OK");
@@ -1051,8 +1075,8 @@ app.put("/User", middleware,(request, response) => {
 //Récupérer l'ensemble des utilisateurs
 //?login=aaaa&idUsine=1
 app.get("/Users", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM users WHERE login LIKE '%"+req.login+"%' AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM users WHERE login LIKE '%"+reqQ.login+"%' AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1062,8 +1086,8 @@ app.get("/Users", middleware,(request, response) => {
 //Récupérer l'ensemble des utilisateurs d'un site ayant les droits ayant les droits rondier
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
-  const req=request.query 
-  pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+req.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+  const reqQ=request.query 
+  pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err) throw err; 
     data = data['recordset'];
     response.json({data});
@@ -1073,10 +1097,10 @@ app.get("/UsersRondier", (request, response) => {
 //Récupérer l'utilisateur qui est connecté et Connexion
 app.get("/User/:login/:pwd", (request, response) => {
   console.log("connection")
-  const req=request.query;
+  const reqP=request.params
   //pour protéger la connexion tablette des users avec un apostrophe
-  let login = request.params.login.replace("'","''");
-  pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+request.params.pwd+"'", (err,data) => {
+  let login = reqP.login.replace("'","''");
+  pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+reqP.pwd+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     //Si on a une valeur de retour on génère un token
@@ -1093,8 +1117,8 @@ app.get("/User/:login/:pwd", (request, response) => {
 
 //Permet de verifier si l'identifiant est déjà utilisé
 app.get("/User/:login", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM users WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM users WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1103,8 +1127,8 @@ app.get("/User/:login", middleware,(request, response) => {
 
 //Update du mdp utilisateur
 app.put("/User/:login/:pwd", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE users SET pwd = '" + request.params.pwd + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET pwd = '" + reqP.pwd + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du mot de passe OK")
   });
@@ -1112,8 +1136,8 @@ app.put("/User/:login/:pwd", middleware,(request, response) => {
 
 //Update droit rondier
 app.put("/UserRondier/:login/:droit", middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isRondier = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isRondier = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1121,8 +1145,8 @@ app.put("/UserRondier/:login/:droit", middleware, (request, response) => {
 
 //Update droit saisie
 app.put("/UserSaisie/:login/:droit", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isSaisie = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isSaisie = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1130,8 +1154,8 @@ app.put("/UserSaisie/:login/:droit", middleware,(request, response) => {
 
 //Update droit QSE
 app.put("/UserQSE/:login/:droit", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isQSE = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isQSE = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1139,8 +1163,8 @@ app.put("/UserQSE/:login/:droit", middleware,(request, response) => {
 
 //Update droit rapport
 app.put("/UserRapport/:login/:droit", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isRapport = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isRapport = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1148,8 +1172,8 @@ app.put("/UserRapport/:login/:droit", middleware,(request, response) => {
 
 //Update droit chef quart
 app.put("/UserChefQuart/:login/:droit", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isChefQuart = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isChefQuart = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1157,8 +1181,8 @@ app.put("/UserChefQuart/:login/:droit", middleware,(request, response) => {
 
 //Update droit admin
 app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE users SET isAdmin = '" + request.params.droit + "' WHERE login = '"+request.params.login+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE users SET isAdmin = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du droit OK")
   });
@@ -1166,8 +1190,8 @@ app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
 
 //DELETE User
 app.delete("/user/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM users WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM users WHERE Id = "+reqP.id, (err,data) => {
     if(err) {
       response.json("Suppression du user KO")
     }
@@ -1177,8 +1201,8 @@ app.delete("/user/:id", middleware,(request, response) => {
 
 //Récupérer l'ensemble des users non affecté à un badge
 app.get("/UsersLibre/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM users WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM users WHERE idUsine = "+reqP.idUsine+" AND Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1192,8 +1216,8 @@ app.get("/UsersLibre/:idUsine", middleware,(request, response) => {
 /*Badge*/
 //?uid=AD:123:D23&idUsine=1
 app.put("/Badge", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO badge (uid, idUsine) VALUES ('"+req.uid+"', "+req.idUsine+")"
+  const reqQ=request.query
+  pool.query("INSERT INTO badge (uid, idUsine) VALUES ('"+reqQ.uid+"', "+reqQ.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création du badge KO");
       else response.json("Création du badge OK");
@@ -1202,7 +1226,7 @@ app.put("/Badge", middleware,(request, response) => {
 
 //Récupérer le dernier ID de badge inséré
 app.get("/BadgeLastId", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT IDENT_CURRENT('badge') as Id", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -1212,8 +1236,8 @@ app.get("/BadgeLastId", middleware,(request, response) => {
 
 //Récupérer l'utilisateur lié au badge
 app.get("/UserOfBadge/:uid", (request, response) => {
-  const req=request.query
-  pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.idUsine, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+request.params.uid+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.idUsine, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+reqP.uid+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1222,8 +1246,8 @@ app.get("/UserOfBadge/:uid", (request, response) => {
 
 //Récupérer les elements de controle lié à la zone qui est lié au badge
 app.get("/ElementsOfBadge/:uid", (request, response) => {
-  const req=request.query
-  pool.query("SELECT e.Id, e.zoneId, z.nom as 'NomZone', z.commentaire, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE '"+request.params.uid+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT e.Id, e.zoneId, z.nom as 'NomZone', z.commentaire, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE '"+reqP.uid+"'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1232,8 +1256,8 @@ app.get("/ElementsOfBadge/:uid", (request, response) => {
 
 //Récupérer l'ensemble des badges affecté à un User
 app.get("/BadgesUser/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId WHERE b.idUsine = "+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1242,8 +1266,8 @@ app.get("/BadgesUser/:idUsine", middleware,(request, response) => {
 
 //Récupérer l'ensemble des badges affecté à une zone
 app.get("/BadgesZone/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId WHERE b.idUsine = "+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId WHERE b.idUsine = "+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1252,8 +1276,8 @@ app.get("/BadgesZone/:idUsine", middleware,(request, response) => {
 
 //Récupérer l'ensemble des badges non affecté
 app.get("/BadgesLibre/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM badge b WHERE b.idUsine = "+request.params.idUsine+" AND b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM badge b WHERE b.idUsine = "+reqP.idUsine+" AND b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1262,8 +1286,8 @@ app.get("/BadgesLibre/:idUsine", middleware,(request, response) => {
 
 //Update enabled
 app.put("/BadgeEnabled/:id/:enabled",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE badge SET isEnabled = '" + request.params.enabled + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE badge SET isEnabled = '" + reqP.enabled + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'activation OK")
   });
@@ -1271,8 +1295,8 @@ app.put("/BadgeEnabled/:id/:enabled",middleware, (request, response) => {
 
 //Update affectation
 app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE badge SET " + request.params.typeAffectation+" = '" + request.params.idAffectation + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE badge SET " + reqP.typeAffectation+" = '" + reqP.idAffectation + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'affectation OK")
   });
@@ -1280,8 +1304,8 @@ app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(req
 
 //Update affectation => retirer les affectations
 app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE badge SET userId = NULL, zoneId = NULL WHERE Id = '"+request.params.id+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE badge SET userId = NULL, zoneId = NULL WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'affectation OK")
   });
@@ -1289,8 +1313,8 @@ app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
 
 //Update affectation => retirer les affectations
 app.put("/deleteBadge/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("delete from badge where Id = '"+request.params.id+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("delete from badge where Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Suppression du badge OK")
   });
@@ -1301,8 +1325,8 @@ app.put("/deleteBadge/:id", middleware,(request, response) => {
 //Créer une zone de contrôle
 //?nom=dggd&commentaire=fff&four=1&idUsine=1
 app.put("/zone", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO zonecontrole (nom, commentaire, four, idUsine) VALUES ('"+req.nom+"', '"+req.commentaire+"', "+req.four+", "+req.idUsine+")"
+  const reqQ=request.query
+  pool.query("INSERT INTO zonecontrole (nom, commentaire, four, idUsine) VALUES ('"+reqQ.nom+"', '"+reqQ.commentaire+"', "+reqQ.four+", "+reqQ.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Création de la zone OK");
@@ -1312,8 +1336,8 @@ app.put("/zone", middleware,(request, response) => {
 //Supprimer une zone de controle
 //?Id=1
 app.delete("/deleteZone", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM zonecontrole WHERE Id = "+req.Id, (err,result,fields) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM zonecontrole WHERE Id = "+reqQ.Id, (err,result,fields) => {
       if(err) response.json("Création de la zone KO");
       else response.json("Suppression OK");
   });
@@ -1321,8 +1345,8 @@ app.delete("/deleteZone", middleware,(request, response) => {
 
 //Récupérer l'ensemble des zones de controle
 app.get("/zones/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" ORDER BY nom ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1331,8 +1355,8 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 
 //Récupérer l'ensemble des zones de controle
 app.get("/zones/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" ORDER BY nom ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1343,12 +1367,13 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 //?quart=1
 app.get("/getZonesAndAnomaliesOfDay/:idUsine/:date", middleware,(request, response) => {
   listZones = [];
-  const req=request.query
-  if(req.quart == 0){
-    var query = "SELECT * from ronde where dateHeure = '"+request.params.date+"' and idUsine ="+request.params.idUsine
+  const reqQ=request.query
+  const reqP=request.params
+  if(reqQ.quart == 0){
+    var query = "SELECT * from ronde where dateHeure = '"+reqP.date+"' and idUsine ="+reqP.idUsine
   }
   else{
-    var query = "SELECT * from ronde where dateHeure = '"+request.params.date+"' and idUsine ="+request.params.idUsine +'and quart=' + req.quart
+    var query = "SELECT * from ronde where dateHeure = '"+reqP.date+"' and idUsine ="+reqP.idUsine +'and quart=' + reqQ.quart
   }
   pool.query(query, async (err,data) => {
     if(err) throw err;
@@ -1364,12 +1389,13 @@ app.get("/getZonesAndAnomaliesOfDay/:idUsine/:date", middleware,(request, respon
 //Récupérer l'ensemble des zones de controle
 app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) => {
   listZones = [];
-  const req=request.query
-  if(req.quart==0){
-    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+request.params.date+"' and ronde.idUsine = "+request.params.idUsine  
+  const reqQ=request.query
+  const reqP=request.params
+  if(reqQ.quart==0){
+    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine  
   }
   else{
-    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+request.params.date+"' and ronde.idUsine = "+request.params.idUsine +" and ronde.quart = "+req.quart 
+    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine +" and ronde.quart = "+reqQ.quart 
   }
   pool.query(query, async (err,data) => {
     if(err) throw err;
@@ -1381,12 +1407,13 @@ app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) =
 //Récupérer l'ensemble des zones de controle
 app.get("/getElementsAndValuesOfDay/:idUsine/:date", middleware,(request, response) => {
   listZones = [];
-  const req=request.query
-  if(req.quart == 0){
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+  const reqQ=request.query
+  const reqP=request.params
+  if(reqQ.quart == 0){
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
   }
   else{
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" and r.quart = "+ req.quart+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" and r.quart = "+ reqQ.quart+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
   }
   pool.query(query, async (err,data) => {
     if(err) throw err;
@@ -1418,12 +1445,13 @@ function getZonesAndAnomaliesOfRonde(ronde){
 //Récupérer l'ensemble des zones, le badge associé et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      await getPreviousId(request.params.idUsine);
+      await getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -1436,12 +1464,13 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
 //Récupérer l'ensemble des zones, les modes OPs associés et les éléments de contrôle associé ainsi que la valeur de la ronde précédente
 app.get("/elementsOfUsine/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      await getPreviousId(request.params.idUsine);
+      await getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -1489,11 +1518,11 @@ function getElementsHorsLigne(zone) {
 // //Récupérer l'ensemble des zones de controle
 // //?dateHeure
 // app.get("/reporting/:idUsine",(request, response) => {
-//   const req=request.query
+//   const reqQ=request.query
 //   var test
 //   pool.query("select r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, users.Nom as 'nomUser', users.Prenom as 'prenomUser', chefQuart.Nom as 'nomChefQuart', chefQuart.Prenom as 'prenomChefQuart'"
 //   +"from ronde r join users on users.Id = userId join users chefQuart on chefQuart.Id = r.chefQuartId  where r.dateHeure='15/02/2024' and r.idUsine = "
-//    +request.params.idUsine, async (err,data) => {
+//    +reqP.idUsine, async (err,data) => {
 //     if(err) throw err;
 //     listeRondes = data['recordset'];
 //     for await(const ronde of listeRondes){
@@ -1579,19 +1608,20 @@ function getElementsHorsLigne(zone) {
 //Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
 app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
   BadgeAndElementsOfZone = [];
-  if(request.params.idUsine == 7){
-    var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
+  const reqP=request.params
+  if(reqP.idUsine == 7){
+    var requete = "SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC"
   }
-  else var requete = "SELECT distinct z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+request.params.idUsine+ " ORDER BY z.nom ASC"
+  else var requete = "SELECT distinct z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC"
   pool.query(requete, async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      getPreviousId(request.params.idUsine);
+      getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
-        await getElementsWithValues(zone,request.params.idRonde);
+        await getElementsWithValues(zone,reqP.idRonde);
       };
       // console.log(BadgeAndElementsOfZone)
       response.json({BadgeAndElementsOfZone});
@@ -1636,12 +1666,13 @@ function getElementsWithValues(zone,idRonde) {
 //Récupérer la ronde affecté à un utilisateur et ses éléments de controle
 app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   BadgeAndElementsOfZone = [];
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+request.params.idUsine+" and e.idRondier = "+request.params.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+reqP.idUsine+" and e.idRondier = "+reqP.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
     if(err) throw err;
     else {
       //On récupère l'Id de la ronde précedente
       data = data['recordset'];
-      await getPreviousId(request.params.idUsine);
+      await getPreviousId(reqP.idUsine);
       //On récupère les éléments de la zone
       await getElementsHorsLigneUser(data);
       
@@ -1703,8 +1734,8 @@ function getPreviousId(id){
 
 //Update commentaire
 app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE zonecontrole SET commentaire = '" + request.params.commentaire + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE zonecontrole SET commentaire = '" + reqP.commentaire + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du commentaire OK")
   });
@@ -1713,9 +1744,10 @@ app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
 //Update nom
 //?nom=test
 app.put("/zoneNom/:id", middleware,(request, response) => {
-  const req=request.query
-  req.nom = req.nom.replace("'"," ");
-  pool.query("UPDATE zonecontrole SET nom = '" + req.nom + "' WHERE Id = '"+request.params.id+"'", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  reqQ.nom = reqQ.nom.replace("'"," ");
+  pool.query("UPDATE zonecontrole SET nom = '" + reqQ.nom + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du nom OK")
   });
@@ -1723,8 +1755,9 @@ app.put("/zoneNom/:id", middleware,(request, response) => {
 
 //Récupérer l'ensemble des zones non affecté à un badge
 app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+request.params.idUsine+" AND Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" AND Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1734,11 +1767,11 @@ app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
 /*Element de controle*/
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=10&infoSup=djdjjd
 app.put("/element", middleware,(request, response) => {
-  const req=request.query
-  if(req.idGroupement==0){
-    req.idGroupement = null;
+  const reqQ=request.query
+  if(reqQ.idGroupement==0){
+    reqQ.idGroupement = null;
   }
-  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement, CodeEquipement, infoSup) VALUES ("+req.zoneId+", '"+req.nom+"', "+req.valeurMin+", "+req.valeurMax+", "+req.typeChamp+", '"+req.unit+"', '"+req.defaultValue+"', "+req.isRegulateur+", '"+req.listValues+"', "+req.isCompteur+", "+req.ordre+"," + req.idGroupement +",'"+req.codeEquipement+"', '"+req.infoSup+"')"
+  pool.query("INSERT INTO elementcontrole (zoneId, nom, valeurMin, valeurMax, typeChamp, unit, defaultValue, isRegulateur, listValues, isCompteur, ordre, idGroupement, CodeEquipement, infoSup) VALUES ("+reqQ.zoneId+", '"+reqQ.nom+"', "+reqQ.valeurMin+", "+reqQ.valeurMax+", "+reqQ.typeChamp+", '"+reqQ.unit+"', '"+reqQ.defaultValue+"', "+reqQ.isRegulateur+", '"+reqQ.listValues+"', "+reqQ.isCompteur+", "+reqQ.ordre+"," + reqQ.idGroupement +",'"+reqQ.codeEquipement+"', '"+reqQ.infoSup+"')"
     ,(err,result,fields) => {
         if(err) response.json("Création de l'élément KO");
         else response.json("Création de l'élément OK");
@@ -1749,8 +1782,8 @@ app.put("/element", middleware,(request, response) => {
 //Incrémente les ordres de 1 pour pouvoir insérer une éléments entre 2 éléments existants
 //?zoneId=1&maxOrdre=2
 app.put("/updateOrdreElement", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE elementcontrole SET ordre = ordre + 1 WHERE zoneId = " + req.zoneId + " AND ordre > " + req.maxOrdre, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE elementcontrole SET ordre = ordre + 1 WHERE zoneId = " + reqQ.zoneId + " AND ordre > " + reqQ.maxOrdre, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour des ordres OK")
   });
@@ -1759,11 +1792,12 @@ app.put("/updateOrdreElement", middleware,(request, response) => {
 //Update element
 //?zoneId=1&nom=ddd&valeurMin=1.4&valeurMax=2.5&typeChamp=1&unit=tonnes&defaultValue=1.7&isRegulateur=0&listValues=1 2 3&isCompteur=1&ordre=5&idGroupement=1&infoSup=zgyzgzy
 app.put("/updateElement/:id", middleware,(request, response) => {
-  const req=request.query
-  if(req.idGroupement == 0 ){
-    req.idGroupement = null;
+  const reqQ=request.query
+  const reqP=request.params
+  if(reqQ.idGroupement == 0 ){
+    reqQ.idGroupement = null;
   }
-  pool.query("UPDATE elementcontrole SET zoneId = " + req.zoneId + ", nom = '"+ req.nom +"', valeurMin = "+ req.valeurMin+", valeurMax = "+ req.valeurMax +", typeChamp = "+ req.typeChamp +", unit = '"+ req.unit +"', defaultValue = '"+ req.defaultValue +"', isRegulateur = "+ req.isRegulateur +", listValues = '"+ req.listValues +"', isCompteur = "+ req.isCompteur +", ordre = "+ req.ordre +", idGroupement ="+ req.idGroupement +",CodeEquipement = '"+ req.codeEquipement +"', infoSup = '"+ req.infoSup +"' WHERE Id = "+request.params.id, (err,data) => {
+  pool.query("UPDATE elementcontrole SET zoneId = " + reqQ.zoneId + ", nom = '"+ reqQ.nom +"', valeurMin = "+ reqQ.valeurMin+", valeurMax = "+ reqQ.valeurMax +", typeChamp = "+ reqQ.typeChamp +", unit = '"+ reqQ.unit +"', defaultValue = '"+ reqQ.defaultValue +"', isRegulateur = "+ reqQ.isRegulateur +", listValues = '"+ reqQ.listValues +"', isCompteur = "+ reqQ.isCompteur +", ordre = "+ reqQ.ordre +", idGroupement ="+ reqQ.idGroupement +",CodeEquipement = '"+ reqQ.codeEquipement +"', infoSup = '"+ reqQ.infoSup +"' WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'element OK")
   });
@@ -1772,8 +1806,8 @@ app.put("/updateElement/:id", middleware,(request, response) => {
 //Suppression element
 //?id=12
 app.delete("/deleteElement", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM elementcontrole WHERE Id = "+ req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM elementcontrole WHERE Id = "+ reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de l'élément OK")
   });
@@ -1781,8 +1815,8 @@ app.delete("/deleteElement", middleware,(request, response) => {
 
 //Récupérer l'ensemble des élements d'une usine
 app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
-  const req=request.query
-  pool.query("select e.*, z.nom as nomZone from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+request.params.idUsine + " order by e.nom asc", (err,data) => {
+  const reqP=request.params
+  pool.query("select e.*, z.nom as nomZone from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+reqP.idUsine + " order by e.nom asc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1792,11 +1826,12 @@ app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
 
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+request.params.zoneId +" ORDER BY idGroupement asc, ordre ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+reqP.zoneId +" ORDER BY idGroupement asc, ordre ASC", (err,data) => {
     //if(err) throw err;
     //TODO : bug ici => à debug
     if(err) console.log(err);
+    console.log(data)
     data = data['recordset'];
     response.json({data});
   });
@@ -1804,8 +1839,8 @@ app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
 
 //Récupérer l'ensemble des élements de type compteur
 app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE z.IdUsine = "+request.params.idUsine+" AND e.isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE z.IdUsine = "+reqP.idUsine+" AND e.isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1814,8 +1849,8 @@ app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
 
 //Récupérer un element 
 app.get("/element/:elementId", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM elementcontrole WHERE Id = "+request.params.elementId, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM elementcontrole WHERE Id = "+reqP.elementId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1825,8 +1860,9 @@ app.get("/element/:elementId", middleware,(request, response) => {
 //Récupérer l'ensemble des élements pour lesquelles il n'y a pas de valeur sur la ronde en cours
 //?date=07/02/2022
 app.get("/elementsOfRonde/:quart", (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart+")", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+reqQ.date+"%' AND r.quart = "+reqP.quart+")", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1840,8 +1876,8 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 //Récupérer les groupements d'une zone
 //?zoneId=220
 app.get("/getGroupements", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * from groupement WHERE zoneId = "+ req.zoneId, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * from groupement WHERE zoneId = "+ reqQ.zoneId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1851,12 +1887,13 @@ app.get("/getGroupements", middleware,(request, response) => {
 //Récupérer l'ensemble des groupements d'une usine
 //?idUsine=1
 app.get("/getGroupementsOfOneDay/:idUsine/:date",middleware, (request, response) => {
-  const req=request.query
-  if(req.quart == 0){
-    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.idUsine = "+request.params.idUsine+" ORDER BY g.groupement" 
+  const reqQ=request.query
+  const reqP=request.params
+  if(reqQ.quart == 0){
+    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY g.groupement" 
   }
   else{
-    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+request.params.date+"' and r.quart="+req.quart+" and r.idUsine = "+request.params.idUsine+" ORDER BY g.groupement" 
+    var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.quart="+reqQ.quart+" and r.idUsine = "+reqP.idUsine+" ORDER BY g.groupement" 
   }
   pool.query( query , async (err,data) => {
     if(err) throw err;
@@ -1868,8 +1905,8 @@ app.get("/getGroupementsOfOneDay/:idUsine/:date",middleware, (request, response)
 //Récupérer l'ensemble des groupements d'une usine
 //?idUsine=1
 app.get("/getAllGroupements",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+req.idUsine + "order by groupement.zoneId asc", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+reqQ.idUsine + "order by groupement.zoneId asc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1878,8 +1915,8 @@ app.get("/getAllGroupements",middleware, (request, response) => {
 //Récupérer un groupement
 //?idGroupement=1
 app.get("/getOneGroupement",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM groupement where id="+req.idGroupement, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM groupement where id="+reqQ.idGroupement, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1889,8 +1926,8 @@ app.get("/getOneGroupement",middleware, (request, response) => {
 //Créer un groupement
 //?zoneId=2&groupement=test
 app.put("/groupement", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO groupement (groupement, zoneId) VALUES ('"+req.groupement+"', "+req.zoneId+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO groupement (groupement, zoneId) VALUES ('"+reqQ.groupement+"', "+reqQ.zoneId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création du groupement KO");
       else response.json("Création du groupement OK");
@@ -1900,16 +1937,16 @@ app.put("/groupement", middleware,(request, response) => {
 //Modifier un groupement
 //?idGroupement=1&groupement=test&zoneId=1
 app.put("/updateGroupement", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE groupement SET zoneId = " + req.zoneId + ", groupement = '"+ req.groupement +"' WHERE id = "+req.idGroupement, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE groupement SET zoneId = " + reqQ.zoneId + ", groupement = '"+ reqQ.groupement +"' WHERE id = "+reqQ.idGroupement, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de l'element OK")
   });
 });
 
 app.delete("/deleteGroupement", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM groupement WHERE id = "+ req.idGroupement, (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM groupement WHERE id = "+ reqQ.idGroupement, (err,data) => {
     if(err) throw err;
     response.json("Suppression ok")
   });
@@ -1921,8 +1958,8 @@ app.delete("/deleteGroupement", middleware,(request, response) => {
 /*Ronde*/
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/ronde", (request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+", "+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+reqQ.dateHeure+"', "+reqQ.quart+", "+reqQ.userId+", "+reqQ.chefQuartId+", "+reqQ.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1932,8 +1969,8 @@ app.put("/ronde", (request, response) => {
 //Cloture des rondes encore en cours Calce pour mode auto
 //?idUsine=7
 app.put("/clotureRondesCalceAuto",(request,response) => {
-  const req=request.query;
-  pool.query('UPDATE ronde SET isFinished = 1 WHERE idUsine =' + req.idUsine,(err,data) => {
+  const reqQ=request.query;
+  pool.query('UPDATE ronde SET isFinished = 1 WHERE idUsine =' + reqQ.idUsine,(err,data) => {
     if(err) console.log(err);
     response.json("Cloture des rondes auto OK");
   })
@@ -1941,8 +1978,8 @@ app.put("/clotureRondesCalceAuto",(request,response) => {
 
 //?dateHeure=07/02/2022 08:00&quart=1&userId=1&chefQuartId=1&idUsine=1
 app.put("/rondeCalce", (request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+req.dateHeure+"', "+req.quart+", "+req.userId+", "+req.chefQuartId+", "+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO ronde (dateHeure, quart, userId, chefQuartId, idUsine) VALUES ('"+reqQ.dateHeure+"', "+reqQ.quart+", "+reqQ.userId+", "+reqQ.chefQuartId+", "+reqQ.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la ronde KO");
       else response.json("Création de la ronde OK");
@@ -1952,8 +1989,9 @@ app.put("/rondeCalce", (request, response) => {
 //Cloture de la ronde avec ou sans commentaire/anomalie
 //?commentaire=ejejejeje&id=1&four1=0&four2=1&four3=1&four4=1
 app.put("/closeRonde/:id", (request, response) => {
-  const req=request.query
-  pool.query("UPDATE ronde SET commentaire = '" + req.commentaire +"', fonctFour1 = '" + req.four1 +"', fonctFour2 = '" + req.four2 +"', fonctFour3 = '" + req.four3 + "' , fonctFour4 = '" + req.four4 + "' , isFinished = 1 WHERE id = "+ req.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE ronde SET commentaire = '" + reqQ.commentaire +"', fonctFour1 = '" + reqQ.four1 +"', fonctFour2 = '" + reqQ.four2 +"', fonctFour3 = '" + reqQ.four3 + "' , fonctFour4 = '" + reqQ.four4 + "' , isFinished = 1 WHERE id = "+ reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1962,8 +2000,8 @@ app.put("/closeRonde/:id", (request, response) => {
 //Cloture de la ronde encore en cours
 //?id=12
 app.put("/closeRondeEnCours", (request, response) => {
-  const req=request.query
-  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1, fonctFour4 = 1 WHERE id = "+ req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1, fonctFour4 = 1 WHERE id = "+ reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Cloture de la ronde OK")
   });
@@ -1974,8 +2012,9 @@ app.put("/closeRondeEnCours", (request, response) => {
 //Récupérer l'auteur d'une ronde
 //?date=07/02/2022&idUsine=1
 app.get("/AuteurRonde/:quart", (request, response) => {
-  const req=request.query
-  pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' AND r.quart = "+request.params.quart, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.idUsine = "+reqQ.idUsine+" AND r.dateHeure LIKE '"+reqQ.date+"%' AND r.quart = "+reqP.quart, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -1984,8 +2023,8 @@ app.get("/AuteurRonde/:quart", (request, response) => {
 
 //Récupérer l'id de la dernière ronde inséré (ronde en cours)
 app.get("/LastRonde/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+reqP.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data[0] != undefined){
@@ -1999,8 +2038,8 @@ app.get("/LastRonde/:idUsine", (request, response) => {
 
 //Récupérer l'id de la ronde précédente (0 si première ronde de la BDD)
 app.get("/RondePrecedente/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+request.params.idUsine+" ORDER BY Id DESC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+reqP.idUsine+" ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length>1){
@@ -2013,8 +2052,9 @@ app.get("/RondePrecedente/:idUsine", (request, response) => {
 //Récupérer la ronde encore en cours sur le même quart et la même date => permettre au rondier de la reprendre
 //?date=01/01/2023
 app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
-  const req=request.query;
-  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+request.params.idUsine+" AND quart = "+request.params.quart+" AND dateHeure = '"+req.date+"' ORDER BY Id DESC", (err,data) => {
+  const reqQ=request.query;
+  const reqP=request.params
+  pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+reqP.idUsine+" AND quart = "+reqP.quart+" AND dateHeure = '"+reqQ.date+"' ORDER BY Id DESC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length < 1){
@@ -2027,8 +2067,8 @@ app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
 //Récupérer les rondes et leurs infos pour une date donnée
 //?date=07/02/2022&idUsine=1
 app.get("/Rondes", (request, response) => {
-  const req=request.query
-  pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%' ORDER BY r.quart ASC", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+reqQ.idUsine+" AND r.dateHeure LIKE '"+reqQ.date+"%' ORDER BY r.quart ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});    
@@ -2038,12 +2078,12 @@ app.get("/Rondes", (request, response) => {
 //Récupérer les rondes et leurs infos pour une date et un quart donnée
 //?date=07/02/2022&idUsine=7&quart=1
 app.get("/RondesQuart", (request, response) => {
-  const req=request.query
-  if(req.quart == 0){
-    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.dateHeure LIKE '"+req.date+"%'"
+  const reqQ=request.query
+  if(reqQ.quart == 0){
+    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+reqQ.idUsine+" AND r.dateHeure LIKE '"+reqQ.date+"%'"
   }
   else{
-    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+req.idUsine+" AND r.quart = "+req.quart+" AND r.dateHeure LIKE '"+req.date+"%'"
+    var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+reqQ.idUsine+" AND r.quart = "+reqQ.quart+" AND r.dateHeure LIKE '"+reqQ.date+"%'"
   }
   pool.query(query, (err,data) => {
     if(err) throw err;
@@ -2056,8 +2096,8 @@ app.get("/RondesQuart", (request, response) => {
 //Récupérer le nombre de rondes cloturées (pour fonctionnement avec équipes)
 //?id=1
 app.get("/nbRondes", (request, response) => {
-  const req=request.query
-  pool.query("SELECT nbRondes FROM ronde WHERE Id =" + req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT nbRondes FROM ronde WHERE Id =" + reqQ.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length > 0){
@@ -2070,8 +2110,8 @@ app.get("/nbRondes", (request, response) => {
 //Incrémenter de 1 le nombre de rondes cloturées (pour fonctionnement avec équipes)
 //?id=1
 app.put("/updateNbRondes",(request, response) => {
-  const req=request.query
-  pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de la valeur OK")
   });
@@ -2080,8 +2120,8 @@ app.put("/updateNbRondes",(request, response) => {
 //Récupère le nombre de rondes cloturées pour une ronde (pour fonctionnement avec équipes)
 //?userId=1
 app.get("/nbRondiersEquipe", (request, response) => {
-  const req=request.query
-  pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + req.userId, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + reqQ.userId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length >0){
@@ -2099,8 +2139,8 @@ app.get("/nbRondiersEquipe", (request, response) => {
 //Suppression ronde
 //?id=12
 app.delete("/deleteRonde", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM ronde WHERE id = "+ req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM ronde WHERE id = "+ reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la ronde OK")
   });
@@ -2109,8 +2149,8 @@ app.delete("/deleteRonde", middleware,(request, response) => {
 /*Mesures Rondier*/
 //?elementId=1&modeRegulateur=AP&value=2.4&rondeId=1
 app.put("/mesureRondier", (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+req.elementId+", '"+req.modeRegulateur+"', '"+req.value+"', "+req.rondeId+")"
+  const reqQ=request.query
+  pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+reqQ.elementId+", '"+reqQ.modeRegulateur+"', '"+reqQ.value+"', "+reqQ.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
@@ -2120,8 +2160,8 @@ app.put("/mesureRondier", (request, response) => {
 //Update valeur de l'élement de contrôle
 //?id=12&value=dhdhhd
 app.put("/updateMesureRonde", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE mesuresrondier SET value = '"+req.value+"' WHERE id = "+ req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE mesuresrondier SET value = '"+reqQ.value+"' WHERE id = "+ reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour de la valeur OK")
   });
@@ -2129,8 +2169,9 @@ app.put("/updateMesureRonde", middleware,(request, response) => {
 
 //Récupérer l'ensemble des mesures pour une ronde => reporting
 app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT e.Id as elementId, e.unit, e.typeChamp, e.valeurMin, e.valeurMax, e.defaultValue, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+request.params.idRonde+" ORDER BY z.nom ASC", (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("SELECT e.Id as elementId, e.unit, e.typeChamp, e.valeurMin, e.valeurMax, e.defaultValue, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+reqP.idRonde+" ORDER BY z.nom ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2140,13 +2181,13 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
 //Récupérer la valeur pour un élément de contrôle et une date (dernière valeur enregistrée sur la journée)
 //?id=111&date=dhdhdh
 app.get("/valueElementDay", async (request, response) =>  {
-  const req=request.query
-  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+req.date+"' AND m.elementId = "+req.id, async (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+reqQ.date+"' AND m.elementId = "+reqQ.id, async (err,data) => {
     if(err) throw err;
     valueElementDay = data['recordset'];
     data = data['recordset'];
     if(valueElementDay.length == 0){
-      await valueElementDayAprem(req.date, req.id);
+      await valueElementDayAprem(reqQ.date, reqQ.id);
       data = valueElementDay
       response.json({data});
     }
@@ -2183,8 +2224,8 @@ async function valueElementDayMatin(date, id){
 /*Permis de feu et zone de consignation*/
 //?dateHeureDeb=dggd&dateHeureFin=fff&badgeId=1&zone=zone&isPermisFeu=1&numero=fnjfjfj
 app.put("/PermisFeu", middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+req.dateHeureDeb+"', '"+req.dateHeureFin+"', "+req.badgeId+", '"+req.zone+"', "+req.isPermisFeu+", '"+req.numero+"')"
+  const reqQ=request.query
+  pool.query("INSERT INTO permisfeu (dateHeureDeb, dateHeureFin, badgeId, zone, isPermisFeu, numero) VALUES ('"+reqQ.dateHeureDeb+"', '"+reqQ.dateHeureFin+"', "+reqQ.badgeId+", '"+reqQ.zone+"', "+reqQ.isPermisFeu+", '"+reqQ.numero+"')"
   ,(err,result,fields) => {
       if(err) response.json("Création du permis de feu KO");
       else response.json("Création du permis de feu OK");
@@ -2193,8 +2234,8 @@ app.put("/PermisFeu", middleware,(request, response) => {
 
 //Récupérer les permis de feu en cours ou les zones de consignation
 app.get("/PermisFeu/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE b.idUsine = "+request.params.idUsine+" AND p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE b.idUsine = "+reqP.idUsine+" AND p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2205,8 +2246,8 @@ app.get("/PermisFeu/:idUsine", (request, response) => {
 //Enregistrer une validation de permis de feu
 //?dateHeure=dggd&permisFeuId=1&userId=1&quart=1&rondeId=1
 app.put("/VerifPermisFeu", (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO permisfeuvalidation (permisFeuId, userId, dateHeure, quart, rondeId) VALUES ("+req.permisFeuId+", "+req.userId+", '"+req.dateHeure+"', "+req.quart+", "+req.rondeId+")"
+  const reqQ=request.query
+  pool.query("INSERT INTO permisfeuvalidation (permisFeuId, userId, dateHeure, quart, rondeId) VALUES ("+reqQ.permisFeuId+", "+reqQ.userId+", '"+reqQ.dateHeure+"', "+reqQ.quart+", "+reqQ.rondeId+")"
   ,(err,result,fields) => {
       if(err) response.json("Validation du permis de feu KO");
       else response.json("Validation du permis de feu OK");
@@ -2216,8 +2257,8 @@ app.put("/VerifPermisFeu", (request, response) => {
 //Récupérer les validation pour une date donnée
 //?dateHeure=22/06/2022&idUsine=1
 app.get("/PermisFeuVerification",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId INNER JOIN badge b ON pf.badgeId = b.Id WHERE b.idUsine = "+req.idUsine+" AND p.dateHeure LIKE '%"+req.dateHeure+"%'", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId INNER JOIN badge b ON pf.badgeId = b.Id WHERE b.idUsine = "+reqQ.idUsine+" AND p.dateHeure LIKE '%"+reqQ.dateHeure+"%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2229,13 +2270,13 @@ app.get("/PermisFeuVerification",middleware, (request, response) => {
 //?nom=dggd&zoneId=1
 //passage du fichier dans un formData portant le nom 'fichier'
 app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   //création de l'url de stockage du fichier
   //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
   //on utilise l'url publique
   const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
-  var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+req.nom+"', '"+url+"', "+req.zoneId+")";
+  var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+reqQ.nom+"', '"+url+"', "+reqQ.zoneId+")";
   pool.query(query,(err,result,fields) => {
       if(err) {
         response.json("Création du modeOP KO");
@@ -2247,12 +2288,12 @@ app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, resp
 //DELETE modeOP
 //?nom=test.pdf
 app.delete("/modeOP/:id", middleware,(request, response) => {
-  const req=request.query
-
+  const reqP=request.params
+  const reqQ=request.query
   //On supprime le fichier du storage multer avant de supprimer le mode OP en BDD
-  fs.unlink(`fichiers/${req.nom}`, () => {
+  fs.unlink(`fichiers/${reqQ.nom}`, () => {
     //Suppression en BDD du mode OP
-    pool.query("DELETE FROM modeoperatoire WHERE Id = "+request.params.id, (err,data) => {
+    pool.query("DELETE FROM modeoperatoire WHERE Id = "+reqP.id, (err,data) => {
       if(err) throw err;
       response.json("Suppression du modeOP OK")
     });
@@ -2261,8 +2302,8 @@ app.delete("/modeOP/:id", middleware,(request, response) => {
 
 //Récupérer l'ensemble des modeOP
 app.get("/modeOPs/:idUsine", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId WHERE z.idUsine = "+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId WHERE z.idUsine = "+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2271,8 +2312,8 @@ app.get("/modeOPs/:idUsine", middleware,(request, response) => {
 
 //Récupérer les modeOP associé à une zone
 app.get("/modeOPofZone/:zoneId", (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM modeoperatoire WHERE zoneId="+request.params.zoneId, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM modeoperatoire WHERE zoneId="+reqP.zoneId, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2282,8 +2323,9 @@ app.get("/modeOPofZone/:zoneId", (request, response) => {
 //Update du fichier du modeOP
 //?fichier=modeOP1
 app.put("/modeOP/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE modeoperatoire SET fichier = " + req.fichier + " WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE modeoperatoire SET fichier = " + reqQ.fichier + " WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du modeOP OK")
   });
@@ -2293,12 +2335,15 @@ app.put("/modeOP/:id", middleware,(request, response) => {
 /*Consignes*/
 //?commentaire=dggd&dateDebut=fff&c=fff&type=1&idUsine=1
 app.put("/consigne", multer({storage: storage}).single('fichier'),(request, response) => {
-  const req=request.query
+  const reqQ=request.query
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const commentaire = reqQ.commentaire.replace(/'/g, "''");
+
   if(request.file != undefined){
     url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
-    requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine, url) OUTPUT INSERTED.Id VALUES ('"+req.titre+"','"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+",'"+url+"')"
+    requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine, url) OUTPUT INSERTED.Id VALUES ('"+titre+"','"+commentaire+"', '"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.type+", "+reqQ.idUsine+",'"+url+"')"
   }
-  else requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine) OUTPUT INSERTED.Id VALUES ('"+req.titre+"','"+req.commentaire+"', '"+req.dateDebut+"', '"+req.dateFin+"', "+req.type+", "+req.idUsine+")"
+  else requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine) OUTPUT INSERTED.Id VALUES ('"+titre+"','"+commentaire+"', '"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.type+", "+reqQ.idUsine+")"
   pool.query(requete
   ,(err,data) => {
     if(err) throw err;
@@ -2310,8 +2355,10 @@ app.put("/consigne", multer({storage: storage}).single('fichier'),(request, resp
 //mettre a jour une consigne
 //?commentaire=dggd&dateDebut=fff&c=fff&type=1&id=1
 app.put("/updateConsigne", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE consigne SET titre = '"+req.titre+"', commentaire ='"+req.commentaire+"', date_heure_debut = '"+req.dateDebut+"', date_heure_fin ='"+req.dateFin+"', type="+req.type+" where id = "+req.id
+  const reqQ=request.query
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const commentaire = reqQ.commentaire.replace(/'/g, "''");
+  pool.query("UPDATE consigne SET titre = '"+titre+"', commentaire ='"+commentaire+"', date_heure_debut = '"+reqQ.dateDebut+"', date_heure_fin ='"+reqQ.dateFin+"', type="+reqQ.type+" where id = "+reqQ.id
   ,(err,result,fields) => {
       if(err) response.json("Modification de la consigne KO");
       else response.json("Modification de la consigne OK");
@@ -2320,8 +2367,8 @@ app.put("/updateConsigne", middleware,(request, response) => {
 
 //Récupérer les consignes en cours
 app.get("/consignes/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE isActive = 1 and idUsine = "+request.params.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2330,8 +2377,8 @@ app.get("/consignes/:idUsine", (request, response) => {
 
 //Récupérer toutes les consignes
 app.get("/allConsignes/:idUsine", (request, response) => {
-  const req=request.query
-  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, url, type FROM consigne WHERE isActive = 1 and idUsine = "+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, url, type FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2340,8 +2387,8 @@ app.get("/allConsignes/:idUsine", (request, response) => {
 
 //Récupérer toutes les consignes
 app.get("/getConsignesEntreDeuxDates", (request, response) => {
-  const req=request.query
-  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where  date_heure_debut < '"+req.dateFin+"' and date_heure_fin > '"+req.dateDeb+"' and isActive = 1 and commentaire like '%"+req.titre+"%' and idUsine = "+req.idUsine
+  const reqQ=request.query
+  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where  date_heure_debut < '"+reqQ.dateFin+"' and date_heure_fin > '"+reqQ.dateDeb+"' and isActive = 1 and commentaire like '%"+reqQ.titre+"%' and idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2351,8 +2398,8 @@ app.get("/getConsignesEntreDeuxDates", (request, response) => {
 
 //DELETE consigne
 app.put("/consigne/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("update consigne set isActive = 0 WHERE id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("update consigne set isActive = 0 WHERE id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la consigne OK")
   });
@@ -2362,11 +2409,11 @@ app.put("/consigne/:id",middleware, (request, response) => {
 //?rondeId=1&zoneId=2&commentaire=dggd
 //passage de la photo dans un formData portant le nom 'fichier'
 app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   //création de l'url de stockage du fichier
   const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
 
-  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+req.rondeId+", "+req.zoneId+", '"+req.commentaire+"', '"+url+"')";
+  var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+reqQ.rondeId+", "+reqQ.zoneId+", '"+reqQ.commentaire+"', '"+url+"')";
   pool.query(query,(err,result,fields) => {
       if(err) {
         response.json("Création de l'anomalie KO");
@@ -2378,8 +2425,19 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
 //TODO : inner join avec Ronde ??? Zone ???
 //Récupérer les anomalies d'une ronde
 app.get("/anomalies/:id",(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM anomalie WHERE rondeId = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM anomalie WHERE rondeId = "+reqP.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les anomalies d'une ronde
+app.get("/getAnomaliesOfOneRonde",(request, response) => {
+  const reqQ=request.query
+  console.log("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+ "%' and quart = " +reqQ.quart )
+  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart  , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2389,13 +2447,13 @@ app.get("/anomalies/:id",(request, response) => {
 //Récupérer les anomalies d'une usine entre deux dates
 //?idUsine=7?detaDeb=01/01/2023&dateFin=01/09/2023
 app.get("/anomaliesEntreDeuxDates",(request, response) => {
-  const req=request.query
-  const [day,month, year]= req.dateDeb.split('/') 
+  const reqQ=request.query
+  const [day,month, year]= reqQ.dateDeb.split('/') 
   var dateDeDebut = `${year}-${month}-${day}`
 
-  const [day2,month2, year2]= req.dateFin.split('/') 
+  const [day2,month2, year2]= reqQ.dateFin.split('/') 
   var dateDeFin = `${year2}-${month2}-${day2}`
-  pool.query("select a.*, r.dateHeure, r.quart from anomalie a join ronde r on r.Id = a.rondeId where r.IdUsine = " + req.idUsine +" and (convert(datetime, r.dateHeure, 103)) BETWEEN '"+ dateDeDebut +"' and '"+ dateDeFin +"'"
+  pool.query("select a.*, r.dateHeure, r.quart from anomalie a join ronde r on r.Id = a.rondeId where r.IdUsine = " + reqQ.idUsine +" and (convert(datetime, r.dateHeure, 103)) BETWEEN '"+ dateDeDebut +"' and '"+ dateDeFin +"'"
     , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2406,8 +2464,8 @@ app.get("/anomaliesEntreDeuxDates",(request, response) => {
 //UpdateAnomalie
 //?rondeId=12&zoneId=5&commentaire=test
 app.put("/updateAnomalie", (request, response) => {
-  const req=request.query
-  pool.query("UPDATE anomalie SET commentaire = '" + req.commentaire + "' WHERE rondeId ="+ req.rondeId +" AND zoneId =" + req.zoneId, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE anomalie SET commentaire = '" + reqQ.commentaire + "' WHERE rondeId ="+ reqQ.rondeId +" AND zoneId =" + reqQ.zoneId, (err,data) => {
     if(err) throw err;
     response.json("OK")
   });
@@ -2416,8 +2474,8 @@ app.put("/updateAnomalie", (request, response) => {
 //UpdateAnomalie
 //?rondeId=1&zoneId=12&commentaire=test
 app.put("/createAnomalie", (request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO anomalie(rondeId, zoneId, commentaire) VALUES ("+ req.rondeId + "," + req.zoneId + ",'" + req.commentaire +"')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO anomalie(rondeId, zoneId, commentaire) VALUES ("+ reqQ.rondeId + "," + reqQ.zoneId + ",'" + reqQ.commentaire +"')", (err,data) => {
     if(err) throw err;
     response.json("OK")
   });
@@ -2432,9 +2490,9 @@ app.put("/createAnomalie", (request, response) => {
 //Créer une nouvelle équipe
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/equipe",middleware, (request, response) => {
-  const req = request.query
-  const nomEquipe = req.nomEquipe.replace(/'/g, "''");
-  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+nomEquipe+"',"+req.quart+","+req.idChefQuart+",'"+req.date+"')", (err,data) => {
+  const reqQ = request.query
+  const nomEquipe = reqQ.nomEquipe.replace(/'/g, "''");
+  pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+nomEquipe+"',"+reqQ.quart+","+reqQ.idChefQuart+",'"+reqQ.date+"')", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2444,8 +2502,8 @@ app.put("/equipe",middleware, (request, response) => {
 //Créer les nouveau rondier d'une équipe
 //?nomEquipe=test&quart=1&idChefQuart=1
 app.put("/affectationEquipe",middleware, (request, response) => {
-  const req = request.query
-  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+req.idRondier+","+req.idEquipe+","+req.idZone+",'"+req.poste+"')", (err,data) => {
+  const reqQ = request.query
+  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+","+reqQ.idZone+",'"+reqQ.poste+"')", (err,data) => {
     if(err) throw err;
     response.json("Ajout ok");
   });
@@ -2454,9 +2512,9 @@ app.put("/affectationEquipe",middleware, (request, response) => {
 //Récupérer les utilisateurs rondier qui ne sont pas affecter à une équipe
 //?idUsine=1
 app.get("/usersRondierSansEquipe", middleware,(request, response) => {
-  const req=request.query
-  //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
-  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + req.idUsine + " ORDER BY Nom", (err,data) => {
+  const reqQ=request.query
+  //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " ORDER BY Nom", (err,data) => {
   if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2466,8 +2524,8 @@ app.get("/usersRondierSansEquipe", middleware,(request, response) => {
 //Récupérer les équipes d'une usine
 //?idUsine=1
 app.get("/equipes", middleware,async (request, response) => {
-  const req=request.query
-  pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + req.idUsine + " order by equipe.quart asc",
+  const reqQ=request.query
+  pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + reqQ.idUsine + " order by equipe.quart asc",
     async (err, data) => {
       if (err)
         throw err;
@@ -2504,8 +2562,8 @@ function getUsersEquipe(equipe) {
 //Récupérer une seule équipe
 //?idUsine=1&idEquipe=28
 app.get("/getOneEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe FULL OUTER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+req.idEquipe, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe FULL OUTER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+reqQ.idEquipe, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2515,8 +2573,8 @@ app.get("/getOneEquipe", middleware,(request, response) => {
 //Mise à jour des information d'une équipe
 //?nomEquipe=test&quart=1&idEquipe=1
 app.put("/updateEquipe",middleware, (request, response) => {
-  const req = request.query
-  pool.query("update equipe set equipe = '"+req.nomEquipe +"', quart = "+req.quart+" , idChefQuart = "+ req.idChefQuart  +"where id = "+req.idEquipe, (err,data) => {
+  const reqQ = request.query
+  pool.query("update equipe set equipe = '"+reqQ.nomEquipe +"', quart = "+reqQ.quart+" , idChefQuart = "+ reqQ.idChefQuart  +"where id = "+reqQ.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Update ok");
   });
@@ -2524,8 +2582,8 @@ app.put("/updateEquipe",middleware, (request, response) => {
 
 //DELETE equipe
 app.delete("/deleteEquipe/:idEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM equipe WHERE id = "+request.params.idEquipe, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM equipe WHERE id = "+reqP.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Suppression des Rondiers OK")
   });
@@ -2533,8 +2591,8 @@ app.delete("/deleteEquipe/:idEquipe", middleware,(request, response) => {
 
 //DELETE affectation_equipe
 app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM affectation_equipe WHERE idEquipe = "+request.params.idEquipe, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM affectation_equipe WHERE idEquipe = "+reqP.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Suppression des Rondiers OK")
   });
@@ -2543,8 +2601,8 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 //Récupérer l'équipe d'un utilisateur POUR RONDIER
 //?idRondier
 app.get("/getEquipeUser", (request, response) => {
-  const req=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +req.idRondier, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2554,8 +2612,8 @@ app.get("/getEquipeUser", (request, response) => {
 //Récupérer l'équipe d'un utilisateur POUR RONDIER
 //?idRondier=1&quart=1
 app.get("/getEquipeUserCahierQuart", (request, response) => {
-  const req=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +req.idRondier + " and e.quart = " + req.quart, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier + " and e.quart = " + reqQ.quart, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2566,10 +2624,10 @@ app.get("/getEquipeUserCahierQuart", (request, response) => {
 //Récupérer l'équipe d'un quart d'une usine
 //?idUsine=7&quart=1?date=2024-01-01
 app.get("/getEquipeQuart", (request, response) => {
-  const req=request.query
-  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'", (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + reqQ.idUsine +" and e.quart =" + reqQ.quart +"and e.date='"+reqQ.date+"'", (err,data) => {
     if(err) {
-      console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + req.idUsine +" and e.quart =" + req.quart +"and e.date='"+req.date+"'");
+      console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + reqQ.idUsine +" and e.quart =" + reqQ.quart +"and e.date='"+reqQ.date+"'");
       console.log(err);
       response.json("erreur");
     }
@@ -2592,8 +2650,8 @@ app.get("/getEquipeQuart", (request, response) => {
 //Créer un nouvel enregistrement d'équipe
 //?equipe=test
 app.put("/enregistrementEquipe",middleware, (request, response) => {
-  const req = request.query
-  pool.query("INSERT INTO enregistrement_equipe(equipe) OUTPUT INSERTED.Id VALUES('"+req.nomEquipe+"')", (err,data) => {
+  const reqQ = request.query
+  pool.query("INSERT INTO enregistrement_equipe(equipe) OUTPUT INSERTED.Id VALUES('"+reqQ.nomEquipe+"')", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2602,8 +2660,8 @@ app.put("/enregistrementEquipe",middleware, (request, response) => {
 
 //DELETE enregistrement_affectation_equipe
 app.delete("/deleteEnregistrementAffectationEquipe/:idEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM enregistrement_affectation_equipe WHERE idEquipe = "+request.params.idEquipe, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM enregistrement_affectation_equipe WHERE idEquipe = "+reqP.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Suppression des Rondiers OK")
   });
@@ -2612,8 +2670,8 @@ app.delete("/deleteEnregistrementAffectationEquipe/:idEquipe", middleware,(reque
 
 //DELETE enregistremen_equipe
 app.delete("/deleteEnregistrementEquipe/:idEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM enregistrement_equipe WHERE id = "+request.params.idEquipe, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM enregistrement_equipe WHERE id = "+reqP.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Suppression des Rondiers OK")
   });
@@ -2623,8 +2681,8 @@ app.delete("/deleteEnregistrementEquipe/:idEquipe", middleware,(request, respons
 //Mise à jour des information d'un enregistrement d'équipe
 //?nomEquipe=test&idEquipe=1
 app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
-  const req = request.query
-  pool.query("update enregistrement_equipe set equipe = '"+req.nomEquipe+"' where id = "+req.idEquipe, (err,data) => {
+  const reqQ = request.query
+  pool.query("update enregistrement_equipe set equipe = '"+reqQ.nomEquipe+"' where id = "+reqQ.idEquipe, (err,data) => {
     if(err) throw err;
     response.json("Update ok");
   });
@@ -2633,8 +2691,8 @@ app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
 //Récupérer une seule équipe enregistrée
 //idEquipe=28
 app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+req.idEquipe, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+reqQ.idEquipe, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2644,8 +2702,8 @@ app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
 //Récupérer les nom des équipes enregistrée et leurs id
 //?idUsine=1
 app.get("/getNomsEquipesEnregistrees", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT distinct enregistrement_equipe.id, enregistrement_equipe.equipe FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE users.idUsine =" +req.idUsine, (err,data) => {
+  const reqQ=request.query
+  pool.query("SELECT distinct enregistrement_equipe.id, enregistrement_equipe.equipe FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE users.idUsine =" +reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2655,8 +2713,8 @@ app.get("/getNomsEquipesEnregistrees", middleware,(request, response) => {
 //Récupérer les équipes enregistrées d'une usine
 //?idUsine=1
 app.get("/getEquipesEnregistrees", middleware,async (request, response) => {
-  const req=request.query
-  pool.query("SELECT distinct e.id, e.equipe from enregistrement_equipe e JOIN enregistrement_affectation_equipe a ON a.idEquipe = e.id JOIN users u on u.Id = a.idRondier WHERE u.idUsine =" + req.idUsine ,
+  const reqQ=request.query
+  pool.query("SELECT distinct e.id, e.equipe from enregistrement_equipe e JOIN enregistrement_affectation_equipe a ON a.idEquipe = e.id JOIN users u on u.Id = a.idRondier WHERE u.idUsine =" + reqQ.idUsine ,
     async (err, data) => {
       if (err)
         throw err;
@@ -2690,8 +2748,8 @@ function getUsersEnregistrementEquipe(equipe) {
 //Créer les nouveau rondier d'un enregistrement d'équipe
 //?idRondier=test&idEquipe=1
 app.put("/enregistrementAffectationEquipe",middleware, (request, response) => {
-  const req = request.query
-  pool.query("INSERT INTO enregistrement_affectation_equipe(idRondier,idEquipe) VALUES("+req.idRondier+","+req.idEquipe+")", (err,data) => {
+  const reqQ = request.query
+  pool.query("INSERT INTO enregistrement_affectation_equipe(idRondier,idEquipe) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+")", (err,data) => {
     if(err) throw err;
     response.json("Ajout ok");
   });
@@ -2709,10 +2767,20 @@ app.put("/enregistrementAffectationEquipe",middleware, (request, response) => {
 ******* SITES
 */
 
+//Récupérer la locatlisation d'un site
+app.get("/getOneLocalisation/:id", middleware,(request, response) => {
+  const reqP=request.params
+  pool.query("SELECT localisation FROM site WHERE id = " + reqP.id, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //Récupérer la liste des sites (pour choisir pour l'administration du superAdmin)
 //sauf le global
 app.get("/sites", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' ORDER BY localisation ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2723,7 +2791,7 @@ app.get("/sites", middleware,(request, response) => {
 //Récupérer la liste des sites avec une ip Aveva
 //sauf le global
 app.get("/sitesAveva", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' and ipAveva !='' ORDER BY localisation ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2734,8 +2802,8 @@ app.get("/sitesAveva", middleware,(request, response) => {
 
 //Récupérer le nombre de ligne d'un site
 app.get("/nbLigne/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT nbLigne FROM site WHERE id ="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2745,8 +2813,8 @@ app.get("/nbLigne/:id", middleware,(request, response) => {
 
 //Récupérer le nombre de ligne d'un site avec une réponse au format chiffre
 app.get("/nbLigneChiffre/:id",(request, response) => {
-  const req=request.query
-  pool.query("SELECT nbLigne FROM site WHERE id ="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT nbLigne FROM site WHERE id ="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length>0){
@@ -2758,8 +2826,8 @@ app.get("/nbLigneChiffre/:id",(request, response) => {
 
 //Récupérer le nombre de GTA d'un site
 app.get("/nbGTA/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT nbGTA FROM site WHERE id ="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT nbGTA FROM site WHERE id ="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2768,8 +2836,8 @@ app.get("/nbGTA/:id", middleware,(request, response) => {
 
 //Récupérer le nombre de RCU d'un site
 app.get("/nbRCU/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT nbReseauChaleur FROM site WHERE id ="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT nbReseauChaleur FROM site WHERE id ="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2778,8 +2846,8 @@ app.get("/nbRCU/:id", middleware,(request, response) => {
 
 //Récupérer le type d'import pour les pesées d'un site
 app.get("/typeImport/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT typeImport FROM site WHERE id ="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT typeImport FROM site WHERE id ="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2789,8 +2857,8 @@ app.get("/typeImport/:id",middleware, (request, response) => {
 
 //Récupérer le type de l'aapli rondier d'un site avec une réponse au format string
 app.get("/typeRondier/:id",(request, response) => {
-  const req=request.params
-  pool.query("SELECT typeRondier FROM site WHERE id = "+req.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT typeRondier FROM site WHERE id = "+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     if(data.length>0){
@@ -2812,8 +2880,8 @@ app.get("/typeRondier/:id",(request, response) => {
 
 //Récupérer la liste des rapports pour un site en question
 app.get("/rapports/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM rapport WHERE idUsine="+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM rapport WHERE idUsine="+reqP.id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -2832,8 +2900,8 @@ app.get("/rapports/:id",middleware, (request, response) => {
 
 //Get products without TAGs
 app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +request.params.id+ " ORDER BY Name ASC", (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +reqP.id+ " ORDER BY Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -2843,7 +2911,7 @@ app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
 
 //Get products avec un TAG EVELER
 app.get("/ProductEveler", middleware, (request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE TAG LIKE 'EVELER%'", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2854,8 +2922,9 @@ app.get("/ProductEveler", middleware, (request, response) => {
 //UPDATE Product, set TAG
 //?TAG=123
 app.put("/productTAG/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET TAG = '" + req.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = null WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE products_new SET TAG = '" + reqQ.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = null WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du TAG OK")
   });
@@ -2864,11 +2933,11 @@ app.put("/productTAG/:id", middleware,(request, response) => {
 //UPDATE Product, set TAG
 //?id=1&idElementRondier=123
 app.put("/productElementRondier", middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   var idElem;
-  if(req.idElementRondier == 0) idElem = null 
-  else idElem = req.idElementRondier
-  pool.query("UPDATE products_new SET TAG = '', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = " + idElem + " WHERE Id = "+req.id, (err,data) => {
+  if(reqQ.idElementRondier == 0) idElem = null 
+  else idElem = reqQ.idElementRondier
+  pool.query("UPDATE products_new SET TAG = '', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = " + idElem + " WHERE Id = "+reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du TAG OK")
   });
@@ -2877,8 +2946,9 @@ app.put("/productElementRondier", middleware,(request, response) => {
 //UPDATE Product, set Code
 //?CodeEquipement=123
 app.put("/productCodeEquipement/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE products_new SET CodeEquipement = '" + reqQ.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du Code OK")
   });
@@ -2887,8 +2957,9 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
 //UPDATE Product, set Code
 //?CodeEquipement=123
 app.put("/productCodeEquipement/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET CodeEquipement = '" + req.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE products_new SET CodeEquipement = '" + reqQ.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour du Code OK")
   });
@@ -2897,10 +2968,11 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
 //UPDATE Product, set Code
 //?CodeEquipement=123
 app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id, (err,data) => {
+  const reqQ=request.query
+  const reqP=request.params
+  pool.query("UPDATE products_new SET Coefficient = '" + reqQ.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
-    console.log("UPDATE products_new SET Coefficient = '" + req.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+request.params.id)
+    console.log("UPDATE products_new SET Coefficient = '" + reqQ.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id)
     response.json("Mise à jour du Coeff OK")
   });
 });
@@ -2916,7 +2988,7 @@ app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
 
 //Récupérer la maintenance prévue
 app.get("/Maintenance", middleware, (request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -2940,8 +3012,8 @@ app.get("/Maintenance", middleware, (request, response) => {
 app.put("/accesToken", middleware,(request, response) => {
   //On passe un objet aléatoire pour générer un token aléatoirement
   const token =  jwt.sign({token :"ffrezqskz7f" }, process.env.ACESS_TOKEN_SECRET);
-  const req=request.query
-  pool.query("INSERT INTO token(token,affectation) VALUES ('Bearer " + token + "', '" + req.affectation + "')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO token(token,affectation) VALUES ('Bearer " + token + "', '" + reqQ.affectation + "')", (err,data) => {
     if(err) throw err;
     response.json(token);
   });
@@ -2959,8 +3031,8 @@ app.get("/allAccesTokens", middleware,(request, response) => {
 //Requête permettant de désactiver un token 
 //?id=5
 app.put("/desactivateToken", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE token SET Enabled = 0 WHERE Id = "+req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE token SET Enabled = 0 WHERE Id = "+reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression du token OK")
   });
@@ -2969,8 +3041,8 @@ app.put("/desactivateToken", middleware,(request, response) => {
 //Requête permettant de modifier la personne affectée à un token
 //?id=5&affectation=tesst
 app.put("/updateToken", middleware,(request, response) => {
-  const req=request.query
-  pool.query("UPDATE token SET affectation = '" + req.affectation +"' WHERE Id = "+req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE token SET affectation = '" + reqQ.affectation +"' WHERE Id = "+reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -2999,11 +3071,11 @@ app.get("/unauthorizedTokens",
 //Requête permettant de récupérer les moral entities d'une usine sans correspondance
 //?idUsine=1
 app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
-  const req=request.query
+  const reqQ=request.query
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur, i.nomImport, i.productImport FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
   "FULL OUTER JOIN import_tonnage i ON i.ProducerId = mr.Id "+
-  "WHERE mr.idUsine = "+req.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Enabled = 1 AND mr.Code LIKE '" + req.Code + "%' ORDER BY mr.Name ASC", (err,data) => {
+  "WHERE mr.idUsine = "+reqQ.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Enabled = 1 AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY mr.Name ASC", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -3013,8 +3085,8 @@ app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
 //Requête permettant de récupérer les moral entities d'une usine sans correspondance
 //?idUsine=1
 app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new p JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +req.idUsine + "and p.Code LIKE '" +req.Code +"%'"
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new p JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +reqQ.idUsine + "and p.Code LIKE '" +reqQ.Code +"%'"
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3025,8 +3097,8 @@ app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
 //Requête permettant de récupérer les moral entities d'une usine sans correspondance
 //?idUsine=1
 app.get("/getReactifsAndCorrespondance",middleware,(request, response) => {
-  const req=request.query
-  pool.query("SELECT * FROM products_new p JOIN import_tonnageReactifs i ON i.ProductId = p.Id WHERE p.idUsine = " +req.idUsine 
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new p JOIN import_tonnageReactifs i ON i.ProductId = p.Id WHERE p.idUsine = " +reqQ.idUsine 
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3039,8 +3111,8 @@ app.get("/getReactifsAndCorrespondance",middleware,(request, response) => {
 
 //?ProductId=5&ProducerId=1&nomImport=test&idUsine=7
 app.put("/import_tonnage",middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+req.ProductId+","+req.ProducerId+","+req.idUsine+",'"+req.nomImport+"','"+req.productImport+"')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+reqQ.ProductId+","+reqQ.ProducerId+","+reqQ.idUsine+",'"+reqQ.nomImport+"','"+reqQ.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3048,8 +3120,8 @@ app.put("/import_tonnage",middleware,(request, response) => {
 
 //?ProductId=5&idUsine=7
 app.put("/import_tonnageSortant",middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO import_tonnageSortants (ProductId,idUsine, productImport) VALUES ("+req.ProductId+","+req.idUsine+",'"+req.productImport+"')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO import_tonnageSortants (ProductId,idUsine, productImport) VALUES ("+reqQ.ProductId+","+reqQ.idUsine+",'"+reqQ.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3057,8 +3129,8 @@ app.put("/import_tonnageSortant",middleware,(request, response) => {
 
 //?ProductId=5&idUsine=7
 app.put("/import_tonnageReactif",middleware,(request, response) => {
-  const req=request.query
-  pool.query("INSERT INTO import_tonnageReactifs (ProductId,idUsine, productImport) VALUES ("+req.ProductId+","+req.idUsine+",'"+req.productImport+"')", (err,data) => {
+  const reqQ=request.query
+  pool.query("INSERT INTO import_tonnageReactifs (ProductId,idUsine, productImport) VALUES ("+reqQ.ProductId+","+reqQ.idUsine+",'"+reqQ.productImport+"')", (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3067,7 +3139,8 @@ app.put("/import_tonnageReactif",middleware,(request, response) => {
 
 //Requête permettant de récupérer tout les tokens non autorisés
 app.get("/correspondance/:Id",middleware,(request, response) => {
-  pool.query("SELECT * FROM import_tonnage where ProducerId ="+request.params.Id, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM import_tonnage where ProducerId ="+reqP.Id, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -3076,8 +3149,8 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
 
 //DELETE correspondance
 app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM import_tonnageSortants WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM import_tonnageSortants WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la correspondance OK")
   });
@@ -3085,8 +3158,8 @@ app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
 
 //DELETE correspondance
 app.delete("/deleteCorrespondanceReactif/:id", middleware,(request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM import_tonnageReactifs WHERE Id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM import_tonnageReactifs WHERE Id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la correspondance OK")
   });
@@ -3094,8 +3167,8 @@ app.delete("/deleteCorrespondanceReactif/:id", middleware,(request, response) =>
 
 
 app.put("/updateCorrespondance",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE import_tonnage SET nomImport='"+ req.nomImport+"', productImport ='"+ req.productImport+"' WHERE ProducerId =" +req.ProducerId, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE import_tonnage SET nomImport='"+ reqQ.nomImport+"', productImport ='"+ reqQ.productImport+"' WHERE ProducerId =" +reqQ.ProducerId, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3104,8 +3177,8 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
 //mettre à jour le nom dans le logiciel de pesée d'une correspondance sortant
 //?productImport=1&ProductId=&
 app.put("/updateNomImportCorrespondanceSortant",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE import_tonnageSortants SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE import_tonnageSortants SET productImport ='"+ reqQ.productImport+"' WHERE ProductId =" +reqQ.ProductId, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3114,8 +3187,8 @@ app.put("/updateNomImportCorrespondanceSortant",middleware, (request, response) 
 //mettre à jour le nom de produit cap exploitation d'une correspondance sortant
 //?idCorrespondance=1&ProductId=&
 app.put("/updateProductImportCorrespondanceSortant",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE import_tonnageSortants SET ProductId =" +req.ProductId +"WHERE id =" + req.idCorrespondance, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE import_tonnageSortants SET ProductId =" +reqQ.ProductId +"WHERE id =" + reqQ.idCorrespondance, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3124,8 +3197,8 @@ app.put("/updateProductImportCorrespondanceSortant",middleware, (request, respon
 //mettre à jour le nom dans le logiciel de pesée d'une correspondance réactif
 //?productImport=1&ProductId=&
 app.put("/updateNomImportCorrespondanceReactif",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE import_tonnageReactifs SET productImport ='"+ req.productImport+"' WHERE ProductId =" +req.ProductId, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE import_tonnageReactifs SET productImport ='"+ reqQ.productImport+"' WHERE ProductId =" +reqQ.ProductId, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3134,8 +3207,8 @@ app.put("/updateNomImportCorrespondanceReactif",middleware, (request, response) 
 //mettre à jour le nom de produit cap exploitation d'une correspondance réactif
 //?idCorrespondance=1&ProductId=&
 app.put("/updateProductImportCorrespondanceReactif",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE import_tonnageReactifs SET ProductId =" +req.ProductId +"WHERE id =" + req.idCorrespondance, (err,data) => {
+  const reqQ=request.query
+  pool.query("UPDATE import_tonnageReactifs SET ProductId =" +reqQ.ProductId +"WHERE id =" + reqQ.idCorrespondance, (err,data) => {
     if(err) throw err;
     response.json("Mise à jour OK")
   });
@@ -3143,7 +3216,8 @@ app.put("/updateProductImportCorrespondanceReactif",middleware, (request, respon
 
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des entrants
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
-  pool.query("SELECT * FROM import_tonnage where idUsine ="+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM import_tonnage where idUsine ="+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -3152,7 +3226,8 @@ app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
 
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des sortants
 app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => {
-  pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -3161,7 +3236,8 @@ app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => 
 
 //Requête permettant de récupérer toutes les correspondance pour l'import csv des réactifs
 app.get("/getCorrespondanceReactifs/:idUsine",middleware,(request, response) => {
-  pool.query("SELECT * FROM import_tonnageReactifs where idUsine ="+request.params.idUsine, (err,data) => {
+  const reqP=request.params
+  pool.query("SELECT * FROM import_tonnageReactifs where idUsine ="+reqP.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data}) 
@@ -3191,8 +3267,8 @@ app.get("/getConversions",middleware,(request, response) => {
 
 //?nom=journalier&type=1&idUsine=1
 app.put("/formulaire", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO formulaire (nom, type, idUsine) VALUES ('"+req.nom+"', "+req.type+", "+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO formulaire (nom, type, idUsine) VALUES ('"+reqQ.nom+"', "+reqQ.type+", "+reqQ.idUsine+")"
   ,(err,result,fields) => {
       if(err) response.json("Création du formulaire KO");
       else response.json("Création du formulaire OK");
@@ -3202,8 +3278,8 @@ app.put("/formulaire", middleware,(request, response) => {
 //Récupérer les formulaires d'un site
 //?idUsine=7
 app.get("/formulaires", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT * FROM formulaire WHERE idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT * FROM formulaire WHERE idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3223,8 +3299,8 @@ app.get("/formulaires", middleware,(request, response) => {
 //Récupérer une consigne
 //?idConsigne=7
 app.get("/getOneConsigne", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT * FROM consigne WHERE id = "+req.idConsigne, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT * FROM consigne WHERE id = "+reqQ.idConsigne, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3236,11 +3312,11 @@ app.get("/getOneConsigne", middleware,(request, response) => {
 //Créer une actu
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec
 app.put("/actu", middleware,(request, response) => {
-  const req=request.query;
-  const titre = req.titre.replace(/'/g, "''");
-  const description = req.description.replace(/'/g, "''");
+  const reqQ=request.query;
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const description = reqQ.description.replace(/'/g, "''");
   pool.query("INSERT INTO quart_actualite(idUsine,titre,importance,date_heure_debut,date_heure_Fin,isValide,description) OUTPUT INSERTED.Id "
-            +"VALUES("+req.idUsine+",'"+titre+"',"+req.importance+",'"+req.dateDeb+"','"+req.dateFin+"',0,'"+description+"')"
+            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"',0,'"+description+"')"
   ,(err,data) => {
     if(err) throw(err)
     data = data['recordset'];
@@ -3251,10 +3327,10 @@ app.put("/actu", middleware,(request, response) => {
 //Modifier une actu
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1&description=deeeeeeec
 app.put("/updateActu", middleware,(request, response) => {
-  const req=request.query;
-  const titre = req.titre.replace(/'/g, "''");
-  const description = req.description.replace(/'/g, "''");
-  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+req.importance+",date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"', description = '"+description+"' WHERE id="+req.idActu
+  const reqQ=request.query;
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const description = reqQ.description.replace(/'/g, "''");
+  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', description = '"+description+"' WHERE id="+reqQ.idActu
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'actu OK !");
@@ -3264,8 +3340,8 @@ app.put("/updateActu", middleware,(request, response) => {
 //Récupérer toutes les actus entre deux dates
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActusRonde", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance FROM quart_actualite a WHERE a.date_heure_debut < '"+req.dateFin+"' and a.date_heure_fin > '"+req.dateDeb+"' and idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT a.id, a.titre, a.description, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance FROM quart_actualite a WHERE a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3275,8 +3351,8 @@ app.get("/getActusRonde", middleware,(request, response) => {
 //Récupérer une actualité
 //?idActu=7
 app.get("/getOneActu", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT * FROM quart_actualite WHERE id = "+req.idActu, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT * FROM quart_actualite WHERE id = "+reqQ.idActu, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3286,8 +3362,8 @@ app.get("/getOneActu", middleware,(request, response) => {
 //Récupérer toutes les actualités
 //?idUsine=7
 app.get("/getAllActu", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+req.idUsine +" ORDER BY date_heure_debut desc", (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+reqQ.idUsine +" ORDER BY date_heure_debut desc", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3297,12 +3373,12 @@ app.get("/getAllActu", middleware,(request, response) => {
 //Récupérer toutes les actualités
 //?idUsine=7
 app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query;
-  var importance = req.importance
-  if(req.importance == 3){
+  const reqQ=request.query;
+  var importance = reqQ.importance
+  if(reqQ.importance == 3){
     importance = ''
   }
-  pool.query("SELECT 'Actualité' as 'typeDonnee', a.id, a.description, a.titre as 'nom', a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a where  a.date_heure_debut < '"+req.dateFin+"' and a.date_heure_fin > '"+req.dateDeb+"' and a.titre like '%"+req.titre+"%' and a.importance like '%"+importance+"%' and a.idUsine = "+req.idUsine, (err,data) => {
+  pool.query("SELECT 'Actualité' as 'typeDonnee', a.id, a.description, a.titre as 'nom', a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a where  a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and a.titre like '%"+reqQ.titre+"%' and a.importance like '%"+importance+"%' and a.idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3313,8 +3389,8 @@ app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
 //Récupérer toutes les actualités actives
 //?idUsine=7
 app.get("/getActusActives", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_fin >= GETDATE() and  idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3324,8 +3400,8 @@ app.get("/getActusActives", middleware,(request, response) => {
 //Terminer une actu
 //?idActu=1
 app.put("/validerActu", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE quart_actualite SET isValide = 1 WHERE id="+req.idActu
+  const reqQ=request.query;
+  pool.query("UPDATE quart_actualite SET isValide = 1 WHERE id="+reqQ.idActu
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'actu OK !");
@@ -3335,8 +3411,8 @@ app.put("/validerActu", middleware,(request, response) => {
 //Terminer une actu
 //?idActu=1
 app.put("/invaliderActu", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE quart_actualite SET isValide = 0 WHERE id="+req.idActu
+  const reqQ=request.query;
+  pool.query("UPDATE quart_actualite SET isValide = 0 WHERE id="+reqQ.idActu
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'actu OK !");
@@ -3350,18 +3426,19 @@ app.put("/invaliderActu", middleware,(request, response) => {
 //Créer un évènement
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&groupementGMAO=&equipementGMAO=&cause=&description
 app.put("/evenement",multer({storage: storage}).single('fichier'),(request, response) => {
-  const req=request.query;
-  const titre = req.titre.replace(/'/g, "''");
-  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
-  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
-  const cause = req.cause.replace(/'/g, "''");
-  const description = req.description.replace(/'/g, "''");
+  const reqQ=request.query;
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const groupementGMAO = reqQ.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = reqQ.equipementGMAO.replace(/'/g, "''");
+  const cause = reqQ.cause.replace(/'/g, "''");
+  const description = reqQ.description.replace(/'/g, "''");
   var url = ""
   if(request.file != undefined){
     url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
   }
+  
   pool.query("INSERT INTO quart_evenement(idUsine,titre,importance,date_heure_debut,date_heure_Fin,groupementGMAO, equipementGMAO, description, cause, consigne, demande_travaux,url) OUTPUT INSERTED.Id "
-            +"VALUES("+req.idUsine+",'"+titre+"',"+req.importance+",'"+req.dateDeb+"','"+req.dateFin+"','"+groupementGMAO+"','"+equipementGMAO+"','"+description+"','"+cause+"',"+req.consigne+","+req.demandeTravaux+",'"+url+"')"
+            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"','"+groupementGMAO+"','"+equipementGMAO+"','"+description+"','"+cause+"',"+reqQ.consigne+",'"+reqQ.demandeTravaux+"','"+url+"')"
   ,(err,data) => {
       if(err) throw(err)
       else {  
@@ -3374,13 +3451,13 @@ app.put("/evenement",multer({storage: storage}).single('fichier'),(request, resp
 //Modifier un évènement
 //?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idEvenement=30&groupementGMAO=&equipementGMAO=&cause=&description
 app.put("/updateEvenement",middleware,(request, response) => {
-  const req=request.query;
-  const titre = req.titre.replace(/'/g, "''");
-  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
-  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
-  const cause = req.cause.replace(/'/g, "''");
-  const description = req.description.replace(/'/g, "''");
-  pool.query("UPDATE quart_evenement SET titre = '"+titre+"',importance = "+req.importance+",date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"',groupementGMAO='"+groupementGMAO+"', equipementGMAO='"+equipementGMAO+"', description='"+description+"', cause='"+cause+"', consigne="+req.consigne+", demande_travaux="+req.demandeTravaux+" where id="+req.idEvenement
+  const reqQ=request.query;
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const groupementGMAO = reqQ.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = reqQ.equipementGMAO.replace(/'/g, "''");
+  const cause = reqQ.cause.replace(/'/g, "''");
+  const description = reqQ.description.replace(/'/g, "''");
+  pool.query("UPDATE quart_evenement SET titre = '"+titre+"',importance = "+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"',groupementGMAO='"+groupementGMAO+"', equipementGMAO='"+equipementGMAO+"', description='"+description+"', cause='"+cause+"', consigne="+reqQ.consigne+", demande_travaux='"+reqQ.demandeTravaux+"' where id="+reqQ.idEvenement
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modification de l'evenement OK !");
@@ -3390,8 +3467,8 @@ app.put("/updateEvenement",middleware,(request, response) => {
 //Récupérer un évènement
 //?idEvenement=7
 app.get("/getOneEvenement", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT * FROM quart_evenement WHERE id = "+req.idEvenement, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT * FROM quart_evenement WHERE id = "+reqQ.idEvenement, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3401,8 +3478,8 @@ app.get("/getOneEvenement", middleware,(request, response) => {
 //Récupérer toutes les évènements
 //?idUsine=7
 app.get("/getAllEvenement", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3412,15 +3489,15 @@ app.get("/getAllEvenement", middleware,(request, response) => {
 //Récupérer toutes les évènements entre deux dates
 //?idUsine=7
 app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query;
-  var importance = req.importance
-  if(req.importance == 3){
+  const reqQ=request.query;
+  var importance = reqQ.importance
+  if(reqQ.importance == 3){
     importance = ''
   }
-  const titre = req.titre.replace(/'/g, "''");
-  const groupementGMAO = req.groupementGMAO.replace(/'/g, "''");
-  const equipementGMAO = req.equipementGMAO.replace(/'/g, "''");
-  pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and e.titre like '%"+titre+"%' and e.groupementGMAO like '%"+groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+equipementGMAO+"%' and e.isActive = 1 and e.idUsine = "+req.idUsine
+  const titre = reqQ.titre.replace(/'/g, "''");
+  const groupementGMAO = reqQ.groupementGMAO.replace(/'/g, "''");
+  const equipementGMAO = reqQ.equipementGMAO.replace(/'/g, "''");
+  pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and e.titre like '%"+titre+"%' and e.groupementGMAO like '%"+groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+equipementGMAO+"%' and e.isActive = 1 and e.idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3430,8 +3507,8 @@ app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
 
 //DELETE évènement
 app.put("/deleteEvenement/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("UPDATE quart_evenement set isActive = 0 WHERE id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("UPDATE quart_evenement set isActive = 0 WHERE id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de l'evenement OK")
   });
@@ -3444,8 +3521,8 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 //Récupérer toutes les zones présentes dans la table calndrier pour une usine
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3455,8 +3532,8 @@ app.get("/getAllZonesCalendrier", middleware,(request, response) => {
 //Récupérer toutes les actions présentes dans la table calndrier pour une usine
 //?idUsine=
 app.get("/getAllActionsCalendrier", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select a.nom, c.* from quart_calendrier c full outer join quart_action a on a.id = c.idAction where c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("select a.nom, c.* from quart_calendrier c full outer join quart_action a on a.id = c.idAction where c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3466,9 +3543,9 @@ app.get("/getAllActionsCalendrier", middleware,(request, response) => {
 //Créer une instance pour les ZONES
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
 app.put("/newCalendrierZone", middleware,(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+req.idUsine+","+req.idRonde+",'"+req.dateDeb+"',"+req.quart+",0,'"+req.dateFin+"')"
+            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Création de l'instance OK !");
@@ -3478,9 +3555,9 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
 //Créer une instance pour les ACTIONS
 //?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+req.idUsine+","+req.idAction+",'"+req.dateDeb+"',"+req.quart+",0,'"+req.dateFin+"')"
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Création de l'instance OK !");
@@ -3490,10 +3567,10 @@ app.put("/newCalendrierAction", middleware,(request, response) => {
 //Créer une action
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''
 app.put("/newAction", middleware,(request, response) => {
-  const req=request.query;
-  const nom = req.nom.replace(/'/g, "''");
+  const reqQ=request.query;
+  const nom = reqQ.nom.replace(/'/g, "''");
   pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
-            +"VALUES("+req.idUsine+",'"+nom+"','"+req.dateDeb+"','"+req.dateFin+"')"
+            +"VALUES("+reqQ.idUsine+",'"+nom+"','"+reqQ.dateDeb+"','"+reqQ.dateFin+"')"
     ,(err,data) => {
     if(err) throw(err)
     data = data['recordset'];
@@ -3503,8 +3580,8 @@ app.put("/newAction", middleware,(request, response) => {
 
 //DELETE évènement
 app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
-  const req=request.query
-  pool.query("DELETE FROM quart_calendrier WHERE id = "+request.params.id, (err,data) => {
+  const reqP=request.params
+  pool.query("DELETE FROM quart_calendrier WHERE id = "+reqP.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de l'evenement du calendrier OK")
   });
@@ -3516,8 +3593,9 @@ app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
 //Récupérer toutes les zones présentes dans la table calndrier pour une usine
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getEvenementsRonde", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+req.dateFin+"' and e.date_heure_fin > '"+req.dateDeb+"' and idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  console.log("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine,)
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3527,9 +3605,9 @@ app.get("/getEvenementsRonde", middleware,(request, response) => {
 //Récupérer toutes les action présentes dans la table calndrier pour une usine
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActionsRonde", middleware,(request, response) => {
-  const req=request.query;
-  console.log("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+req.dateDeb+"' and a.date_heure_fin = '"+req.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine)
-  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+req.dateDeb+"' and a.date_heure_fin = '"+req.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  console.log("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+reqQ.dateDeb+"' and a.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine)
+  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+reqQ.dateDeb+"' and a.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     console.log(data)
     data = data['recordset'];
@@ -3540,15 +3618,15 @@ app.get("/getActionsRonde", middleware,(request, response) => {
 //Récupérer les zone affectée à une ronde
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getZonesCalendrierRonde",(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   BadgeAndElementsOfZone = [];
-  console.log("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine)
-  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+req.dateDeb+"' and c.date_heure_fin = '"+req.dateFin+"' and c.idZone is not null and c.idUsine = "+req.idUsine, async (err,data) => {
+  console.log("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and c.idZone is not null and c.idUsine = "+reqQ.idUsine)
+  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and c.idZone is not null and c.idUsine = "+reqQ.idUsine, async (err,data) => {
     if(err) throw err;
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      await getPreviousId(req.idUsine);
+      await getPreviousId(reqQ.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -3566,8 +3644,8 @@ app.get("/getZonesCalendrierRonde",(request, response) => {
 //Récupérer toutes les actions d'une usine
 //?idUsine=1
 app.get("/getAllAction", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin' from quart_action a where a.idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("select a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin' from quart_action a where a.idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3577,8 +3655,8 @@ app.get("/getAllAction", middleware,(request, response) => {
 //Récupérer une action
 //?idAction=7
 app.get("/getOneAction", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("SELECT * FROM quart_action WHERE id = "+req.idAction, (err,data) => {
+  const reqQ=request.query;
+  pool.query("SELECT * FROM quart_action WHERE id = "+reqQ.idAction, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3588,9 +3666,9 @@ app.get("/getOneAction", middleware,(request, response) => {
 //Modifier une action
 //?nom=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idAction=1
 app.put("/updateAction", middleware,(request, response) => {
-  const req=request.query;
-  const nom = req.nom.replace(/'/g, "''");
-  pool.query("UPDATE quart_action SET nom ='" +nom +"',date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"' WHERE id="+req.idAction
+  const reqQ=request.query;
+  const nom = reqQ.nom.replace(/'/g, "''");
+  pool.query("UPDATE quart_action SET nom ='" +nom +"',date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"' WHERE id="+reqQ.idAction
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'actu OK !");
@@ -3600,8 +3678,8 @@ app.put("/updateAction", middleware,(request, response) => {
 //Modifier une action dans la table calendrier
 //?nom=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idAction=1
 app.put("/updateCalendrierAction", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE quart_calendrier SET date_heure_debut='"+req.dateDeb+"',date_heure_Fin='"+req.dateFin+"', quart="+req.quart+" WHERE idAction="+req.idAction
+  const reqQ=request.query;
+  pool.query("UPDATE quart_calendrier SET date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', quart="+reqQ.quart+" WHERE idAction="+reqQ.idAction
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'actu OK !");
@@ -3612,8 +3690,8 @@ app.put("/updateCalendrierAction", middleware,(request, response) => {
 //Récupérer toutes les actions d'une usine
 //?idUsine=1&dateDeb=''&dateFin=''
 app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select 'Action' as 'typeDonnee', a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.id from quart_action a where  a.date_heure_debut < '"+req.dateFin+"' and a.date_heure_fin > '"+req.dateDeb+"' and a.nom like '%"+req.titre+"%' and a.idUsine = "+req.idUsine, (err,data) => {
+  const reqQ=request.query;
+  pool.query("select 'Action' as 'typeDonnee', a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.id from quart_action a where  a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and a.nom like '%"+reqQ.titre+"%' and a.idUsine = "+reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -3632,7 +3710,7 @@ app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
 //////////////////////////
 
 app.put("/registreDNDTS", middleware,(request, response) => {
-  const req=request.query;
+  const reqQ=request.query;
   for(var i=0; i<request.body.data.length;i++){
    
     pool.query("IF NOT EXISTS (SELECT * FROM registre_DNDTS WHERE numDePesee = '"+request.body.data[i].numDePesee+"')"
@@ -3735,9 +3813,9 @@ app.put("/registreDNDTS", middleware,(request, response) => {
 //Générer les colonnes pour dnd-entrant
 //?idUsine=7
 app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
-  const req=request.query;
-  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception', RIGHT(date1,8) as 'heurePeseeDechet', RIGHT(nomProduit,8) as 'codeDechet', nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='RECEPTION' and idUsine ="+req.idUsine
+  const reqQ=request.query;
+  // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
+  pool.query("select numDePesee as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception', LEFT(RIGHT(date1,8),5) as 'heurePeseeDechet', REPLACE(RIGHT(nomProduit,8),'-',' ') as 'codeDechet', nomProduit as 'denominationUsuelle', 'B3020' as 'codeDechetBale', REPLACE(CAST(net AS INT)/1000.000,',','.') as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"' and type='RECEPTION' and idUsine ="+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3748,9 +3826,9 @@ app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
 //Générer les colonnes pour dnd-sortant
 //?idUsine=7
 app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
-  const req=request.query;
-  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+req.dateDeb+"' AND '"+req.dateFin+"' and type='EXPEDITION' and idUsine ="+req.idUsine
+  const reqQ=request.query;
+  // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
+  pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"' and type='EXPEDITION' and idUsine ="+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3767,9 +3845,9 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
 //Récupérer toutes les anomalies d'une usine
 //?idUsine=7
 app.get("/getAllAnomalies", middleware,(request, response) => {
-  const req=request.query;
-  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+req.idUsine
+  const reqQ=request.query;
+  // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
+  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3780,8 +3858,8 @@ app.get("/getAllAnomalies", middleware,(request, response) => {
 //Mette à un la colonne évènement dans la table anomalie
 //?idAnomalie=1
 app.put("/updateAnomalieSetEvenement", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE anomalie SET evenement = 1 WHERE id="+req.idAnomalie
+  const reqQ=request.query;
+  pool.query("UPDATE anomalie SET evenement = 1 WHERE id="+reqQ.idAnomalie
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif de l'anomalie OK !");
@@ -3791,9 +3869,9 @@ app.put("/updateAnomalieSetEvenement", middleware,(request, response) => {
 //Récupérer une anomalie
 //?idAnomalie=7
 app.get("/getOneAnomalie", middleware,(request, response) => {
-  const req=request.query;
-  // +" and date1 >'"+req.dateDeb+"' and date1 <'"+req.dateFin+"'order by date1"
-  pool.query("select * from anomalie where id = "+req.idAnomalie
+  const reqQ=request.query;
+  // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
+  pool.query("select * from anomalie where id = "+reqQ.idAnomalie
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3811,8 +3889,8 @@ app.get("/getOneAnomalie", middleware,(request, response) => {
 //Récupérer un lien externe
 //?idLien=7
 app.get("/getOneLienExterne", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select * from quart_liensExternes where id = "+req.idLien
+  const reqQ=request.query;
+  pool.query("select * from quart_liensExternes where id = "+reqQ.idLien
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3824,8 +3902,8 @@ app.get("/getOneLienExterne", middleware,(request, response) => {
 //Récupérer tous les liens externes
 //?idUsine=7
 app.get("/getAllLiensExternes", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select * from quart_liensExternes where idUsine = "+req.idUsine
+  const reqQ=request.query;
+  pool.query("select * from quart_liensExternes where idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3836,8 +3914,8 @@ app.get("/getAllLiensExternes", middleware,(request, response) => {
 //Récupérer tous les liens externes actifs
 //?idUsine=7
 app.get("/getActifsLiensExternes", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("select * from quart_liensExternes where actif = 1 and idUsine = "+req.idUsine
+  const reqQ=request.query;
+  pool.query("select * from quart_liensExternes where actif = 1 and idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -3848,10 +3926,10 @@ app.get("/getActifsLiensExternes", middleware,(request, response) => {
 //Modifier un lien externe
 //nom=??&url=??&idLien=2
 app.put("/updateLienExterne",middleware,(request, response) => {
-  const req=request.query;
-  const nom = req.nom.replace(/'/g, "''");
-  const url = req.url.replace(/'/g, "''");
-  pool.query("UPDATE quart_liensExternes SET nom = '"+nom+"',url='"+url+"' where id="+req.idLien
+  const reqQ=request.query;
+  const nom = reqQ.nom.replace(/'/g, "''");
+  const url = reqQ.url.replace(/'/g, "''");
+  pool.query("UPDATE quart_liensExternes SET nom = '"+nom+"',url='"+url+"' where id="+reqQ.idLien
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif du lien OK !");
@@ -3861,10 +3939,10 @@ app.put("/updateLienExterne",middleware,(request, response) => {
 //Nouveau lien externe
 //nom=??&url=??&idUsine=2
 app.put("/newLienExterne",middleware,(request, response) => {
-  const req=request.query;
-  const nom = req.nom.replace(/'/g, "''");
-  const url = req.url.replace(/'/g, "''");
-  pool.query("INSERT INTO quart_liensExternes(nom,url,actif,idUsine) VALUES('"+nom+"','"+url+"',0,"+req.idUsine+")"
+  const reqQ=request.query;
+  const nom = reqQ.nom.replace(/'/g, "''");
+  const url = reqQ.url.replace(/'/g, "''");
+  pool.query("INSERT INTO quart_liensExternes(nom,url,actif,idUsine) VALUES('"+nom+"','"+url+"',0,"+reqQ.idUsine+")"
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Création du lien OK !");
@@ -3874,8 +3952,8 @@ app.put("/newLienExterne",middleware,(request, response) => {
 //activer un lien externe
 //idLien=2
 app.put("/activerLien",middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE quart_liensExternes SET actif = 1 where id="+req.idLien
+  const reqQ=request.query;
+  pool.query("UPDATE quart_liensExternes SET actif = 1 where id="+reqQ.idLien
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif du lien OK !");
@@ -3885,8 +3963,8 @@ app.put("/activerLien",middleware,(request, response) => {
 //desactiver un lien externe
 //idLien=2
 app.put("/desactiverLien",middleware,(request, response) => {
-  const req=request.query;
-  pool.query("UPDATE quart_liensExternes SET actif = 0 where id="+req.idLien
+  const reqQ=request.query;
+  pool.query("UPDATE quart_liensExternes SET actif = 0 where id="+reqQ.idLien
   ,(err,result) => {
       if(err) throw(err)
       else response.json("Modif du lien OK !");
@@ -3896,8 +3974,8 @@ app.put("/desactiverLien",middleware,(request, response) => {
 //Supprimer un lien externe
 //?idLien=
 app.delete("/deleteLienExterne", middleware,(request, response) => {
-  const req=request.query
-  pool.query("delete from quart_liensExternes where id ="+req.idLien, (err,data) => {
+  const reqQ=request.query
+  pool.query("delete from quart_liensExternes where id ="+reqQ.idLien, (err,data) => {
     if(err) throw err;
     response.json("Suppression du lien OK")
   });
@@ -3914,8 +3992,8 @@ app.delete("/deleteLienExterne", middleware,(request, response) => {
 //Création d'un évènement
 //?idUser=1&idEvenement=123&dateHeure=???&idUsine=1
 app.put("/historiqueEvenementCreate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,creation,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3925,8 +4003,8 @@ app.put("/historiqueEvenementCreate", middleware,(request, response) => {
 //Update d'un évènement
 //?idUser=1&idEvenement=123&dateHeure=???&idUsine=1
 app.put("/historiqueEvenementUpdate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,edition,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3936,9 +4014,9 @@ app.put("/historiqueEvenementUpdate", middleware,(request, response) => {
 //Suppression d'un évènement
 //?idUser=1&idEvenement=123&dateHeure=???&idUsine=1
 app.put("/historiqueEvenementDelete", middleware,(request, response) => {
-  const req=request.query;
-  console.log("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")")
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idEvenement+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  console.log("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")")
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3948,8 +4026,8 @@ app.put("/historiqueEvenementDelete", middleware,(request, response) => {
 //Prise de quart
 //?idUser=1&dateHeure=???&idUsine=1
 app.put("/historiquePriseQuart", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,priseQuart,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,priseQuart,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3960,8 +4038,8 @@ app.put("/historiquePriseQuart", middleware,(request, response) => {
 //Création d'une actu
 //?idUser=1&idActu=123&dateHeure=???&idUsine=1
 app.put("/historiqueActuCreate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,creation,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idActu+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idActu+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3972,8 +4050,8 @@ app.put("/historiqueActuCreate", middleware,(request, response) => {
 //Update d'une actu
 //?idUser=1&idActu=123&dateHeure=???&idUsine=1
 app.put("/historiqueActuUpdate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,edition,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idActu+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idActu+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3983,8 +4061,8 @@ app.put("/historiqueActuUpdate", middleware,(request, response) => {
 //Création d'une consigne
 //?idUser=1&idConsigne=123&dateHeure=???&idUsine=1
 app.put("/historiqueConsigneCreate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,creation,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idConsigne+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -3995,8 +4073,8 @@ app.put("/historiqueConsigneCreate", middleware,(request, response) => {
 //Update d'une consigne
 //?idUser=1&idConsigne=123&dateHeure=???&idUsine=1
 app.put("/historiqueConsigneUpdate", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,edition,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idConsigne+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -4006,8 +4084,8 @@ app.put("/historiqueConsigneUpdate", middleware,(request, response) => {
 //Delete d'une consigne
 //?idUser=1&idConsigne=123&dateHeure=???&idUsine=1
 app.put("/historiqueConsigneDelete", middleware,(request, response) => {
-  const req=request.query;
-  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,suppression,idUsine) VALUES("+req.idUser+",'"+req.dateHeure+"',"+req.idConsigne+",1,"+req.idUsine+")"
+  const reqQ=request.query;
+  pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,suppression,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
       if(err) throw(err)
       else response.json("Ajout OK !");
@@ -4022,13 +4100,14 @@ app.put("/historiqueConsigneDelete", middleware,(request, response) => {
 //Récupérer les actions du quart selon idUsine,le quart,
 //?idUsine=1&quart=1
 app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
-  const req=request.query
+  const reqQ=request.query
+  const reqP=request.params
   console.log("SELECT a.nom, a.id FROM [dolibarr].[dbo].[quart_calendrier] c INNER JOIN [dolibarr].[dbo].[quart_action] a ON a.id = c.idAction "
-  +"WHERE c.idUsine = "+request.params.idUsine+" AND c.quart = "+request.params.quart+" AND c.termine = 0 "
-  +"AND c.date_heure_debut = '"+req.date_heure_debut+"'")
+  +"WHERE c.idUsine = "+reqP.idUsine+" AND c.quart = "+reqP.quart+" AND c.termine = 0 "
+  +"AND c.date_heure_debut = '"+reqQ.date_heure_debut+"'")
   pool.query("SELECT a.nom, a.id FROM [dolibarr].[dbo].[quart_calendrier] c INNER JOIN [dolibarr].[dbo].[quart_action] a ON a.id = c.idAction "
-  +"WHERE c.idUsine = "+request.params.idUsine+" AND c.quart = "+request.params.quart+" AND c.termine = 0 "
-  +"AND c.date_heure_debut = '"+req.date_heure_debut+"'",(err,data) => {
+  +"WHERE c.idUsine = "+reqP.idUsine+" AND c.quart = "+reqP.quart+" AND c.termine = 0 "
+  +"AND c.date_heure_debut = '"+reqQ.date_heure_debut+"'",(err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
@@ -4037,8 +4116,8 @@ app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
 
 //Controler s'il y a des zones sur la ronde du quart
 app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
-  const req=request.query
-  pool.query("SELECT COUNT(idZone) as nombreDeZones FROM quart_calendrier c WHERE c.quart = "+request.params.quart+" AND c.idUsine = "+request.params.idUsine+" AND c.date_heure_debut = '"+req.date_heure_debut+"' AND c.idZone is NOT NULL"
+  const reqP=request.params
+  pool.query("SELECT COUNT(idZone) as nombreDeZones FROM quart_calendrier c WHERE c.quart = "+reqP.quart+" AND c.idUsine = "+reqP.idUsine+" AND c.date_heure_debut = '"+reqQ.date_heure_debut+"' AND c.idZone is NOT NULL"
   ,(err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -4050,8 +4129,9 @@ app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
 //Mise à jour des information d'une zone sur le quart calendrier
 //?idUsine=1&quart=1
 app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
-  const req = request.query
-  pool.query("update quart_calendrier set termine = 1, idUser = "+req.idUser+" where quart = "+request.params.quart+" AND idUsine = "+request.params.idUsine+" AND idZone = "+req.idZone+" AND date_heure_debut = '"+req.date_heure_debut+"'" , (err,data) => {
+  const reqQ = request.query
+  const reqP=request.params
+  pool.query("update quart_calendrier set termine = 1, idUser = "+reqQ.idUser+" where quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine+" AND idZone = "+reqQ.idZone+" AND date_heure_debut = '"+reqQ.date_heure_debut+"'" , (err,data) => {
     if(err) throw err;
     response.json("Update zone du calendrier ok");
   });
@@ -4060,8 +4140,9 @@ app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
 //update des actions effectués sur le quart et passe en terminer = 1
 //?idUsine=1&quart=1
 app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
-  const req = request.query
-  pool.query("update quart_calendrier set termine = 1, idUser = "+req.idUser+" where quart = "+request.params.quart+" AND idUsine = "+request.params.idUsine+" AND idAction = "+req.idAction+" AND date_heure_debut = '"+req.date_heure_debut+"'" , (err,data) => {
+  const reqQ = request.query
+  const reqP=request.params
+  pool.query("update quart_calendrier set termine = 1, idUser = "+reqQ.idUser+" where quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine+" AND idAction = "+reqQ.idAction+" AND date_heure_debut = '"+reqQ.date_heure_debut+"'" , (err,data) => {
     if(err) throw err;
     response.json("Update action du calendrier ok");
   });
@@ -4074,8 +4155,8 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
 //update des actions effectués sur le quart et passe en terminer = 1
 //?idUsine=1&quart=1
 app.put("/createRepriseDeRonde", (request, response) => {
-  const req = request.query
-  pool.query("INSERT INTO repriseRonde(date,quart,idUsine,termine) VALUES ('"+req.date+"',"+req.quart+","+req.idUsine+",0)" , (err,data) => {
+  const reqQ = request.query
+  pool.query("INSERT INTO repriseRonde(date,quart,idUsine,termine) VALUES ('"+reqQ.date+"',"+reqQ.quart+","+reqQ.idUsine+",0)" , (err,data) => {
     if(err) throw err;
     response.json("Update action du calendrier ok");
   });
@@ -4083,8 +4164,8 @@ app.put("/createRepriseDeRonde", (request, response) => {
 
 //Controler s'il y a des zones sur la ronde du quart
 app.get("/getReprisesRonde/:idUsine",(request, response) => {
-  const req=request.query
-  pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = "+request.params.idUsine
+  const reqP=request.params
+  pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = "+reqP.idUsine
   ,(err,data) => {
     if(err) throw err;
     data = data['recordset'];
@@ -4095,9 +4176,29 @@ app.get("/getReprisesRonde/:idUsine",(request, response) => {
 //Supprimer les mesures des sortants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd&name=???
 app.delete("/deleteRepriseRonde", middleware,(request, response) => {
-  const req=request.query
-  pool.query("delete from repriseRonde where id =" + req.id, (err,data) => {
+  const reqQ=request.query
+  pool.query("delete from repriseRonde where id =" + reqQ.id, (err,data) => {
     if(err) throw err;
     response.json("Suppression de la reprise OK")
+  });
+});
+
+//Mise à jour des informations - cloture d'une ronde anterieure
+app.put("/updateTermineRondeAnterieur/:date/:quart/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("update repriseRonde set termine = 1 where date = '"+reqP.date+"' AND quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine, (err,data) => {
+    if(err) throw err;
+    response.json("Update ronde anterieure ok");
+  });
+});
+ 
+//Récupérer la liste des rondes à des dates anterieurs
+app.get("/rondeAnterieur/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT * FROM repriseRonde WHERE termine = 0 AND idUsine = "+reqP.idUsine, (err,data) => {
+    if(err) throw err;
+    data = data['recordset'];
+    console.log(data);
+    response.json({data});
   });
 });
