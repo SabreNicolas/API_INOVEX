@@ -2425,7 +2425,7 @@ app.get("/anomalies/:id",(request, response) => {
 //Récupérer les anomalies d'une ronde
 app.get("/getAnomaliesOfOneRonde",(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart  , (err,data) => {
+  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart+" AND r.idUsine = " +reqQ.idUsine, (err,data) => {
     if(err) throw err;
     data = data['recordset'];
     response.json({data});
