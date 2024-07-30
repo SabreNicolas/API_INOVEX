@@ -1400,13 +1400,13 @@ app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) =
 //Récupérer l'ensemble des zones de controle
 app.get("/getElementsAndValuesOfDay/:idUsine/:date", middleware,(request, response) => {
   listZones = [];
-  const reqQ=request.query
-  const reqP=request.params
+  const reqQ=request.query;
+  const reqP=request.params;
   if(reqQ.quart == 0){
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY z.nom, e.ordre"  
   }
   else{
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" and r.quart = "+ reqQ.quart+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" and r.quart = "+ reqQ.quart+" ORDER BY z.nom, e.ordre"  
   }
   pool.query(query, async (err,data) => {
     if(err) throw err;
@@ -4095,7 +4095,8 @@ app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
 
 //Controler s'il y a des zones sur la ronde du quart
 app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
-  const reqP=request.params
+  const reqP=request.params;
+  const reqQ=request.query;
   pool.query("SELECT COUNT(idZone) as nombreDeZones FROM quart_calendrier c WHERE c.quart = "+reqP.quart+" AND c.idUsine = "+reqP.idUsine+" AND c.date_heure_debut = '"+reqQ.date_heure_debut+"' AND c.idZone is NOT NULL"
   ,(err,data) => {
     if(err) throw err;
