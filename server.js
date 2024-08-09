@@ -1480,7 +1480,7 @@ function getElementsHorsLigne(zone) {
       if(err) throw err;
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
           if(err) throw err;
           else{
             data = data['recordset'];
@@ -3573,6 +3573,33 @@ app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
   });
 });
 
+//Récupérer les évènement suivant de l'occurence
+app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
+  const reqP=request.params
+  //ON récupère déjà les infos de l'event choisi
+  pool.query("SELECT * from quart_calendrier WHERE id = "+reqP.id, (err,event) => {
+    if(err) throw(err);
+    event = event['recordset'][0];
+    //ON récupère les infos de l'action associé
+    pool.query("SELECT * from quart_action WHERE id = "+event.idAction, (err,action) => {
+      if(err) throw(err);
+      action = action['recordset'][0];
+      //On récupère la liste des actions lié
+      pool.query("SELECT id FROM quart_action WHERE idUsine = "+action.idUsine+" AND nom = '"+action.nom+"'", (err,data) => {
+        if(err) throw(err);
+        data = data['recordset'];
+        //Pour chaque action on supprime dans le calendrier celle sur le quart
+        for (const actions of data) {
+          pool.query("DELETE FROM quart_calendrier WHERE idAction = "+actions.id+" AND quart = "+event.quart, (err,data) => {
+            if(err) throw err;
+          });
+        };
+        response.json("Suppression de l'occurence du calendrier OK");
+      });
+    });
+  });
+});
+
 
 //ACCUEIL /////
 
@@ -4107,7 +4134,7 @@ app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
 
 //a la validation de zone, on update calendrier zone sur termine = 1
 //Mise à jour des information d'une zone sur le quart calendrier
-//?idUsine=1&quart=1
+//?idUser=1&idZone=1&date_heure_debut=
 app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
   const reqQ = request.query
   const reqP=request.params
