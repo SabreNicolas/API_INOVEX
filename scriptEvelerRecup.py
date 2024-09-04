@@ -59,7 +59,7 @@ for p in listeProducts:
     channel="power:"+typeEnergie
     #channel="power:reactive+"
     start=hier # Attention UTC
-    end=aujourdhui# Attention UTC
+    end=hier + timedelta (days=1)# Attention UTC
     complete_url = f"{URL}/meter/{_id_human}/data/{channel}/{start}/{end}"
     r = requests.get(complete_url, headers=headers, verify=False)
     if r.status_code == 200 and r.json()['success'] is True:
