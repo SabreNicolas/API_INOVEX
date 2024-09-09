@@ -29,6 +29,8 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
+    "get-current-line": "^7.4.0",
+    "get-line-number": "^1.0.2",
     "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-redis": "^7.0.3",
