@@ -2884,10 +2884,10 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 });
 
 //Récupérer l'équipe d'un utilisateur POUR RONDIER
-//?idRondier
+//?idRondier=1
 app.get("/getEquipeUser", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier, (err,data) => {
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +"AND e.date LIKE CONVERT(date,GETDATE()) ORDER BY e.date DESC", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -3701,13 +3701,13 @@ app.get("/getOneConsigne", middleware,(request, response) => {
 //////////ACTU//////////
 
 //Créer une actu
-//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec&isQuart=1
 app.put("/actu", middleware,(request, response) => {
   const reqQ=request.query;
   const titre = reqQ.titre.replace(/'/g, "''");
   const description = reqQ.description.replace(/'/g, "''");
   pool.query("INSERT INTO quart_actualite(idUsine,titre,importance,date_heure_debut,date_heure_Fin,isValide,description) OUTPUT INSERTED.Id "
-            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"',0,'"+description+"')"
+            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"','"+reqQ.isQuart+"','"+description+"')"
   ,(err,data) => {
     if(err) throw err
     data = data['recordset'];
@@ -3716,12 +3716,12 @@ app.put("/actu", middleware,(request, response) => {
 });
 
 //Modifier une actu
-//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1&description=deeeeeeec
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1&description=deeeeeeec&isQuart=1
 app.put("/updateActu", middleware,(request, response) => {
   const reqQ=request.query;
   const titre = reqQ.titre.replace(/'/g, "''");
   const description = reqQ.description.replace(/'/g, "''");
-  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', description = '"+description+"' WHERE id="+reqQ.idActu
+  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', description = '"+description+"', isValide = '"+reqQ.isQuart+"' WHERE id="+reqQ.idActu
   ,(err,result) => {
       if(err) throw err
       else response.json("Modif de l'actu OK !");
@@ -3785,11 +3785,11 @@ app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
 });
 
 
-//Récupérer toutes les actualités actives
-//?idUsine=7
-app.get("/getActusActives", middleware,(request, response) => {
+//Récupérer toutes les actualités actives -> étant lié à un quart
+//?idUsine=7&isQuart=1
+app.get("/getActusQuart", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.isValide = "+reqQ.isQuart+" AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4005,7 +4005,7 @@ app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
   });
 });
 
-//Récupérer les évènement suivant de l'occurence
+//Récupérer les évènement suivant de l'occurence pour supprimer une occurence complète
 app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
   const reqP=request.params
   //ON récupère déjà les infos de l'event choisi
@@ -4612,7 +4612,9 @@ app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
   const reqP=request.params
   pool.query("update quart_calendrier set termine = 1, idUser = "+reqQ.idUser+" where quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine+" AND idZone = "+reqQ.idZone+" AND date_heure_debut = '"+reqQ.date_heure_debut+"'" , (err,data) => {
     if(err){
-      currentLineError=currentLine(); throw err;
+      //TODO à régler
+      //currentLineError=currentLine(); throw err;
+      console.log(err);
     }
     //if(err) console.log(err + " - "+reqP.idUsine);
     response.json("Update zone du calendrier ok");
