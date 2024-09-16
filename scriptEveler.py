@@ -2,6 +2,7 @@ import requests
 import json
 from pprint import pprint
 from datetime import datetime, timedelta
+import pytz
 import time
 import warnings
 #Disable warnings
@@ -37,6 +38,14 @@ if r.status_code == 200 and r.json()["success"] is True:
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
+#On ajoute l'utc à la date
+cop_tz = pytz.timezone('Europe/Copenhagen')
+utcValue = cop_tz.utcoffset(datetime.now()).total_seconds() / (60*60) #Récupération UTC au format nombre
+utc = -utcValue
+aujourdhuiUTC =  datetime.now()
+aujourdhuiUTC = aujourdhuiUTC.replace(hour=0, minute=0, second=0, microsecond=0)
+aujourdhuiUTC = aujourdhuiUTC + timedelta (hours=utc)
+hierUTC = aujourdhuiUTC - timedelta (days=1)
 
 print("Debut du script Eveler Le " + str(aujourdhui) + "\n")
 
@@ -68,8 +77,8 @@ for p in listeProducts:
     _id_human = idCompteur
     channel="power:"+typeEnergie
     #channel="power:reactive+"
-    start=hier # Attention UTC
-    end=aujourdhui# Attention UTC
+    start=hierUTC # Attention UTC
+    end=aujourdhuiUTC# Attention UTC
     complete_url = f"{URL}/meter/{_id_human}/data/{channel}/{start}/{end}"
     r = requests.get(complete_url, headers=headers, verify=False)
     if r.status_code == 200 and r.json()['success'] is True:

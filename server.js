@@ -1266,6 +1266,19 @@ app.get("/Users", middleware,(request, response) => {
   });
 });
 
+//Récupérer l'ensemble des utilisateurs d'un site ayant un email renseigné
+//?idUsine=1
+app.get("/UsersEmail", middleware,(request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM users WHERE LEN(email) > 0 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //Récupérer l'ensemble des utilisateurs d'un site ayant les droits ayant les droits rondier
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
@@ -1387,6 +1400,19 @@ app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
       currentLineError=currentLine(); throw err;
     }
     response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update info user
+//?infoValue=ehhehehe
+app.put("/UserInfos/:login/:info", middleware,(request, response) => {
+  const reqP=request.params;
+  const reqQ=request.query;
+  pool.query("UPDATE users SET "+reqP.info+" = '" + reqQ.infoValue + "' WHERE login = '"+reqP.login+"'", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Mise à jour info OK")
   });
 });
 
@@ -3789,7 +3815,7 @@ app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
 //?idUsine=7&isQuart=1
 app.get("/getActusQuart", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.isValide = "+reqQ.isQuart+" AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.isValide = "+reqQ.isQuart+" AND a.date_heure_debut <= GETDATE() AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
