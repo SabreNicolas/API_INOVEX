@@ -3727,11 +3727,49 @@ app.get("/getOneConsigne", middleware,(request, response) => {
 //////////ACTU//////////
 
 //Créer une actu
-//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec&isQuart=1
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec&isQuart=1&maillist=jsjsjs
 app.put("/actu", middleware,(request, response) => {
   const reqQ=request.query;
   const titre = reqQ.titre.replace(/'/g, "''");
   const description = reqQ.description.replace(/'/g, "''");
+  /* MAIL */
+  //SI on a une maillist => on va envoyer un mail pour notifier les destinataires de la création de l'actu
+  if(reqQ.maillist != ""){
+    //Transciption int importance en chaine
+    let importanceString = ""
+    if(reqQ.importance == 0) importanceString = "Faible"
+    else if(reqQ.importance == 1) importanceString = "Neutre"
+    else importanceString = "Elevée"
+    //On va split la description par rapport au passage à la ligne
+    let tabDescription = description.split("\n");
+    let htmlDescription = "";
+    tabDescription.forEach((desc) => {
+      htmlDescription += "<p>"+desc+"</p>"
+    });
+    //on va créer des formats de date plus sympa
+    let dateDebFormat = reqQ.dateDeb.substring(8,10)+"/"+reqQ.dateDeb.substring(5,7)+"/"+reqQ.dateDeb.substring(0,4)+" "+reqQ.dateDeb.substring(11,16);
+    let dateFinFormat = reqQ.dateFin.substring(8,10)+"/"+reqQ.dateFin.substring(5,7)+"/"+reqQ.dateFin.substring(0,4)+" "+reqQ.dateFin.substring(11,16);
+    //Préparation du mail
+    const message = {
+      from: process.env.USER_SMTP, // Sender address
+      to: reqQ.maillist,
+      subject: 'Actualité du '+dateDebFormat+' au '+dateFinFormat, // Subject line
+      html: "<h1>Voici les informations concernant l'actualité sur la période suivante : "+dateDebFormat+" au "+dateFinFormat+"</h1>"+
+      "<div style='border : solid black 1px;'><h2 style='text-decoration: underline;'>"+titre+"</h2>"+
+      "<h3>"+htmlDescription+"</h3>"+
+      "<h4>Niveau d'importance : "+importanceString+"</h4></div>"//Cors du mail en HTML
+    };
+
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        //currentLineError=currentLine(); throw err;
+      } else {
+        console.log('Email sent: ' + info.response);
+      }
+    });
+  }
+  /* FIN MAIL */
   pool.query("INSERT INTO quart_actualite(idUsine,titre,importance,date_heure_debut,date_heure_Fin,isValide,description) OUTPUT INSERTED.Id "
             +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"','"+reqQ.isQuart+"','"+description+"')"
   ,(err,data) => {
