@@ -97,6 +97,8 @@ var pool =  new sql.ConnectionPool(sqlConfig);
 
 //Stockage de la ligne d'erreur pour envoi de mail
 let currentLineError = '';
+//Stockage de la requête SQL en cas d'erreur
+let reqSQL = '';
 
 pool.connect();
 
@@ -113,7 +115,8 @@ process.on('uncaughtException', (err, origin) => {
   messagePlantage.html = '<h1>'+err.name+'</h1>';
   messagePlantage.html += '<h2> Sur la ligne : '+currentLineError.line+'</h2>';
   messagePlantage.html += '<h3>'+err.message+'</h3>';
-  messagePlantage.html += '<p>'+err.stack+'</p>';
+  messagePlantage.html += '<p>'+err.stack+'</p><br>';
+  messagePlantage.html += '<p>'+reqSQL+'</p>';
   transporter.sendMail(messagePlantage, function(errMail, info) {
     if (errMail) {
       console.log(errMail);
@@ -965,23 +968,22 @@ app.put("/Measure", middleware,(request, response) => {
   const reqQ=request.query;
   let value = reqQ.Value.replace(',','.');
   // Si la valeur est nulle
-  if(!value) {
+  if(value === '') {
      value = 0.0;
-     // TODO : Attribuer la valeur à 0 dans une variable et remplacer dans RQTE
-     // /!\ Pas oublier de rependre la valeur initiale var x = reqQ.Value.replace(',','.')
    }
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId = "+reqQ.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
-      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+reqQ.EntryDate+"', "+reqQ.Value.replace(',','.')+", "+reqQ.ProductId+", "+reqQ.ProducerId+") "+
+      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+reqQ.EntryDate+"', "+value+", "+reqQ.ProductId+", "+reqQ.ProducerId+") "+
     "END"+
     " ELSE"+
     " BEGIN "+
-    "UPDATE measures_new SET Value = "+reqQ.Value.replace(',','.')+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId ="+reqQ.ProductId+
+    "UPDATE measures_new SET Value = "+value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId ="+reqQ.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err){
-      currentLineError=currentLine(); throw err;
+        reqSQL = queryOnDuplicate;
+        currentLineError=currentLine(); throw err;
       }
       response.json("Création du Measures OK");
   });
@@ -3737,9 +3739,19 @@ app.put("/actu", middleware,(request, response) => {
   if(reqQ.maillist != ""){
     //Transciption int importance en chaine
     let importanceString = ""
-    if(reqQ.importance == 0) importanceString = "Faible"
-    else if(reqQ.importance == 1) importanceString = "Neutre"
-    else importanceString = "Elevée"
+    let importanceColor = ""
+    if(reqQ.importance == 0) {
+      importanceString = "Faible";
+      importanceColor = "lightgreen";
+    }
+    else if(reqQ.importance == 1) {
+      importanceString = "Neutre";
+      importanceColor = "lightsalmon";
+    } 
+    else {
+      importanceString = "Elevée";
+      importanceColor = "lightcoral";
+    }
     //On va split la description par rapport au passage à la ligne
     let tabDescription = description.split("\n");
     let htmlDescription = "";
@@ -3754,10 +3766,11 @@ app.put("/actu", middleware,(request, response) => {
       from: process.env.USER_SMTP, // Sender address
       to: reqQ.maillist,
       subject: 'Actualité du '+dateDebFormat+' au '+dateFinFormat, // Subject line
-      html: "<h1>Voici les informations concernant l'actualité sur la période suivante : "+dateDebFormat+" au "+dateFinFormat+"</h1>"+
-      "<div style='border : solid black 1px;'><h2 style='text-decoration: underline;'>"+titre+"</h2>"+
-      "<h3>"+htmlDescription+"</h3>"+
-      "<h4>Niveau d'importance : "+importanceString+"</h4></div>"//Cors du mail en HTML
+      html: "<h3>Voici les informations concernant l'actualité sur la période suivante : "+dateDebFormat+" au "+dateFinFormat+"</h3>"+
+      "<div style='height:max-content; box-shadow: 7px 7px 6px lightgray; border-radius : 10px; display:flex; margin: 2em; border: 1px solid rgba(0, 0, 0, 0.125); background-color:"+importanceColor+"; padding:1px;'>"+
+      "<div>"+
+      "<h3 style='text-shadow:none; margin-top:1em; border-bottom:solid white 2px; padding-bottom:1em;'>"+titre+"</h3>"+htmlDescription+
+      "</div></div>"//Cors du mail en HTML
     };
 
     transporter.sendMail(message, function(err, info) {
@@ -3849,7 +3862,7 @@ app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
 });
 
 
-//Récupérer toutes les actualités actives -> étant lié à un quart
+//Récupérer toutes les actualités avec isActive en param, actives -> étant lié à un quart
 //?idUsine=7&isQuart=1
 app.get("/getActusQuart", middleware,(request, response) => {
   const reqQ=request.query;
@@ -3862,7 +3875,20 @@ app.get("/getActusQuart", middleware,(request, response) => {
   });
 });
 
-//Terminer une actu
+//Récupérer toutes les actualités ayant la date courante entre la date de début et la date de fin
+//?idUsine=7
+app.get("/getAllActuDateCourante", middleware,(request, response) => {
+  const reqQ=request.query;
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_debut <= GETDATE() AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//passer une actu à isActive 1 pour l'afficher dans un récap de quart
 //?idActu=1
 app.put("/validerActu", middleware,(request, response) => {
   const reqQ=request.query;
@@ -3873,7 +3899,7 @@ app.put("/validerActu", middleware,(request, response) => {
   });
 });
 
-//Terminer une actu
+//passer une actu à isActive 0 pour l'afficher dans l'acceuil
 //?idActu=1
 app.put("/invaliderActu", middleware,(request, response) => {
   const reqQ=request.query;
@@ -3881,6 +3907,17 @@ app.put("/invaliderActu", middleware,(request, response) => {
   ,(err,result) => {
       if(err) throw err
       else response.json("Modif de l'actu OK !");
+  });
+});
+
+//DELETE actu
+app.put("/deleteActu/:id",middleware, (request, response) => {
+  const reqP=request.params
+  pool.query("DELETE FROM quart_actualite WHERE id = "+reqP.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Suppression de l'actu OK")
   });
 });
 
