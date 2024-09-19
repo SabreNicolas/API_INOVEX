@@ -968,7 +968,7 @@ app.put("/Measure", middleware,(request, response) => {
   const reqQ=request.query;
   let value = reqQ.Value.replace(',','.');
   // Si la valeur est nulle
-  if(value === '') {
+  if(value === '' || value === ' ') {
      value = 0.0;
    }
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId = "+reqQ.ProductId+")"+
@@ -983,6 +983,7 @@ app.put("/Measure", middleware,(request, response) => {
     pool.query(queryOnDuplicate,(err,result,fields) => {
       if(err){
         reqSQL = queryOnDuplicate;
+        reqSQL += "************"+value+"*************";
         currentLineError=currentLine(); throw err;
       }
       response.json("Création du Measures OK");
@@ -3738,26 +3739,29 @@ app.put("/actu", middleware,(request, response) => {
   //SI on a une maillist => on va envoyer un mail pour notifier les destinataires de la création de l'actu
   if(reqQ.maillist != ""){
     //Transciption int importance en chaine
-    let importanceString = ""
-    let importanceColor = ""
+    let importanceString = "";
+    let importanceColor = "";
+    let colorTitre = "";
     if(reqQ.importance == 0) {
       importanceString = "Faible";
-      importanceColor = "lightgreen";
+      importanceColor = "rgb(154,196,89)";
     }
     else if(reqQ.importance == 1) {
       importanceString = "Neutre";
-      importanceColor = "lightsalmon";
+      importanceColor = "orange";
     } 
     else {
       importanceString = "Elevée";
-      importanceColor = "lightcoral";
+      importanceColor = "red";
+      colorTitre = " color:red;";
     }
     //On va split la description par rapport au passage à la ligne
     let tabDescription = description.split("\n");
     let htmlDescription = "";
     tabDescription.forEach((desc) => {
-      htmlDescription += "<p>"+desc+"</p>"
+      htmlDescription += "<p style='color:rgb(27,37,51);'>"+desc+"</p>";
     });
+    htmlDescription += "<p style='color:"+importanceColor+"'>Importance : "+importanceString+"</p>";
     //on va créer des formats de date plus sympa
     let dateDebFormat = reqQ.dateDeb.substring(8,10)+"/"+reqQ.dateDeb.substring(5,7)+"/"+reqQ.dateDeb.substring(0,4)+" "+reqQ.dateDeb.substring(11,16);
     let dateFinFormat = reqQ.dateFin.substring(8,10)+"/"+reqQ.dateFin.substring(5,7)+"/"+reqQ.dateFin.substring(0,4)+" "+reqQ.dateFin.substring(11,16);
@@ -3767,9 +3771,9 @@ app.put("/actu", middleware,(request, response) => {
       to: reqQ.maillist,
       subject: 'Actualité du '+dateDebFormat+' au '+dateFinFormat, // Subject line
       html: "<h3>Voici les informations concernant l'actualité sur la période suivante : "+dateDebFormat+" au "+dateFinFormat+"</h3>"+
-      "<div style='height:max-content; box-shadow: 7px 7px 6px lightgray; border-radius : 10px; display:flex; margin: 2em; border: 1px solid rgba(0, 0, 0, 0.125); background-color:"+importanceColor+"; padding:1px;'>"+
+      "<div style='height:max-content; box-shadow: 7px 7px 6px lightgray; border-radius : 10px; display:flex; margin: 2em; border: 1px solid rgba(0, 0, 0, 0.125); background-color:rgb(84,149,216); padding:1px;'>"+
       "<div>"+
-      "<h3 style='text-shadow:none; margin-top:1em; border-bottom:solid white 2px; padding-bottom:1em;'>"+titre+"</h3>"+htmlDescription+
+      "<h3 style='text-shadow:none; margin-top:1em; border-bottom:solid white 2px; padding-bottom:1em;"+colorTitre+"'>"+titre+"</h3>"+htmlDescription+
       "</div></div>"//Cors du mail en HTML
     };
 
