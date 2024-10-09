@@ -54,6 +54,7 @@ for site in listeSites['data'] :
         listData = response.json()
         # #Si on l'api nous retourne une valeur, on créé une mesure
         if len(listData['value']) != 0:
+            #print(listData['value'][0])
             if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
                 recup = listData['value'][0]['Minimum']
             else :

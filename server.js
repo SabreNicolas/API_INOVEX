@@ -1286,7 +1286,7 @@ app.get("/UsersEmail", middleware,(request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
   const reqQ=request.query 
-  pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err){
       currentLineError=currentLine(); throw err;
     } 
@@ -2648,7 +2648,7 @@ app.put("/updateConsigne", middleware,(request, response) => {
 //Récupérer les consignes en cours
 app.get("/consignes/:idUsine", (request, response) => {
   const reqP=request.params
-  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type, url FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -3019,7 +3019,7 @@ app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
 //idEquipe=28
 app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+reqQ.idEquipe, (err,data) => {
+  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier', users.posteUser FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+reqQ.idEquipe, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -3062,7 +3062,7 @@ app.get("/getEquipesEnregistrees", middleware,async (request, response) => {
 function getUsersEnregistrementEquipe(equipe) {
   return new Promise((resolve) => {
     //Récupération des users d'une équipe
-    pool.query("SELECT u.Nom, u.Prenom FROM enregistrement_affectation_equipe a JOIN users u ON u.Id = a.idRondier WHERE a.idEquipe = " + equipe.id, (err, data) => {
+    pool.query("SELECT u.Nom, u.Prenom, u.posteUser FROM enregistrement_affectation_equipe a JOIN users u ON u.Id = a.idRondier WHERE a.idEquipe = " + equipe.id, (err, data) => {
       if(err){
         currentLineError=currentLine(); throw err;
       }
@@ -4071,11 +4071,11 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
 });
 
 //Créer une instance pour les ACTIONS
-//?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1
+//?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1&termine=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4148,7 +4148,7 @@ app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
 
 //ACCUEIL /////
 
-//Récupérer toutes les zones présentes dans la table calndrier pour une usine
+//Récupérer tout les evenements d'un quart
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getEvenementsRonde", middleware,(request, response) => {
   const reqQ=request.query;
@@ -4266,6 +4266,47 @@ app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
 });
 
 
+/** Stockage des fichiers PDF de fin de quart */
+//?idUsine=1&quart=Matin&date=
+//passage du fichier dans un formData portant le nom 'fichier'
+app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (request, response) => {
+  const reqQ=request.query;
+  let maillist = '';
+  //création de l'url de stockage du fichier
+  //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //on utilise l'url publique
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  pool.query("SELECT * FROM users WHERE isAdmin = 1 AND idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    data.forEach(user => {
+      maillist += user.email+';';
+    });
+
+    /** ENVOI MAIL */
+    //Préparation du mail
+    const message = {
+      from: process.env.USER_SMTP, // Sender address
+      to: maillist,
+      subject: "Récapitulatif quart : "+reqQ.quart+" - "+reqQ.date, // Subject line
+      html: "<h3>Voici le lien pour visualiser le PDF de récap de quart : <a href='"+url+"'>"+url+"</a></h3>"//Cors du mail en HTML
+    };
+
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        response.json("Envoi mail KO");
+        //currentLineError=currentLine(); throw err;
+      } else {
+        console.log('Email sent: ' + info.response);
+        response.json("Envoi mail OK");
+      }
+    });
+    /** FIN ENVOI MAIL */
+  });
+});
 
 
 //////////////////////////
