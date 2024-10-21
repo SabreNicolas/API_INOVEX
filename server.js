@@ -1591,7 +1591,7 @@ app.put("/zone", middleware,(request, response) => {
 app.delete("/deleteZone", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM zonecontrole WHERE Id = "+reqQ.Id, (err,result,fields) => {
-      if(err) response.json("Création de la zone KO");
+      if(err) response.json("Suppression de la zone KO");
       else response.json("Suppression OK");
   });
 });
@@ -1952,6 +1952,19 @@ app.put("/zoneNom/:id", middleware,(request, response) => {
   });
 });
 
+//Update num four
+//?four=1
+app.put("/zoneFour/:id", middleware,(request, response) => {
+  const reqQ=request.query;
+  const reqP=request.params;
+  pool.query("UPDATE zonecontrole SET four = " + reqQ.four + " WHERE Id = "+reqP.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Mise à jour du four OK")
+  });
+});
+
 //Récupérer l'ensemble des zones non affecté à un badge
 app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
   const reqQ=request.query
@@ -2047,6 +2060,19 @@ app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
   });
 });
 
+//Récupérer le nombre d'éléments d'un groupement
+//?idGroupement=1
+app.get("/GetElementsGroupement",middleware, (request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT COUNT(*) as nb FROM elementcontrole e WHERE e.idGroupement = "+reqQ.idGroupement, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json(data[0].nb);
+  });
+});
+
 //Récupérer l'ensemble des élements de type compteur
 app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
   const reqP=request.params
@@ -2134,6 +2160,7 @@ app.get("/getAllGroupements",middleware, (request, response) => {
     response.json({data});
   });
 });
+
 //Récupérer un groupement
 //?idGroupement=1
 app.get("/getOneGroupement",middleware, (request, response) => {
@@ -2799,10 +2826,23 @@ app.put("/equipe",middleware, (request, response) => {
 });
 
 //Créer les nouveau rondier d'une équipe
-//?nomEquipe=test&quart=1&idChefQuart=1
+//?idRondier=2&idEquipe=1&idZone=1&poste=admin&heure_deb=05:00&heure_fin=13:00
 app.put("/affectationEquipe",middleware, (request, response) => {
   const reqQ = request.query
-  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+","+reqQ.idZone+",'"+reqQ.poste+"')", (err,data) => {
+  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste,heure_deb,heure_fin) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+","+reqQ.idZone+",'"+reqQ.poste+"','"+reqQ.heure_deb+"','"+reqQ.heure_fin+"')", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    //if (err) console.log(err);
+    response.json("Ajout ok");
+  });
+});
+
+//Changer les infos d'heures de quart pour les utilisateurs d'une equipe
+//?idRondier=1&idEquipe=1&typeInfo=heure_fin&valueInfo=13:00
+app.put("/updateInfosAffectationEquipe",middleware, (request, response) => {
+  const reqQ = request.query;
+  pool.query("UPDATE affectation_equipe SET "+reqQ.typeInfo+" = '"+reqQ.valueInfo+"' WHERE idRondier = "+reqQ.idRondier+" AND idEquipe = "+reqQ.idEquipe, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -2869,7 +2909,7 @@ function getUsersEquipe(equipe) {
 //?idUsine=1&idEquipe=28
 app.get("/getOneEquipe", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe FULL OUTER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+reqQ.idEquipe, (err,data) => {
+  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart', ae.heure_deb, ae.heure_fin, ae.heure_tp, ae.comm_tp FROM equipe FULL OUTER JOIN affectation_equipe ae ON equipe.Id = ae.idEquipe FULL OUTER JOIN users ON users.Id = ae.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+reqQ.idEquipe, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -3987,7 +4027,7 @@ app.get("/getOneEvenement", middleware,(request, response) => {
 //?idUsine=7
 app.get("/getAllEvenement", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+reqQ.idUsine+" ORDER BY e.date_heure_debut DESC", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
