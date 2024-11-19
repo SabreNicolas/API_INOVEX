@@ -18,10 +18,18 @@ headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tl
 warnings.filterwarnings("ignore")
 
 #Récupération de la date de la veille
+#TODO : Attention il faut gérer les heures UTC
+#UTC+1 => 00h00 et 23h59 correspond UTC => 23h00 la veille et 23h
+#UTC+2 => 00h00 et 23h59 correspond UTC => 22h00 la veille et 22h
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
-hierAvevaFin = f'{hier}' + "T23:59:00Z"
+hierAvevaFin = f'{hier}' + "T23:59:59Z"
+#derniere valeur de la journée
+#Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
+#Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
+dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
+dernierAvevaFin = f'{hier}' + "T22:59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
@@ -39,8 +47,9 @@ listConversions = listConversions["data"]
 # #Boucle sur les sites pour insérer les valeur site par site
 for site in listeSites['data'] :
 
-    #Récupération de la liste des produits avec un TAG dans chaque usine
-    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
+    ############TAG CLASSIQUE
+    #Récupération de la liste des produits avec un TAG dans chaque usine (sauf ceux pour lesquelles ont veut seulement la dernière valeur du jour)
+    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
@@ -49,12 +58,13 @@ for site in listeSites['data'] :
 
         #Récupération des données du jour 
         req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=86400000"
-        print(req)
+        #print(req)
         response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
         listData = response.json()
         # #Si on l'api nous retourne une valeur, on créé une mesure
         if len(listData['value']) != 0:
-            #print(listData['value'][0])
+            #if(product["TAG"] == 'P_Active/MESURE.U'): 
+                #print(listData['value'][0])
             if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
                 recup = listData['value'][0]['Minimum']
             else :
@@ -94,8 +104,37 @@ for site in listeSites['data'] :
                         # f.write(product['Name']  + "\n")
                         # f.write("*******************************"  + "\n")
 
+            #ATTENTION => A automatiser
+            #Permet de faire *24 sur un compteur qui est un débit mètre ou autre et qui renvoi la moyenne
+            if(product["TAG"] == 'P_Active/MESURE.U' or product["TAG"] == '0MKA60CE100/MESURE.U' or product["TAG"] == '0MKA60CE108/MESURE.U'): 
+                recup = recup * 24
+
             req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            print(req)
+            #print(req)
+            response = requests.put(req, headers = headers, verify=False)
+
+
+    ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
+    #Récupération de la liste des produits avec un TAG dans chaque usine (UNIQUEMENT ceux pour lesquelles ont veut seulement la dernière valeur du jour)
+    req = "https://fr-couvinove301:3100/getProductsWithTagDerniere?idUsine=" + str(site['id'])
+    response = requests.get(req, headers = headers, verify=False)
+    listProducts = response.json()
+    listProducts = listProducts["data"]
+
+    for product in listProducts :
+
+        #Récupération de la dernière données du jour
+        req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+dernierAvevaDebut+"+and+EndDateTime+le+"+dernierAvevaFin+"&RetrievalMode=Cyclic"
+        #print(req)
+        response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+        listData = response.json()
+        #print(listData)
+        #Si on l'api nous retourne une valeur, on créé une mesure
+        if len(listData['value']) != 0:
+            recup = listData['value'][0]['Average']
+
+            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+            #print(req)
             response = requests.put(req, headers = headers, verify=False)
 
 print("Fin du script !"  + "\n")

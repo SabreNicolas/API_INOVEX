@@ -694,16 +694,29 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
   });
 });
 
-//get product avec un tag pour une usine
-//?idUsine=?
-app.get("/getProductsWithTag", middleware,(request, response) => {
+//get product avec un tag pour une usine (sauf ceux pour lesquelles on veut récupérer la dernière valeur de la journée)
+//?idUsine=1
+app.get("/getProductsWithTagClassique", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND typeRecupEMonitoring NOT LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
     data = data['recordset'];
-    response.json({data});;
+    response.json({data});
+  });
+});
+
+//get product avec un tag pour une usine (UNIQUEMENT ceux pour lesquelles on veut récupérer la dernière valeur de la journée)
+//?idUsine=1
+app.get("/getProductsWithTagDerniere", middleware,(request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND typeRecupEMonitoring LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -1286,7 +1299,7 @@ app.get("/UsersEmail", middleware,(request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
   const reqQ=request.query 
-  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND isChefQuart = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err){
       currentLineError=currentLine(); throw err;
     } 
@@ -1551,6 +1564,17 @@ app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(req
   });
 });
 
+//Update de la zone choisi par Calce
+app.put("/insertionIdZoneCalce/:idRondier/:idEquipe", (request,response) => {
+  const req = request.query
+  pool.query("UPDATE affectation_equipe SET idZone = "+req.idZone+" WHERE idRondier = "+request.params.idRondier+" AND idEquipe = "+request.params.idEquipe+"", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Ajout ok");
+  });
+});
+
 //Update affectation => retirer les affectations
 app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
   const reqP=request.params
@@ -1612,6 +1636,19 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 app.get("/zones/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" ORDER BY nom ASC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des zones de controle de Calce pour menu déroulant
+// ?idUsine=7
+app.get("/recupZoneCalce",(request, response) => {
+  const reqP=request.query
+  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -1758,7 +1795,7 @@ function getElementsHorsLigne(zone) {
       }
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
           if(err){
             currentLineError=currentLine(); throw err;
           }
@@ -1882,7 +1919,7 @@ function getElementsHorsLigneUser(zone) {
         }
         else{
           modesOp = data['recordset'];
-          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.id, e.ordre ASC"
+          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
           , (err,data) => {
             if(err){
               currentLineError=currentLine(); throw err;
@@ -1929,7 +1966,8 @@ function getPreviousId(id){
 
 //Update commentaire
 app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
-  const reqP=request.params
+  const reqP=request.params;
+  reqP.commentaire.replace("'","''");
   pool.query("UPDATE zonecontrole SET commentaire = '" + reqP.commentaire + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
@@ -2672,10 +2710,24 @@ app.put("/updateConsigne", middleware,(request, response) => {
   });
 });
 
-//Récupérer les consignes en cours
+//Récupérer les consignes en cours à l'instant T
 app.get("/consignes/:idUsine", (request, response) => {
   const reqP=request.params
   pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type, url FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les consignes en cours entre 2 dates
+//?dateDeb=2024-11-01 05:00&dateFin=2024-11-01 13:00
+app.get("/consignesEntreDeuxDates/:idUsine", (request, response) => {
+  const reqP = request.params;
+  const reqQ = request.query;
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type, url FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND (('"+reqQ.dateDeb+"' BETWEEN date_heure_debut AND date_heure_fin) OR ('"+reqQ.dateFin+"' BETWEEN date_heure_debut AND date_heure_fin) OR (date_heure_debut BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"') OR (date_heure_fin BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"'))", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -2696,10 +2748,11 @@ app.get("/allConsignes/:idUsine", (request, response) => {
   });
 });
 
-//Récupérer toutes les consignes
-app.get("/getConsignesEntreDeuxDates", (request, response) => {
+//Récupérer toutes les consignes entre 2 dates => recherche également par titre de consigne
+//?idUsine=10&dateDeb=xxx&dateFin=yyyy&titre=test
+app.get("/getConsignesRecherche", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where  date_heure_debut < '"+reqQ.dateFin+"' and date_heure_fin > '"+reqQ.dateDeb+"' and isActive = 1 and commentaire like '%"+reqQ.titre+"%' and idUsine = "+reqQ.idUsine
+  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where date_heure_debut < '"+reqQ.dateFin+"' and date_heure_fin > '"+reqQ.dateDeb+"' and isActive = 1 and commentaire like '%"+reqQ.titre+"%' and idUsine = "+reqQ.idUsine
   , (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
@@ -2956,7 +3009,7 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 //?idRondier=1
 app.get("/getEquipeUser", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +"AND e.date LIKE CONVERT(date,GETDATE()) ORDER BY e.date DESC", (err,data) => {
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +" ORDER BY e.date DESC", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -3822,7 +3875,7 @@ app.put("/actu", middleware,(request, response) => {
         console.log(err);
         //currentLineError=currentLine(); throw err;
       } else {
-        console.log('Email sent: ' + info.response);
+        console.log('***'+new Date()+' - Email sent to '+reqQ.maillist+' : ' + info.response);
       }
     });
   }
@@ -4175,7 +4228,8 @@ app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
         for (const actions of data) {
           pool.query("DELETE FROM quart_calendrier WHERE idAction = "+actions.id+" AND quart = "+event.quart, (err,data) => {
             if(err){
-              currentLineError=currentLine(); throw err;
+              //currentLineError=currentLine(); throw err;
+              console.log(err);
             }
           });
         };
@@ -4322,7 +4376,7 @@ app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (r
     }
     data = data['recordset'];
     data.forEach(user => {
-      maillist += user.email+';';
+      if(user.email.length > 0) maillist += user.email+';';
     });
 
     /** ENVOI MAIL */
@@ -4340,7 +4394,7 @@ app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (r
         response.json("Envoi mail KO");
         //currentLineError=currentLine(); throw err;
       } else {
-        console.log('Email sent: ' + info.response);
+        console.log('*** Récap PDF ***'+new Date()+' - Email sent to '+maillist+' : ' + info.response);
         response.json("Envoi mail OK");
       }
     });
