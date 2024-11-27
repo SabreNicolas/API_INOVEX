@@ -1645,10 +1645,11 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 });
 
 //Récupérer l'ensemble des zones de controle de Calce pour menu déroulant
-// ?idUsine=7
+// ?idUsine=7&datedeb=''&dateFin=''
 app.get("/recupZoneCalce",(request, response) => {
-  const reqP=request.query
-  pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine, (err,data) => {
+  const reqQ=request.query
+  pool.query("select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '"+reqQ.dateDeb+"' and c.idUsine = "+reqQ.idUsine, async (err,data) => {
+    console.log("-----select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '"+reqQ.dateDeb+"' and c.idUsine = "+reqQ.idUsine);
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4270,11 +4271,17 @@ app.get("/getActionsRonde", middleware,(request, response) => {
 });
 
 //Récupérer les zone affectée à une ronde
-//?idUsine=1&datedeb=''&dateFin=''
+//?idUsine=1&datedeb=''&idZone=3
 app.get("/getZonesCalendrierRonde",(request, response) => {
   const reqQ=request.query;
   BadgeAndElementsOfZone = [];
-  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and c.idZone is not null and c.idUsine = "+reqQ.idUsine, async (err,data) => {
+  let condZone = "";
+  //Si on est sur calce (idUsine 7) alors on récupère seulement 1 zone
+  if(reqQ.idUsine == 7 && reqQ.idZone){
+    condZone = "c.idZone = "+reqQ.idZone
+  }
+  else condZone = "c.idZone is not null"
+  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin', c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and "+condZone+" and c.idUsine = "+reqQ.idUsine, async (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4290,7 +4297,6 @@ app.get("/getZonesCalendrierRonde",(request, response) => {
     }
   });
 });
-
 
 ////FIN ACCUEIL///
 
