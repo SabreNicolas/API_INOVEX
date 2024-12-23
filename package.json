@@ -4,7 +4,8 @@
   "description": "Node.js Restful CRUD API with Node.js, Express and MySQL",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "nodemon server.js",
+    "start": "pm2 start server.js -i max --name API_CAP_EXPLOITATION"
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,8 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
+    "get-current-line": "^7.4.0",
+    "get-line-number": "^1.0.2",
     "https": "^1.0.0",
     "jsonwebtoken": "^9.0.2",
     "jwt-redis": "^7.0.3",

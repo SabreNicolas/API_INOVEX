@@ -2,6 +2,7 @@ import requests
 import json
 from pprint import pprint
 from datetime import datetime, timedelta
+import pytz
 import time
 import warnings
 #Disable warnings
@@ -27,7 +28,13 @@ else:
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
-hier = datetime.strptime(hier, "%d/%m/%Y").date()
+hierInsert = datetime.strptime(hier, "%d/%m/%Y").date()
+hierUTC =  datetime.strptime(hier, "%d/%m/%Y")
+#On ajoute l'utc à la date
+cop_tz = pytz.timezone('Europe/Copenhagen')
+utcValue = cop_tz.utcoffset(datetime.now()).total_seconds() / (60*60) #Récupération UTC au format nombre
+utc = -utcValue
+hierUTC = hierUTC + timedelta (hours=utc)
 
 print("Debut du script Eveler Le " + str(aujourdhui))
 
@@ -58,8 +65,9 @@ for p in listeProducts:
     _id_human = idCompteur
     channel="power:"+typeEnergie
     #channel="power:reactive+"
-    start=hier # Attention UTC
-    end=aujourdhui# Attention UTC
+    start=hierUTC# Attention UTC
+    end=hierUTC + timedelta (days=1)# Attention UTC
+
     complete_url = f"{URL}/meter/{_id_human}/data/{channel}/{start}/{end}"
     r = requests.get(complete_url, headers=headers, verify=False)
     if r.status_code == 200 and r.json()['success'] is True:
@@ -72,21 +80,24 @@ for p in listeProducts:
         #boucle ici pour avoir la valeur
         #pprint(listValuesPoint5min)
         #On boucle sur les point 5 min pour faire la somme
+        #print(listValuesPoint5min)
         for data in listValuesPoint5min:
             #valueToInsert = valueToInsert + data['value']
             #Conversion kw vers khW
-            valueToInsert = valueToInsert + (data['value'] * (5 / 60))
+            #valueToInsert = valueToInsert + (data['value'] * (5 / 60))
+            valueToInsert = valueToInsert + data['value']
         #On divise ensuite la valeur par 12 000 pour avoir la conversion en Mwh ou Mvarh
         #valueToInsert = valueToInsert / 12000
         #Conversion khW en Mwh
-        valueToInsert = valueToInsert / 1000
+        #valueToInsert = valueToInsert / 1000
+        valueToInsert = valueToInsert / 12000
         print("total : ",valueToInsert)
 
     else:
         print("***********************Error : code retour HTTP = {}".format(r.status_code))
 
     #On insére la valeur dans CAP Exploitation
-    req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
+    req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hierInsert) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
     response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
     print(response)
 

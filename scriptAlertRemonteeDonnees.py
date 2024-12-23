@@ -57,7 +57,7 @@ for site in listeSites['data'] :
     body = body +"<div style='border:solid 1px'><p style='color:blue'>//*********** "+str(site['localisation']).upper()+" ***********//" + "</p>\n"
 
     #Récupération de la liste des produits avec un TAG dans chaque usine dans CAP Exploitation
-    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]

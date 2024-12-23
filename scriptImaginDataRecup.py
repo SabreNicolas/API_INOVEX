@@ -44,7 +44,7 @@ for site in listeSites['data'] :
         value = response.json()
         value = value['data']
         for val in value :
-            if val['value'] != '/' :
+            if val['value'] != '/' and val['value'].replace(".","").replace(',','').isnumeric() == True:
                 print(val['value'] + "\n")
                 req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                 response = requests.put(req, headers = headers, verify=False)
