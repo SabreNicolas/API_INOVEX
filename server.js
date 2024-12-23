@@ -698,7 +698,7 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
 //?idUsine=1
 app.get("/getProductsWithTagClassique", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND typeRecupEMonitoring NOT LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND (typeRecupEMonitoring NOT LIKE 'derniere' OR typeRecupEMonitoring IS NULL) AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -1299,7 +1299,20 @@ app.get("/UsersEmail", middleware,(request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
   const reqQ=request.query 
-  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND isChefQuart = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+    if(err){
+      currentLineError=currentLine(); throw err;
+    } 
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des utilisateurs d'un site ayant les droits chef de quart
+//?idUsine=1
+app.get("/UsersChefQuart", (request, response) => { 
+  const reqQ=request.query 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isChefQuart = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
     if(err){
       currentLineError=currentLine(); throw err;
     } 
@@ -2477,6 +2490,31 @@ app.put("/mesureRondier", (request, response) => {
       if(err) response.json("Création de la mesure KO");
       else response.json("Création de la mesure OK");
   });
+});
+
+/*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
+app.put("/mesureRondierOneRequest", (request, response) => {
+  const tableauDonnees = request.body;
+  const nbErreur = 0;
+  const listElemErreur = "";
+  tableauDonnees.values.forEach(element => {
+    let e = element.nameValuePairs;
+    pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+e.elementId+", '"+e.modeRegulateur+"', '"+e.value+"', "+e.rondeId+")"
+    ,(err,result,fields) => {
+        if(err){
+          nbErreur++;
+          listElemErreur = listElemErreur+e.elementId+";";
+        }
+    });
+  });
+  response.json("KO-"+5+"-"+listElemErreur);
+  if(nbErreur > 0){
+    response.json("KO-"+nbErreur+"-"+listElemErreur);
+    currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
+  }
+  else{
+    response.json("OK");
+  }
 });
 
 //Update valeur de l'élement de contrôle
@@ -4559,7 +4597,7 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
 app.get("/getAllAnomalies", middleware,(request, response) => {
   const reqQ=request.query;
   // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
-  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+reqQ.idUsine
+  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+reqQ.idUsine+" ORDER BY a.id DESC"
   , (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
@@ -4860,7 +4898,6 @@ app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
     if(err){
       //TODO à régler
       //currentLineError=currentLine(); throw err;
-      console.log(err);
     }
     //if(err) console.log(err + " - "+reqP.idUsine);
     response.json("Update zone du calendrier ok");
@@ -4877,6 +4914,24 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
       currentLineError=currentLine(); throw err;
     }
     response.json("Update action du calendrier ok");
+  });
+});
+
+//update du champ terminé d'une action du calendrier
+//?id=1&termine=1
+app.put("/changeTermineCalendrier", (request, response) => {
+  const reqQ = request.query;
+  let termine = 1;
+  console.log(reqQ.termine)
+  if(reqQ.termine === "false"){
+    termine = 0;
+  }
+  pool.query("update quart_calendrier set termine = "+termine+" where id = "+reqQ.id , (err,data) => {
+    console.log("update quart_calendrier set termine = "+termine+" where id = "+reqQ.id)
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Update action du calendrier OK");
   });
 });
 

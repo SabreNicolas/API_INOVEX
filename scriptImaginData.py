@@ -53,7 +53,7 @@ for site in listeSites['data'] :
         value = response.json()
         value = value['data']
         for val in value :
-            if val['value'] != '/' :
+            if val['value'] != '/' and val['value'].replace(".","").replace(',','').isnumeric() == True:
                 print(val['value'] + "\n")
                 req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                 response = requests.put(req, headers = headers, verify=False)
@@ -82,7 +82,7 @@ for site in listeSites['data'] :
     listData = curseur.fetchall()
 
     #Récupération de la liste des produits avec un TAG dans chaque usine dans CAP Exploitation
-    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
