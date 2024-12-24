@@ -151,6 +151,13 @@ var transporter = nodemailer.createTransport(smtpTransport({
   },
 }));
 
+const messagePlantage = {
+  from: process.env.USER_SMTP, // Sender address
+  to: 'developpement@kerlan-info.fr',
+  subject: 'API CAP EXPLOITATION', // Subject line
+  html: '' //à compléter avant envoi
+};
+
 // define a sendmail endpoint, which will send emails and response with the corresponding status
 app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', function(req, res) {
   let mailListIdUsine = 'MAIL_LIST_'+req.params.idUsine;
@@ -158,7 +165,9 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
   
   //On récupére le nom du site pour l'inscrire dans l'email
   pool.query("SELECT localisation FROM site WHERE id = "+req.params.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     let localisation = data['recordset'][0].localisation;
 
     //Envoi du mail
@@ -174,7 +183,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
     transporter.sendMail(message, function(err, info) {
       if (err) {
         console.log(err);
-        //throw err;
+        //currentLineError=currentLine(); throw err;
       } else {
         console.log('Email sent: ' + info.response);
         res.json("mail OK");
@@ -192,7 +201,9 @@ app.get("/moralEntities", middleware,(request, response) => {
     pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
     "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
     "WHERE mr.idUsine = "+reqQ.idUsine+" AND mr.Enabled = 1 AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY Name ASC", (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});
     });
@@ -209,7 +220,9 @@ app.delete("/deleteMesuresEntrantsEntreDeuxDates", middleware,(request, response
   }
   pool.query("delete m from moralentities_new  mr join measures_new m on m.ProducerId = mr.id where idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "'"+condDasri
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des mesures OK")
   });
 });
@@ -220,7 +233,9 @@ app.delete("/deleteMesuresSortantsEntreDeuxDates", middleware,(request, response
   const reqQ=request.query
   const name = reqQ.name.replace(/'/g, "''");
   pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageSortants i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des mesures OK")
   });
 });
@@ -231,7 +246,9 @@ app.delete("/deleteMesuresReactifsEntreDeuxDates", middleware,(request, response
   const reqQ=request.query
   const name = reqQ.name.replace(/'/g, "''");
   pool.query("delete m from measures_new m join products_new p on p.Id=m.ProductId join import_tonnageReactifs i on i.ProductId = p.id where Enabled = 1 AND p.idUsine = " + reqQ.idUsine +" and m.EntryDate >= '" + reqQ.dateDeb +"' and m.EntryDate <= '"+ reqQ.dateFin + "' and i.productImport = '"+ name +"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des mesures OK")
   });
 });
@@ -243,7 +260,9 @@ app.get("/moralEntitiesAll", middleware,(request, response) => {
   pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, mr.numCAP, mr.codeDechet, mr.nomClient, mr.prenomClient, mr.mailClient, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
   "WHERE mr.idUsine = "+reqQ.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -256,8 +275,10 @@ app.put("/moralEntitie", middleware,(request, response) => {
     const reqQ=request.query
     const query="INSERT INTO moralentities_new (CreateDate, LastModifiedDate, Name, Address, Enabled, Code, UnitPrice, numCAP, codeDechet, nomClient, prenomClient, mailClient, idUsine) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', '"+reqQ.Address+"', 1, '"+reqQ.Code+"', "+reqQ.UnitPrice+", '"+reqQ.numCAP+"', '"+reqQ.codeDechet+"', '"+reqQ.nomClient+"', '"+reqQ.prenomClient+"','"+reqQ.mailClient+"', "+reqQ.idUsine+")";
     pool.query(query,(err,result,fields) => {
-        if(err) throw err;
-        response.json("Création du client OK");
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
+      response.json("Création du client OK");
     });
 });
 
@@ -266,7 +287,9 @@ app.put("/moralEntitie", middleware,(request, response) => {
 app.get("/moralEntitieLastCode", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT TOP 1 Code FROM moralentities_new WHERE CODE LIKE '" + reqQ.Code + "%' AND idUsine = "+reqQ.idUsine+" ORDER BY Code DESC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -276,7 +299,9 @@ app.get("/moralEntitieLastCode", middleware,(request, response) => {
 app.get("/moralEntitie/:id",middleware, (request, response) => {
     const reqP=request.params
     pool.query("SELECT * FROM moralentities_new WHERE Id = "+reqP.id, (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});
     });
@@ -286,7 +311,9 @@ app.get("/moralEntitie/:id",middleware, (request, response) => {
 app.get("/getOneUser/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM users WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -299,7 +326,9 @@ app.put("/moralEntitie/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET UnitPrice = " + reqQ.UnitPrice + ", Code = " + reqQ.Code + " WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du prix unitaire et code INOVEX OK")
   });
 });
@@ -311,7 +340,9 @@ app.put("/moralEntitieUnitPrice/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET UnitPrice = " + reqQ.UnitPrice + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du prix unitaire OK")
   });
 });
@@ -323,7 +354,9 @@ app.put("/moralEntitieAll/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET mailClient = '" + reqQ.mailClient + "', prenomClient = '" + reqQ.prenomClient + "', nomClient = '" + reqQ.nomClient + "', codeDechet = '" + reqQ.codeDechet + "', numCAP = '" + reqQ.numCAP + "', Code = '" + reqQ.Code + "', Address = '" + reqQ.Address + "', Name = '" + reqQ.Name + "', UnitPrice = '" + reqQ.UnitPrice + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du MR OK")
   });
 });
@@ -334,7 +367,9 @@ app.put("/moralEntitieCAP/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET numCAP = '" + reqQ.cap + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du CAP OK")
   });
 });
@@ -345,7 +380,9 @@ app.put("/moralEntitieCode/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET Code = " + reqQ.Code + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du code OK")
   });
 });
@@ -354,7 +391,9 @@ app.put("/moralEntitieCode/:id", middleware,(request, response) => {
 app.put("/moralEntitieEnabled/:id/:enabled", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET Enabled = "+reqP.enabled+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement de visibilité du client OK")
   });
 });
@@ -365,7 +404,9 @@ app.put("/moralEntitieName/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE moralentities_new SET Name = '"+reqQ.Name+"', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement de nom du client OK")
   });
 });
@@ -374,7 +415,9 @@ app.put("/moralEntitieName/:id", middleware,(request, response) => {
 app.delete("/moralEntitie/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM moralentities_new WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du client OK")
   });
 });
@@ -386,7 +429,9 @@ app.get("/CategoriesCompteurs", middleware, (request, response) => {
     pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
     "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
     "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name NOT LIKE 'Tonnage%' AND cat.Name NOT LIKE 'Cendres%' AND cat.Code NOT LIKE '701%' AND cat.Name NOT LIKE 'Mâchefers%' AND cat.Name NOT LIKE 'Arrêts%' AND cat.Name NOT LIKE 'Autres consommables%' AND cat.Name NOT LIKE 'Déchets détournés%' AND cat.Name NOT LIKE 'Ferraille et autres%' AND cat.Name NOT LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});
     });
@@ -398,7 +443,9 @@ app.get("/CategoriesAnalyses", middleware,(request, response) => {
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
   "WHERE cat.Enabled = 1 AND cat.Code > 1 AND LEN(cat.Code) > 1  AND cat.Name LIKE 'Analyses%' ORDER BY cat.Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -410,7 +457,9 @@ app.get("/CategoriesSortants",middleware, (request, response) => {
   pool.query("SELECT cat.Id, cat.CreateDate, cat.LastModifieddate, cat.Name, cat.Enabled, cat.Code, cat.ParentId, cat2.Name as ParentName "+
   "FROM categories_new as cat LEFT JOIN categories_new as cat2 ON cat.ParentId = cat2.Id "+
   "WHERE cat.Code LIKE '50%' AND cat.Name NOT LIKE 'Résidus de Traitement' ORDER BY cat.Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -422,7 +471,9 @@ app.put("/Category",middleware, (request, response) => {
   const reqQ=request.query
   const query="INSERT INTO categories_new (CreateDate, LastModifiedDate, Name, Enabled, Code, ParentId) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', 1, '"+reqQ.Code+"', "+reqQ.ParentId+")";
   pool.query(query,(err,result,fields) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       response.json("Création de la catégorie OK");
   });
 });
@@ -431,7 +482,9 @@ app.put("/Category",middleware, (request, response) => {
 app.get("/Category/:Id",middleware, (request, response) => {
     const reqP=request.params
     pool.query("SELECT * FROM categories_new WHERE Id = "+ reqP.Id, (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});
     
@@ -442,7 +495,9 @@ app.get("/Category/:Id",middleware, (request, response) => {
 app.get("/Categories/:ParentId",middleware, (request, response) => {
     const reqP=request.params
     pool.query("SELECT * FROM categories_new WHERE ParentId = "+ reqP.ParentId, (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});
     
@@ -454,7 +509,9 @@ app.get("/Categories/:ParentId",middleware, (request, response) => {
 app.get("/productLastCode", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT TOP 1 Code FROM products_new WHERE idUsine = " + reqQ.idUsine + " AND CODE LIKE '" + reqQ.Code + "%' ORDER BY Code DESC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -465,7 +522,9 @@ app.get("/productLastCode", middleware,(request, response) => {
 app.get("/Products", middleware,(request, response) => {
     const reqQ=request.query
     pool.query("SELECT * FROM products_new", (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       data = data['recordset'];
       response.json({data});;
     });
@@ -477,9 +536,11 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = "+reqP.TypeId +" AND Name LIKE '%"+reqQ.Name+"%' ORDER BY Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-      response.json({data});
+    response.json({data});
   
   });
 });
@@ -489,7 +550,9 @@ app.get("/Products/:TypeId", middleware,(request, response) => {
 app.put("/createFormulaire",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO formulaire(nom,idUsine) OUTPUT INSERTED.idFormulaire VALUES('" + reqQ.nom + "',"+reqQ.idUsine+")", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});  });
 });
@@ -499,7 +562,9 @@ app.put("/createFormulaire",middleware, (request, response) => {
 app.put("/updateFormulaire",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE formulaire SET nom ='" + reqQ.nom + "' WHERE idFormulaire ="+reqQ.idFormulaire, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});  });
 });
@@ -509,7 +574,9 @@ app.put("/updateFormulaire",middleware, (request, response) => {
 app.delete("/deleteProduitFormulaire", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM formulaire_affectation WHERE idFormulaire = "+reqQ.idFormulaire , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du produit OK");
   });
 });
@@ -519,7 +586,9 @@ app.delete("/deleteProduitFormulaire", middleware,(request, response) => {
 app.delete("/deleteFormulaire", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM formulaire WHERE idFormulaire = "+reqQ.idFormulaire, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du produit OK");
   });
 });
@@ -529,7 +598,9 @@ app.delete("/deleteFormulaire", middleware,(request, response) => {
 app.put("/createFormulaireAffectation",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO formulaire_affectation(idFormulaire,idProduct,alias) VALUES(" + reqQ.idFormulaire + ","+ reqQ.idProduit + ",'"+reqQ.alias+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Affectation OK");
   });
 });
@@ -539,9 +610,10 @@ app.put("/createFormulaireAffectation",middleware, (request, response) => {
 app.get("/getFormulaires", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM formulaire WHERE idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-    // console.log(data)
     response.json({data});
   });
 });
@@ -551,7 +623,9 @@ app.get("/getFormulaires", middleware,(request, response) => {
 app.get("/getOneFormulaire", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM formulaire WHERE idFormulaire = "+reqQ.idFormulaire, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -562,9 +636,10 @@ app.get("/getOneFormulaire", middleware,(request, response) => {
 app.get("/getProduitsFormulaire", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM formulaire_affectation WHERE idFormulaire = "+reqQ.idFormulaire + 'order by alias', (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-    // console.log(data)
     response.json({data});
   });
 });
@@ -575,9 +650,10 @@ app.get("/getOneProduct/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT id,Name FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-    // console.log(data)
       response.json({data});
   });
 });
@@ -587,7 +663,9 @@ app.get("/getOneProduct/:id", middleware,(request, response) => {
 app.get("/AllProducts", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" and Enabled = 1 and CODE not LIKE '2%' and name NOT LIKE '%arret%' and name NOT LIKE '%depassement%' and name not like 'baisse de charge%' ORDER BY Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -606,20 +684,37 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
   }
   else type = "typeId = "+reqP.TypeId+" AND ";
   pool.query("SELECT p.*, e.nom as nomElementRondier FROM products_new p FULL OUTER JOIN elementcontrole e ON e.Id = p.idElementRondier WHERE idUsine = "+reqQ.idUsine+" AND "+type+"Name LIKE '%"+reqQ.Name+"%' ORDER BY Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
 });
 
-//get product avec un tag pour une usine
-//?idUsine=?
-app.get("/getProductsWithTag", middleware,(request, response) => {
+//get product avec un tag pour une usine (sauf ceux pour lesquelles on veut récupérer la dernière valeur de la journée)
+//?idUsine=1
+app.get("/getProductsWithTagClassique", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND (typeRecupEMonitoring NOT LIKE 'derniere' OR typeRecupEMonitoring IS NULL) AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-    response.json({data});;
+    response.json({data});
+  });
+});
+
+//get product avec un tag pour une usine (UNIQUEMENT ceux pour lesquelles on veut récupérer la dernière valeur de la journée)
+//?idUsine=1
+app.get("/getProductsWithTagDerniere", middleware,(request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND typeRecupEMonitoring LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -628,7 +723,9 @@ app.get("/getProductsWithTag", middleware,(request, response) => {
 app.get("/getProductsWithElementRondier", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("select * from products_new WHERE idElementRondier IS NOT NULL AND idUsine = " + reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});;
   });
@@ -638,7 +735,9 @@ app.get("/getProductsWithElementRondier", middleware,(request, response) => {
 app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
   const reqP=request.params
     pool.query("SELECT * from products_new WHERE idUsine = " + reqP.idUsine + " AND typeId = 1 AND Code NOT LIKE '2%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -648,7 +747,9 @@ app.get("/productsEntrants/:idUsine", middleware,(request, response) => {
 app.put("/updateProductName", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE products_new SET Name = '"+reqQ.newName +"' WHERE Name = '" +reqQ.lastName +"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement du nom du produit OK")
   });
 });
@@ -657,7 +758,9 @@ app.put("/updateProductName", middleware,(request, response) => {
 app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE products_new SET Enabled = "+reqP.enabled +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement de visibilité du client OK")
   });
 });
@@ -666,7 +769,9 @@ app.put("/productEnabled/:id/:enabled", middleware,(request, response) => {
 app.put("/productType/:id/:type",middleware, (request, response) => {
   const reqP=request.params
   pool.query("UPDATE products_new SET TypeId = "+reqP.type +" , LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement de catégorie du produit OK")
   });
 });
@@ -677,7 +782,9 @@ app.put("/productUnit/:id",middleware, (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE products_new SET Unit = '" + reqQ.Unit + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'unité OK")
   });
 });
@@ -689,7 +796,9 @@ app.put("/updateRecupEMonitoring",middleware, (request, response) => {
   var update = "UPDATE products_new SET typeRecupEMonitoring = '" + reqQ.typeRecup + "' WHERE Id = "+reqQ.id;
   if(reqQ.typeRecup == "null") update = "UPDATE products_new SET typeRecupEMonitoring = NULL WHERE Id = "+reqQ.id;
   pool.query(update, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Changement du type de récupération OK")
   });
 });
@@ -699,7 +808,9 @@ app.put("/updateRecupEMonitoring",middleware, (request, response) => {
 app.get("/Compteurs",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 4 AND Enabled = 1 AND Name NOT LIKE 'Arrêt%' AND Name NOT LIKE 'HEURES D''ARRET%' AND Name NOT LIKE 'BAISSE DE CHARGE%' AND Code NOT LIKE '701%' AND Name NOT LIKE 'Temps%' AND NAME LIKE '%" + reqQ.name + "%' AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -710,7 +821,9 @@ app.get("/Compteurs",middleware, (request, response) => {
 app.get("/QSE",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND Code LIKE '701%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -722,7 +835,9 @@ app.get("/QSE",middleware, (request, response) => {
 app.get("/CompteursArrets",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 4 AND Name NOT LIKE 'Temps%' AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -733,7 +848,9 @@ app.get("/CompteursArrets",middleware, (request, response) => {
 app.get("/Analyses", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' AND Name NOT LIKE '%1/2%' AND Name NOT LIKE '%DEPASSEMENT%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -744,7 +861,9 @@ app.get("/Analyses", middleware,(request, response) => {
 app.get("/AnalysesDep/:idUsine", middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 6 AND Enabled = 1 AND Code LIKE '60104%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -756,7 +875,9 @@ app.get("/AnalysesDep/:idUsine", middleware, (request, response) => {
 app.get("/Sortants", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND typeId = 5 AND Enabled = 1 AND Code LIKE '" + reqQ.Code + "%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -768,7 +889,9 @@ app.get("/Sortants", middleware,(request, response) => {
 app.get("/reactifs", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" and Name LIKE '%LIVRAISON%' and Enabled = 1 order by Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -779,7 +902,9 @@ app.get("/reactifs", middleware,(request, response) => {
 app.get("/Consos/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code NOT LIKE '801%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   
@@ -790,7 +915,9 @@ app.get("/Consos/:idUsine", middleware,(request, response) => {
 app.get("/pci/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM products_new WHERE idUsine = "+reqP.idUsine+" AND typeId = 2 AND Enabled = 1 AND Code LIKE '801%' ORDER BY Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -803,7 +930,9 @@ app.put("/Product", middleware,(request, response) => {
   reqQ.Name = reqQ.Name.replace("'"," ");
   const query="INSERT INTO products_new (CreateDate, LastModifiedDate, Name, Enabled, Code, typeId, Unit, idUsine, TAG) VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120), '"+reqQ.Name+"', 0, '"+reqQ.Code+"', "+reqQ.typeId+", '"+reqQ.Unit+"', "+reqQ.idUsine+", '"+reqQ.TAG+"')";
   pool.query(query,(err,result,fields) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+    }
       response.json("Création du produit OK");
   });
 });
@@ -812,7 +941,9 @@ app.put("/Product", middleware,(request, response) => {
 app.get("/Product/:Id",middleware, (request, response) => {
     const reqQ=request.query
     pool.query("SELECT * FROM products_new WHERE Id = " + reqP.Id, (err,data) => {
-      if(err) throw err;
+      if(err){
+      currentLineError=currentLine(); throw err;
+      }
       data = data['recordset'];
       response.json({data});
     });
@@ -826,7 +957,9 @@ app.get("/Product/:Id",middleware, (request, response) => {
 app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT Name, Code FROM products_new WHERE Code Like '2%' AND idUsine = " +reqP.idUsine+ " ORDER BY Code ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -844,18 +977,26 @@ app.get("/DechetsCollecteurs/:idUsine",middleware, (request, response) => {
 //ATTENION Value doit contenir un . pour les décimales
 app.put("/Measure", middleware,(request, response) => {
   const reqQ=request.query;
+  let value = reqQ.Value.replace(',','.');
+  // Si la valeur est nulle
+  if(value === '' || value === ' ') {
+     value = 0.0;
+   }
   queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId = "+reqQ.ProductId+")"+
     " BEGIN "+
       "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)"+
-      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+reqQ.EntryDate+"', "+reqQ.Value+", "+reqQ.ProductId+", "+reqQ.ProducerId+") "+
+      " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'"+reqQ.EntryDate+"', "+value+", "+reqQ.ProductId+", "+reqQ.ProducerId+") "+
     "END"+
     " ELSE"+
     " BEGIN "+
-    "UPDATE measures_new SET Value = "+reqQ.Value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId ="+reqQ.ProductId+
+    "UPDATE measures_new SET Value = "+value+", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '"+reqQ.EntryDate+"' AND ProducerId = "+reqQ.ProducerId+" AND ProductId ="+reqQ.ProductId+
     " END;"
     pool.query(queryOnDuplicate,(err,result,fields) => {
-      //console.log(queryOnDuplicate);
-      if(err) console.log(err);
+      if(err){
+        reqSQL = queryOnDuplicate;
+        reqSQL += "************"+value+"*************";
+        currentLineError=currentLine(); throw err;
+      }
       response.json("Création du Measures OK");
   });
 });
@@ -864,7 +1005,9 @@ app.put("/Measure", middleware,(request, response) => {
 app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT Value FROM measures_new WHERE ProductId = " + reqP.ProductId + " AND ProducerId = " + reqP.ProducerId + " AND EntryDate LIKE '"+reqP.Date+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -874,7 +1017,9 @@ app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware,(request, response) 
 app.get("/ValuesProducts/:ProductId/:Date", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT Value FROM measures_new WHERE ProductId = " + reqP.ProductId + " AND EntryDate LIKE '"+reqP.Date+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -884,7 +1029,9 @@ app.get("/ValuesProducts/:ProductId/:Date", middleware,(request, response) => {
 app.get("/TotalMeasures/:Dechet/:Date/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT COALESCE(SUM(m.Value),0) as Total FROM measures_new m INNER JOIN products_new p ON m.ProductId = p.Id WHERE p.idUsine = "+reqP.idUsine+ " AND m.EntryDate LIKE '"+reqP.Date+"%' AND m.ProducerId > 1 AND p.Code LIKE '"+reqP.Dechet+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -899,7 +1046,9 @@ app.get("/Compteurs/:Code/:Date", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT Value FROM saisiemensuelle WHERE idUsine = "+reqQ.idUsine+" AND Code = '" + reqP.Code + "' AND Date LIKE '"+reqP.Date+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -919,7 +1068,10 @@ app.put("/SaisieMensuelle", middleware,(request, response) => {
     "UPDATE saisiemensuelle SET Value = "+reqQ.Value+" WHERE Date = '"+reqQ.Date+"' AND Code = "+reqQ.Code+" AND idUsine = "+reqQ.idUsine+
     " END;"
   pool.query(queryOnDuplicate,(err,result,fields) => {
-      if(err) console.log(err);
+      //if(err) console.log(err);
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       response.json("Création du saisiemensuelle OK");
   });
 });
@@ -943,7 +1095,9 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("update depassements set date_heure_debut = '"+ reqQ.dateDebut +"', date_heure_fin = '"+reqQ.dateFin+"', duree ="+reqQ.duree+", date_saisie='"+reqQ.dateSaisie+"', description='"+reqQ.description+"', productId="+reqQ.productId+" WHERE id = " + reqP.id 
   ,(err,result,fields) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       else response.json("Modif du dep ok");
   });
 });
@@ -952,7 +1106,9 @@ app.put("/updateDepassement/:id", middleware,(request, response) => {
 app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -962,7 +1118,9 @@ app.get("/Depassements/:dateDeb/:dateFin/:idUsine",middleware, (request, respons
 app.get("/getOneDepassement/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -972,7 +1130,9 @@ app.get("/getOneDepassement/:id",middleware, (request, response) => {
 app.delete("/DeleteDepassement/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM depassements WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du DEP OK");
   });
 });
@@ -981,7 +1141,9 @@ app.delete("/DeleteDepassement/:id", middleware,(request, response) => {
 app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT 'Total Ligne "+reqP.numLigne+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' AND p.Code LIKE '601040"+reqP.numLigne+"01'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -991,7 +1153,9 @@ app.get("/DepassementsSumFour/:dateDeb/:dateFin/:idUsine/:numLigne",middleware, 
 app.get("/DepassementsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM depassements a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1025,7 +1189,9 @@ app.put("/updateArret/:id", middleware,(request, response) => {
 app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT a.Id, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' ORDER BY p.Name, a.date_heure_debut ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1035,7 +1201,9 @@ app.get("/Arrets/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => 
 app.get("/getOneArret/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT a.Id, a.productId, p.Name, convert(varchar, CAST(a.date_heure_debut as datetime2), 103) as dateDebut, convert(varchar, CAST(a.date_heure_debut as datetime2), 108) as heureDebut, convert(varchar, CAST(a.date_heure_fin as datetime2), 103) as dateFin, convert(varchar, CAST(a.date_heure_fin as datetime2), 108) as heureFin, a.duree, a.description FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE a.id = "+ reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1045,7 +1213,9 @@ app.get("/getOneArret/:id",middleware, (request, response) => {
 app.delete("/DeleteArret/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM arrets WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de l'arrêt OK");
   });
 });
@@ -1054,7 +1224,9 @@ app.delete("/DeleteArret/:id", middleware,(request, response) => {
 app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT p.Name, SUM(a.duree) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' GROUP BY p.Name", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1064,7 +1236,9 @@ app.get("/ArretsSumGroup/:dateDeb/:dateFin/:idUsine",middleware, (request, respo
 app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT 'Total' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON p.Id = a.productId WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1074,7 +1248,9 @@ app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware,(request, response) 
 app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT 'Total Four "+reqP.numFour+"' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = "+reqP.idUsine+" AND CAST(a.date_heure_debut as datetime2) BETWEEN '"+reqP.dateDeb+"' AND '"+reqP.dateFin+"' AND p.Name LIKE '%"+reqP.numFour+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
       response.json({data});
   });
@@ -1096,7 +1272,22 @@ app.put("/User", middleware,(request, response) => {
 app.get("/Users", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM users WHERE login LIKE '%"+reqQ.login+"%' AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des utilisateurs d'un site ayant un email renseigné
+//?idUsine=1
+app.get("/UsersEmail", middleware,(request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM users WHERE LEN(email) > 0 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1106,8 +1297,23 @@ app.get("/Users", middleware,(request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => { 
   const reqQ=request.query 
-  pool.query("SELECT Nom, Prenom, Id FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
-    if(err) throw err; 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+    if(err){
+      currentLineError=currentLine(); throw err;
+    } 
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des utilisateurs d'un site ayant les droits chef de quart
+//?idUsine=1
+app.get("/UsersChefQuart", (request, response) => { 
+  const reqQ=request.query 
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isChefQuart = 1 AND idUsine = "+reqQ.idUsine+" ORDER BY Nom ASC", (err,data) => { 
+    if(err){
+      currentLineError=currentLine(); throw err;
+    } 
     data = data['recordset'];
     response.json({data});
   });
@@ -1119,7 +1325,9 @@ app.get("/User/:login/:pwd", (request, response) => {
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = reqP.login.replace("'","''");
   pool.query("SELECT * FROM users WHERE login = '"+login+"' AND pwd = '"+reqP.pwd+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     //Si on a une valeur de retour on génère un token
     if(data.length>0){
@@ -1137,7 +1345,9 @@ app.get("/User/:login/:pwd", (request, response) => {
 app.get("/User/:login", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM users WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1147,7 +1357,9 @@ app.get("/User/:login", middleware,(request, response) => {
 app.put("/User/:login/:pwd", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET pwd = '" + reqP.pwd + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du mot de passe OK")
   });
 });
@@ -1156,7 +1368,9 @@ app.put("/User/:login/:pwd", middleware,(request, response) => {
 app.put("/UserRondier/:login/:droit", middleware, (request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isRondier = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
   });
 });
@@ -1165,7 +1379,9 @@ app.put("/UserRondier/:login/:droit", middleware, (request, response) => {
 app.put("/UserSaisie/:login/:droit", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isSaisie = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
   });
 });
@@ -1174,7 +1390,9 @@ app.put("/UserSaisie/:login/:droit", middleware,(request, response) => {
 app.put("/UserQSE/:login/:droit", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isQSE = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
   });
 });
@@ -1183,7 +1401,9 @@ app.put("/UserQSE/:login/:droit", middleware,(request, response) => {
 app.put("/UserRapport/:login/:droit", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isRapport = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
   });
 });
@@ -1192,7 +1412,9 @@ app.put("/UserRapport/:login/:droit", middleware,(request, response) => {
 app.put("/UserChefQuart/:login/:droit", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isChefQuart = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
   });
 });
@@ -1201,8 +1423,23 @@ app.put("/UserChefQuart/:login/:droit", middleware,(request, response) => {
 app.put("/UserAdmin/:login/:droit", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE users SET isAdmin = '" + reqP.droit + "' WHERE login = '"+reqP.login+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update info user
+//?infoValue=ehhehehe
+app.put("/UserInfos/:login/:info", middleware,(request, response) => {
+  const reqP=request.params;
+  const reqQ=request.query;
+  pool.query("UPDATE users SET "+reqP.info+" = '" + reqQ.infoValue + "' WHERE login = '"+reqP.login+"'", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Mise à jour info OK")
   });
 });
 
@@ -1221,7 +1458,9 @@ app.delete("/user/:id", middleware,(request, response) => {
 app.get("/UsersLibre/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM users WHERE idUsine = "+reqP.idUsine+" AND Id NOT IN (SELECT userId FROM badge WHERE userId IS NOT NULL) ORDER BY Nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1246,7 +1485,9 @@ app.put("/Badge", middleware,(request, response) => {
 app.get("/BadgeLastId", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT IDENT_CURRENT('badge') as Id", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1256,7 +1497,9 @@ app.get("/BadgeLastId", middleware,(request, response) => {
 app.get("/UserOfBadge/:uid", (request, response) => {
   const reqP=request.params
   pool.query("SELECT u.Id, u.Nom, u.Prenom, u.login, u.idUsine, u.pwd, u.isRondier, u.isSaisie, u.isQSE, u.isRapport, u.isAdmin FROM users u INNER JOIN badge b ON b.userId = u.Id WHERE b.uid LIKE '"+reqP.uid+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1266,7 +1509,9 @@ app.get("/UserOfBadge/:uid", (request, response) => {
 app.get("/ElementsOfBadge/:uid", (request, response) => {
   const reqP=request.params
   pool.query("SELECT e.Id, e.zoneId, z.nom as 'NomZone', z.commentaire, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.isFour, e.isGlobal, e.unit, e.defaultValue, e.isRegulateur, e.listValues FROM elementcontrole e INNER JOIN zonecontrole z ON e.zoneId = z.Id INNER JOIN badge b ON b.zoneId = z.Id WHERE b.uid LIKE '"+reqP.uid+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1276,7 +1521,9 @@ app.get("/ElementsOfBadge/:uid", (request, response) => {
 app.get("/BadgesUser/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, u.login as affect FROM badge b INNER JOIN users u ON u.Id = b.userId WHERE b.idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1286,7 +1533,9 @@ app.get("/BadgesUser/:idUsine", middleware,(request, response) => {
 app.get("/BadgesZone/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT b.Id, b.isEnabled, b.userId, b.zoneId, b.uid, z.nom as affect FROM badge b INNER JOIN zonecontrole z ON z.Id = b.zoneId WHERE b.idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1296,7 +1545,9 @@ app.get("/BadgesZone/:idUsine", middleware,(request, response) => {
 app.get("/BadgesLibre/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM badge b WHERE b.idUsine = "+reqP.idUsine+" AND b.userId IS NULL AND b.zoneId IS NULL AND b.Id NOT IN (SELECT p.badgeId FROM permisfeu p WHERE p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120))", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1306,7 +1557,9 @@ app.get("/BadgesLibre/:idUsine", middleware,(request, response) => {
 app.put("/BadgeEnabled/:id/:enabled",middleware, (request, response) => {
   const reqP=request.params
   pool.query("UPDATE badge SET isEnabled = '" + reqP.enabled + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'activation OK")
   });
 });
@@ -1315,8 +1568,21 @@ app.put("/BadgeEnabled/:id/:enabled",middleware, (request, response) => {
 app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE badge SET " + reqP.typeAffectation+" = '" + reqP.idAffectation + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'affectation OK")
+  });
+});
+
+//Update de la zone choisi par Calce
+app.put("/insertionIdZoneCalce/:idRondier/:idEquipe", (request,response) => {
+  const req = request.query
+  pool.query("UPDATE affectation_equipe SET idZone = "+req.idZone+" WHERE idRondier = "+request.params.idRondier+" AND idEquipe = "+request.params.idEquipe+"", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Ajout ok");
   });
 });
 
@@ -1324,7 +1590,9 @@ app.put("/BadgeAffectation/:id/:typeAffectation/:idAffectation", middleware,(req
 app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("UPDATE badge SET userId = NULL, zoneId = NULL WHERE Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'affectation OK")
   });
 });
@@ -1333,7 +1601,9 @@ app.put("/BadgeDeleteAffectation/:id", middleware,(request, response) => {
 app.put("/deleteBadge/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("delete from badge where Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du badge OK")
   });
 });
@@ -1356,7 +1626,7 @@ app.put("/zone", middleware,(request, response) => {
 app.delete("/deleteZone", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM zonecontrole WHERE Id = "+reqQ.Id, (err,result,fields) => {
-      if(err) response.json("Création de la zone KO");
+      if(err) response.json("Suppression de la zone KO");
       else response.json("Suppression OK");
   });
 });
@@ -1365,7 +1635,9 @@ app.delete("/deleteZone", middleware,(request, response) => {
 app.get("/zones/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" ORDER BY nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1375,7 +1647,23 @@ app.get("/zones/:idUsine", middleware,(request, response) => {
 app.get("/zones/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" ORDER BY nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer l'ensemble des zones de controle de Calce pour menu déroulant
+// ?idUsine=7&datedeb=''&dateFin=''
+app.get("/recupZoneCalce",(request, response) => {
+  const reqQ=request.query
+  pool.query("select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '"+reqQ.dateDeb+"' and c.idUsine = "+reqQ.idUsine, async (err,data) => {
+    console.log("-----select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '"+reqQ.dateDeb+"' and c.idUsine = "+reqQ.idUsine);
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1394,7 +1682,9 @@ app.get("/getZonesAndAnomaliesOfDay/:idUsine/:date", middleware,(request, respon
     var query = "SELECT * from ronde where dateHeure = '"+reqP.date+"' and idUsine ="+reqP.idUsine +'and quart=' + reqQ.quart
   }
   pool.query(query, async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     //On boucle sur chaque zone et son badge pour récupérer ses éléments
     for await (const ronde of data) {
@@ -1416,7 +1706,9 @@ app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) =
     var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine +" and ronde.quart = "+reqQ.quart 
   }
   pool.query(query, async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1425,16 +1717,18 @@ app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) =
 //Récupérer l'ensemble des zones de controle
 app.get("/getElementsAndValuesOfDay/:idUsine/:date", middleware,(request, response) => {
   listZones = [];
-  const reqQ=request.query
-  const reqP=request.params
+  const reqQ=request.query;
+  const reqP=request.params;
   if(reqQ.quart == 0){
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" ORDER BY z.nom, e.ordre"  
   }
   else{
-    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" and r.quart = "+ reqQ.quart+" ORDER BY z.nom,g.groupement,e.nom,e.ordre"  
+    var query = "SELECT e.*, r.Id as 'idRonde', m.value, m.id as 'idMesure' FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.idUsine = "+reqP.idUsine+" and r.quart = "+ reqQ.quart+" ORDER BY z.nom, e.ordre"  
   }
   pool.query(query, async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1445,7 +1739,9 @@ function getZonesAndAnomaliesOfRonde(ronde){
   return new Promise((resolve) => {
     //Récupération des zones
         pool.query("select DISTINCT z.*, a.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id =e.zoneId full outer join anomalie a on (a.rondeId=" + ronde["Id"] + " and a.zoneId=z.id)where m.rondeId=" + ronde["Id"] + "order by z.nom", async (err, data) => {
-          if (err) throw err;
+          if(err){
+            currentLineError=currentLine(); throw err;
+          }
           zones = data['recordset'];
           let oneZone = {
             IdRonde : ronde["Id"],
@@ -1453,7 +1749,6 @@ function getZonesAndAnomaliesOfRonde(ronde){
           };
           listZones.push(oneZone)
           resolve();
-          // console.log(oneRonde)
         });
 
   });
@@ -1465,7 +1760,9 @@ app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
   const reqP=request.params
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
@@ -1484,7 +1781,9 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
   const reqP=request.params
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four from zonecontrole z WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
@@ -1503,11 +1802,15 @@ function getElementsHorsLigne(zone) {
     let modesOp;
     //Récupération des modesOP
     pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
-          if(err) throw err;
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
+          if(err){
+            currentLineError=currentLine(); throw err;
+          }
           else{
             data = data['recordset'];
             let OneBadgeAndElementsOfZone = {
@@ -1533,95 +1836,6 @@ function getElementsHorsLigne(zone) {
   });
 }
 
-// //Récupérer l'ensemble des zones de controle
-// //?dateHeure
-// app.get("/reporting/:idUsine",(request, response) => {
-//   const reqQ=request.query
-//   var test
-//   pool.query("select r.Id, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, users.Nom as 'nomUser', users.Prenom as 'prenomUser', chefQuart.Nom as 'nomChefQuart', chefQuart.Prenom as 'prenomChefQuart'"
-//   +"from ronde r join users on users.Id = userId join users chefQuart on chefQuart.Id = r.chefQuartId  where r.dateHeure='15/02/2024' and r.idUsine = "
-//    +reqP.idUsine, async (err,data) => {
-//     if(err) throw err;
-//     listeRondes = data['recordset'];
-//     for await(const ronde of listeRondes){
-//       let oneRonde = {
-//         Id : ronde["Id"],
-//         dateHeure: ronde["dateHeure"],
-//         quart: ronde["quart"],
-//         commentaire: ronde["commentaire"],
-//         isFinished: ronde["isFinished"],
-//         fonctFour1: ronde["fonctFour1"],
-//         fonctFour2: ronde["fonctFour2"],
-//         fonctFour3: ronde["fonctFour3"],
-//         fonctFour4: ronde["fonctFour4"],
-//         nomUser: ronde["nomUser"],
-//         prenomUser: ronde["prenomUser"],
-//         nomChefQuart: ronde["nomChefQuart"],
-//         prenomChefQuart: ronde["prenomChefQuart"],
-//         listZones: []
-//       };
-//       await getZonesAndAnomalies(ronde, oneRonde.listZones);
-//     }
-//     response.json({infosRondes});
-//   });
-// });
-
-// function getZonesAndAnomalies(ronde, listZones){
-//   return new Promise(async (resolve) => {
-//     // console.log(ronde)
-//     let modesOp;
-//     //Récupération des zones
-//     pool.query("select DISTINCT z.*, a.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id =e.zoneId full outer join anomalie a on (a.rondeId=" + ronde["Id"] + " and a.zoneId=z.id)where m.rondeId=" + ronde["Id"], async (err, data) => {
-//       if (err) throw err;
-//       listZones = data['recordset'];
-//       for await(const zone of listZones){
-//         await getGroupementsZone(ronde, zone);
-//       }
-      
-//       // console.log(oneRonde)
-//     });
-//     resolve();
-//   });
-// }
-
-// function getGroupementsZone(ronde, zone){
-//   return new Promise(async (resolve) => {
-//     //Récupération des groupements
-//     pool.query("SELECT * from groupement where zoneId = " + zone["Id"], async (err, data) => {
-//       if (err) throw err;
-//       listGrouepements = data['recordset'];
-//       for await(const groupement of listGrouepements){
-//         await getGroupementsElementsWithValue(ronde, zone, groupement);
-//       }
-//     });
-//     resolve();
-//   });
-// }
-
-// function getGroupementsElementsWithValue(ronde, zone, groupement){
-//   return new Promise(async (resolve) => {
-//     //Récupération des groupements
-//     pool.query("SELECT e.Id, e.zoneId, e.nom, m.value, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id ="+ronde["Id"]+" and e.zoneId ="+zone["Id"]+" and g.groupement="+groupement["Id"]+" ORDER BY z.nom,g.groupement,e.ordre", async (err, data) => {
-//       listElementDuGroupement = data['recordset']
-//       if (err) throw err;
-//       listGrouepements = data['recordset'];
-//       await getElementsWithValueWithoutGroupement(ronde, zone, groupement, listElementDuGroupement)
-//     });
-//     resolve();
-//   });
-// }
-
-// function getElementsWithValueWithoutGroupement(ronde, zone, groupement, listElementDuGroupement){
-//   return new Promise(async (resolve) => {
-//     //Récupération des groupements
-//     pool.query("SELECT e.Id, e.zoneId, e.nom, m.value, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id ="+ronde["Id"]+" and e.zoneId ="+zone["Id"]+" and g.groupement IS NULL ORDER BY z.nom,g.groupement,e.ordre", async (err, data) => {
-//       if (err) throw err;
-//       listElementsSansGroupements = data['recordset'];
-      
-//     });
-//     resolve();
-//   });
-// }
 
 //Récupérer l'ensemble des zones, pour lesquelles on a des valeur sur une ronde donnée
 app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, response) => {
@@ -1632,7 +1846,9 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
   }
   else var requete = "SELECT distinct z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC"
   pool.query(requete, async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
@@ -1641,7 +1857,6 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
       for await (const zone of data) {
         await getElementsWithValues(zone,reqP.idRonde);
       };
-      // console.log(BadgeAndElementsOfZone)
       response.json({BadgeAndElementsOfZone});
     }
   });
@@ -1653,12 +1868,16 @@ function getElementsWithValues(zone,idRonde) {
     let modesOp;
     //Récupération des modesOP
     pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       else{
         modesOp = data['recordset'];
 
         pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id FULL OUTER JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id =" + idRonde +" and e.zoneId =" + zone.zoneId +" ORDER BY z.nom,g.groupement,e.ordre", (err,data) => {
-          if(err) throw err;
+          if(err){
+            currentLineError=currentLine(); throw err;
+          }
           else{
             data = data['recordset'];
             let OneBadgeAndElementsOfZone = {
@@ -1686,7 +1905,9 @@ app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
   BadgeAndElementsOfZone = [];
   const reqP=request.params
   pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, idRondier from zonecontrole z inner join affectation_equipe e on e.idZone = z.Id WHERE z.idUsine = "+reqP.idUsine+" and e.idRondier = "+reqP.idUser+" ORDER BY z.nom ASC ", async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     else {
       //On récupère l'Id de la ronde précedente
       data = data['recordset'];
@@ -1705,15 +1926,18 @@ function getElementsHorsLigneUser(zone) {
     //Récupération des modesOP
     if(zone[0] != undefined){
       pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone[0]['zoneId'], (err,data) => {
-        if(err) throw err;
+        if(err){
+          currentLineError=currentLine(); throw err;
+        }
         else{
           modesOp = data['recordset'];
-          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.id, e.ordre ASC"
+          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
           , (err,data) => {
-            if(err) throw err;
+            if(err){
+              currentLineError=currentLine(); throw err;
+            }
             else{
               data = data['recordset'];
-              // console.log(data);
               let OneElementOfZone = {
                 zoneId : zone[0]['zoneId'],
                 zone : zone[0]['nomZone'],
@@ -1738,7 +1962,9 @@ function getElementsHorsLigneUser(zone) {
 function getPreviousId(id){
   return new Promise((resolve) => {
     pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = " + id + " ORDER BY Id DESC", (err, data) => {
-      if (err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       else {
         data = data['recordset'];
         if (data.length > 1) {
@@ -1752,9 +1978,12 @@ function getPreviousId(id){
 
 //Update commentaire
 app.put("/zoneCommentaire/:id/:commentaire", middleware,(request, response) => {
-  const reqP=request.params
+  const reqP=request.params;
+  reqP.commentaire.replace("'","''");
   pool.query("UPDATE zonecontrole SET commentaire = '" + reqP.commentaire + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du commentaire OK")
   });
 });
@@ -1766,8 +1995,23 @@ app.put("/zoneNom/:id", middleware,(request, response) => {
   const reqP=request.params
   reqQ.nom = reqQ.nom.replace("'"," ");
   pool.query("UPDATE zonecontrole SET nom = '" + reqQ.nom + "' WHERE Id = '"+reqP.id+"'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du nom OK")
+  });
+});
+
+//Update num four
+//?four=1
+app.put("/zoneFour/:id", middleware,(request, response) => {
+  const reqQ=request.query;
+  const reqP=request.params;
+  pool.query("UPDATE zonecontrole SET four = " + reqQ.four + " WHERE Id = "+reqP.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Mise à jour du four OK")
   });
 });
 
@@ -1776,7 +2020,9 @@ app.get("/ZonesLibre/:idUsine", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT * FROM zonecontrole WHERE idUsine = "+reqP.idUsine+" AND Id NOT IN (SELECT zoneId FROM badge WHERE zoneId IS NOT NULL) ORDER BY nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1802,7 +2048,9 @@ app.put("/element", middleware,(request, response) => {
 app.put("/updateOrdreElement", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE elementcontrole SET ordre = ordre + 1 WHERE zoneId = " + reqQ.zoneId + " AND ordre > " + reqQ.maxOrdre, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour des ordres OK")
   });
 });
@@ -1816,7 +2064,9 @@ app.put("/updateElement/:id", middleware,(request, response) => {
     reqQ.idGroupement = null;
   }
   pool.query("UPDATE elementcontrole SET zoneId = " + reqQ.zoneId + ", nom = '"+ reqQ.nom +"', valeurMin = "+ reqQ.valeurMin+", valeurMax = "+ reqQ.valeurMax +", typeChamp = "+ reqQ.typeChamp +", unit = '"+ reqQ.unit +"', defaultValue = '"+ reqQ.defaultValue +"', isRegulateur = "+ reqQ.isRegulateur +", listValues = '"+ reqQ.listValues +"', isCompteur = "+ reqQ.isCompteur +", ordre = "+ reqQ.ordre +", idGroupement ="+ reqQ.idGroupement +",CodeEquipement = '"+ reqQ.codeEquipement +"', infoSup = '"+ reqQ.infoSup +"' WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'element OK")
   });
 });
@@ -1826,7 +2076,9 @@ app.put("/updateElement/:id", middleware,(request, response) => {
 app.delete("/deleteElement", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM elementcontrole WHERE Id = "+ reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de l'élément OK")
   });
 });
@@ -1835,7 +2087,9 @@ app.delete("/deleteElement", middleware,(request, response) => {
 app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
   const reqP=request.params
   pool.query("select e.*, z.nom as nomZone from elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.typeChamp IN (1,2) and  z.idUsine = "+reqP.idUsine + " order by e.nom asc", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1845,13 +2099,27 @@ app.get("/elementsControleOfUsine/:idUsine",middleware, (request, response) => {
 //Récupérer l'ensemble des élements d'une zone
 app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
   const reqP=request.params
-  pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+reqP.zoneId +" ORDER BY idGroupement asc, ordre ASC", (err,data) => {
-    //if(err) throw err;
+  pool.query("SELECT e.*, g.groupement FROM elementcontrole  e FULL OUTER join groupement g on g.id = e.idGroupement  WHERE e.zoneId = "+reqP.zoneId +" ORDER BY g.groupement asc, ordre ASC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     //TODO : bug ici => à debug
-    if(err) console.log(err);
-    console.log(data)
+    //if(err) console.log(err);
     data = data['recordset'];
     response.json({data});
+  });
+});
+
+//Récupérer le nombre d'éléments d'un groupement
+//?idGroupement=1
+app.get("/GetElementsGroupement",middleware, (request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT COUNT(*) as nb FROM elementcontrole e WHERE e.idGroupement = "+reqQ.idGroupement, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json(data[0].nb);
   });
 });
 
@@ -1859,7 +2127,9 @@ app.get("/elementsOfZone/:zoneId",middleware, (request, response) => {
 app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM elementcontrole e INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE z.IdUsine = "+reqP.idUsine+" AND e.isCompteur = 1 ORDER BY ordre ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1869,7 +2139,9 @@ app.get("/elementsCompteur/:idUsine",middleware, (request, response) => {
 app.get("/element/:elementId", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM elementcontrole WHERE Id = "+reqP.elementId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1881,7 +2153,9 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT * FROM elementcontrole WHERE Id NOT IN (SELECT m.elementId FROM mesuresrondier m INNER JOIN ronde r ON r.Id = m.rondeId WHERE r.dateHeure LIKE '"+reqQ.date+"%' AND r.quart = "+reqP.quart+")", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1896,7 +2170,9 @@ app.get("/elementsOfRonde/:quart", (request, response) => {
 app.get("/getGroupements", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * from groupement WHERE zoneId = "+ reqQ.zoneId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1914,7 +2190,9 @@ app.get("/getGroupementsOfOneDay/:idUsine/:date",middleware, (request, response)
     var query = "SELECT distinct g.id, g.groupement, g.zoneId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id JOIN groupement g ON g.id = e.idGroupement INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.dateHeure = '"+reqP.date+"' and r.quart="+reqQ.quart+" and r.idUsine = "+reqP.idUsine+" ORDER BY g.groupement" 
   }
   pool.query( query , async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1925,17 +2203,22 @@ app.get("/getGroupementsOfOneDay/:idUsine/:date",middleware, (request, response)
 app.get("/getAllGroupements",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM groupement join zonecontrole on groupement.zoneId = zonecontrole.Id WHERE zonecontrole.idUsine= "+reqQ.idUsine + "order by groupement.zoneId asc", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
+
 //Récupérer un groupement
 //?idGroupement=1
 app.get("/getOneGroupement",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM groupement where id="+reqQ.idGroupement, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -1957,7 +2240,9 @@ app.put("/groupement", middleware,(request, response) => {
 app.put("/updateGroupement", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE groupement SET zoneId = " + reqQ.zoneId + ", groupement = '"+ reqQ.groupement +"' WHERE id = "+reqQ.idGroupement, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de l'element OK")
   });
 });
@@ -1965,7 +2250,9 @@ app.put("/updateGroupement", middleware,(request, response) => {
 app.delete("/deleteGroupement", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM groupement WHERE id = "+ reqQ.idGroupement, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression ok")
   });
 });
@@ -1989,7 +2276,9 @@ app.put("/ronde", (request, response) => {
 app.put("/clotureRondesCalceAuto",(request,response) => {
   const reqQ=request.query;
   pool.query('UPDATE ronde SET isFinished = 1 WHERE idUsine =' + reqQ.idUsine,(err,data) => {
-    if(err) console.log(err);
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Cloture des rondes auto OK");
   })
 })
@@ -2010,7 +2299,9 @@ app.put("/closeRonde/:id", (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE ronde SET commentaire = '" + reqQ.commentaire +"', fonctFour1 = '" + reqQ.four1 +"', fonctFour2 = '" + reqQ.four2 +"', fonctFour3 = '" + reqQ.four3 + "' , fonctFour4 = '" + reqQ.four4 + "' , isFinished = 1 WHERE id = "+ reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Cloture de la ronde OK")
   });
 });
@@ -2020,7 +2311,9 @@ app.put("/closeRonde/:id", (request, response) => {
 app.put("/closeRondeEnCours", (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE ronde SET isFinished = 1, fonctFour1 = 1, fonctFour2 = 1, fonctFour3 = 1, fonctFour4 = 1 WHERE id = "+ reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Cloture de la ronde OK")
   });
 });
@@ -2033,7 +2326,9 @@ app.get("/AuteurRonde/:quart", (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT DISTINCT u.nom, u.prenom FROM ronde r INNER JOIN users u ON r.userId = u.Id WHERE r.idUsine = "+reqQ.idUsine+" AND r.dateHeure LIKE '"+reqQ.date+"%' AND r.quart = "+reqP.quart, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2043,7 +2338,9 @@ app.get("/AuteurRonde/:quart", (request, response) => {
 app.get("/LastRonde/:idUsine", (request, response) => {
   const reqP=request.params
   pool.query("SELECT TOP 1 Id from ronde WHERE idUsine = "+reqP.idUsine+" ORDER BY Id DESC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data[0] != undefined){
       response.json(data[0].Id)
@@ -2058,7 +2355,9 @@ app.get("/LastRonde/:idUsine", (request, response) => {
 app.get("/RondePrecedente/:idUsine", (request, response) => {
   const reqP=request.params
   pool.query("SELECT TOP 2 Id from ronde WHERE idUsine = "+reqP.idUsine+" ORDER BY Id DESC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length>1){
       response.json(data[1].Id)
@@ -2073,7 +2372,9 @@ app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
   const reqQ=request.query;
   const reqP=request.params
   pool.query("SELECT TOP 1 id from ronde WHERE isFinished = 0 AND idUsine = "+reqP.idUsine+" AND quart = "+reqP.quart+" AND dateHeure = '"+reqQ.date+"' ORDER BY Id DESC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length < 1){
       response.json(0);
@@ -2087,7 +2388,9 @@ app.get("/LastRondeOpen/:idUsine/:quart", (request, response) => {
 app.get("/Rondes", (request, response) => {
   const reqQ=request.query
   pool.query("SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+reqQ.idUsine+" AND r.dateHeure LIKE '"+reqQ.date+"%' ORDER BY r.quart ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});    
   });
@@ -2104,7 +2407,9 @@ app.get("/RondesQuart", (request, response) => {
     var query = "SELECT r.Id, r.userId, r.dateHeure, r.quart, r.commentaire, r.isFinished, r.fonctFour1, r.fonctFour2, r.fonctFour3, r.fonctFour4, u.Nom, u.Prenom, uChef.Nom as nomChef, uChef.Prenom as prenomChef FROM ronde r INNER JOIN users u ON u.Id = r.userId INNER JOIN users uChef ON uChef.Id = r.chefQuartId WHERE r.idUsine = "+reqQ.idUsine+" AND r.quart = "+reqQ.quart+" AND r.dateHeure LIKE '"+reqQ.date+"%'"
   }
   pool.query(query, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});    
   });
@@ -2116,7 +2421,9 @@ app.get("/RondesQuart", (request, response) => {
 app.get("/nbRondes", (request, response) => {
   const reqQ=request.query
   pool.query("SELECT nbRondes FROM ronde WHERE Id =" + reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length > 0){
       response.json(data[0].nbRondes);
@@ -2130,7 +2437,9 @@ app.get("/nbRondes", (request, response) => {
 app.put("/updateNbRondes",(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE ronde SET nbRondes = nbRondes + 1 WHERE Id=" +reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de la valeur OK")
   });
 });
@@ -2140,11 +2449,15 @@ app.put("/updateNbRondes",(request, response) => {
 app.get("/nbRondiersEquipe", (request, response) => {
   const reqQ=request.query
   pool.query("SELECT equipe.id FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE idRondier = " + reqQ.userId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length >0){
       pool.query("SELECT COUNT(*) as nbRondesACloturer FROM equipe JOIN affectation_equipe ON equipe.id = affectation_equipe.idEquipe WHERE affectation_equipe.idZone > 0 AND equipe.id = " + data[0].id, (err,data) => {
-        if(err) throw err;
+        if(err){
+          currentLineError=currentLine(); throw err;
+        }
         data = data['recordset'];
         response.json(data[0].nbRondesACloturer);    
       });  
@@ -2159,7 +2472,9 @@ app.get("/nbRondiersEquipe", (request, response) => {
 app.delete("/deleteRonde", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("DELETE FROM ronde WHERE id = "+ reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de la ronde OK")
   });
 });
@@ -2175,12 +2490,39 @@ app.put("/mesureRondier", (request, response) => {
   });
 });
 
+/*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
+app.put("/mesureRondierOneRequest", (request, response) => {
+  const tableauDonnees = request.body;
+  const nbErreur = 0;
+  const listElemErreur = "";
+  tableauDonnees.values.forEach(element => {
+    let e = element.nameValuePairs;
+    pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+e.elementId+", '"+e.modeRegulateur+"', '"+e.value+"', "+e.rondeId+")"
+    ,(err,result,fields) => {
+        if(err){
+          nbErreur++;
+          listElemErreur = listElemErreur+e.elementId+";";
+        }
+    });
+  });
+  response.json("KO-"+5+"-"+listElemErreur);
+  if(nbErreur > 0){
+    response.json("KO-"+nbErreur+"-"+listElemErreur);
+    currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
+  }
+  else{
+    response.json("OK");
+  }
+});
+
 //Update valeur de l'élement de contrôle
 //?id=12&value=dhdhhd
 app.put("/updateMesureRonde", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE mesuresrondier SET value = '"+reqQ.value+"' WHERE id = "+ reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour de la valeur OK")
   });
 });
@@ -2190,7 +2532,9 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("SELECT e.Id as elementId, e.unit, e.typeChamp, e.valeurMin, e.valeurMax, e.defaultValue, m.Id, m.value, e.nom, m.modeRegulateur, z.nom as nomZone, r.Id as rondeId FROM mesuresrondier m INNER JOIN elementcontrole e ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId WHERE r.Id = "+reqP.idRonde+" ORDER BY z.nom ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2201,7 +2545,9 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
 app.get("/valueElementDay", async (request, response) =>  {
   const reqQ=request.query
   pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+reqQ.date+"' AND m.elementId = "+reqQ.id, async (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     valueElementDay = data['recordset'];
     data = data['recordset'];
     if(valueElementDay.length == 0){
@@ -2217,7 +2563,9 @@ app.get("/valueElementDay", async (request, response) =>  {
 async function valueElementDayAprem(date, id){
   return new Promise((resolve) => {
     pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 2 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       valueElementDay = data['recordset'];
       if(valueElementDay.length == 0){
         await valueElementDayMatin(date, id);
@@ -2232,7 +2580,9 @@ async function valueElementDayAprem(date, id){
 async function valueElementDayMatin(date, id){
   return new Promise((resolve) => {
     pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 1 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       valueElementDay = data['recordset'];
       resolve()
     }); 
@@ -2254,7 +2604,9 @@ app.put("/PermisFeu", middleware,(request, response) => {
 app.get("/PermisFeu/:idUsine", (request, response) => {
   const reqP=request.params
   pool.query("SELECT p.Id, CONCAT(CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureDeb as datetime2), 108)) as dateHeureDeb, CONCAT(CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 103),' ',CONVERT(varchar,CAST(p.dateHeureFin as datetime2), 108)) as dateHeureFin, b.uid as badge, p.badgeId, p.isPermisFeu, p.zone, p.numero FROM permisfeu p INNER JOIN badge b ON b.Id = p.badgeId WHERE b.idUsine = "+reqP.idUsine+" AND p.dateHeureDeb <= convert(varchar, getdate(), 120) AND p.dateHeureFin > convert(varchar, getdate(), 120)", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2277,7 +2629,9 @@ app.put("/VerifPermisFeu", (request, response) => {
 app.get("/PermisFeuVerification",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT pf.numero, pf.zone, p.rondeId, p.dateHeure, p.userId , p.permisFeuId, p.quart FROM permisfeuvalidation p INNER JOIN permisfeu pf ON pf.Id = p.permisFeuId INNER JOIN badge b ON pf.badgeId = b.Id WHERE b.idUsine = "+reqQ.idUsine+" AND p.dateHeure LIKE '%"+reqQ.dateHeure+"%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2312,7 +2666,9 @@ app.delete("/modeOP/:id", middleware,(request, response) => {
   fs.unlink(`fichiers/${reqQ.nom}`, () => {
     //Suppression en BDD du mode OP
     pool.query("DELETE FROM modeoperatoire WHERE Id = "+reqP.id, (err,data) => {
-      if(err) throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       response.json("Suppression du modeOP OK")
     });
   });
@@ -2322,7 +2678,9 @@ app.delete("/modeOP/:id", middleware,(request, response) => {
 app.get("/modeOPs/:idUsine", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT m.Id, m.nom, m.fichier, z.nom as nomZone FROM modeoperatoire m INNER JOIN zonecontrole z ON z.Id = m.zoneId WHERE z.idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2332,7 +2690,9 @@ app.get("/modeOPs/:idUsine", middleware,(request, response) => {
 app.get("/modeOPofZone/:zoneId", (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM modeoperatoire WHERE zoneId="+reqP.zoneId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2344,7 +2704,9 @@ app.put("/modeOP/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE modeoperatoire SET fichier = " + reqQ.fichier + " WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du modeOP OK")
   });
 });
@@ -2364,7 +2726,9 @@ app.put("/consigne", multer({storage: storage}).single('fichier'),(request, resp
   else requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine) OUTPUT INSERTED.Id VALUES ('"+titre+"','"+commentaire+"', '"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.type+", "+reqQ.idUsine+")"
   pool.query(requete
   ,(err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2383,11 +2747,27 @@ app.put("/updateConsigne", middleware,(request, response) => {
   });
 });
 
-//Récupérer les consignes en cours
+//Récupérer les consignes en cours à l'instant T
 app.get("/consignes/:idUsine", (request, response) => {
   const reqP=request.params
-  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type, url FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND date_heure_debut <= convert(varchar, getdate(), 120) AND date_heure_fin >= convert(varchar, getdate(), 120)", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupérer les consignes en cours entre 2 dates
+//?dateDeb=2024-11-01 05:00&dateFin=2024-11-01 13:00
+app.get("/consignesEntreDeuxDates/:idUsine", (request, response) => {
+  const reqP = request.params;
+  const reqQ = request.query;
+  pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, type, url FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine+" AND (('"+reqQ.dateDeb+"' BETWEEN date_heure_debut AND date_heure_fin) OR ('"+reqQ.dateFin+"' BETWEEN date_heure_debut AND date_heure_fin) OR (date_heure_debut BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"') OR (date_heure_fin BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"'))", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2397,18 +2777,23 @@ app.get("/consignes/:idUsine", (request, response) => {
 app.get("/allConsignes/:idUsine", (request, response) => {
   const reqP=request.params
   pool.query("SELECT titre, CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as dateHeureDebut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as dateHeureFin, commentaire, id, url, type FROM consigne WHERE isActive = 1 and idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
-//Récupérer toutes les consignes
-app.get("/getConsignesEntreDeuxDates", (request, response) => {
+//Récupérer toutes les consignes entre 2 dates => recherche également par titre de consigne
+//?idUsine=10&dateDeb=xxx&dateFin=yyyy&titre=test
+app.get("/getConsignesRecherche", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where  date_heure_debut < '"+reqQ.dateFin+"' and date_heure_fin > '"+reqQ.dateDeb+"' and isActive = 1 and commentaire like '%"+reqQ.titre+"%' and idUsine = "+reqQ.idUsine
+  pool.query("SELECT titre, 'Consigne' as 'typeDonnee',  CONCAT(CONVERT(varchar,CAST(date_heure_debut as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_debut as datetime2), 108)) as date_heure_debut, CONCAT(CONVERT(varchar,CAST(date_heure_fin as datetime2), 103),' ',CONVERT(varchar,CAST(date_heure_fin as datetime2), 108)) as date_heure_fin, commentaire as 'nom', id, type FROM consigne where date_heure_debut < '"+reqQ.dateFin+"' and date_heure_fin > '"+reqQ.dateDeb+"' and isActive = 1 and commentaire like '%"+reqQ.titre+"%' and idUsine = "+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2418,7 +2803,9 @@ app.get("/getConsignesEntreDeuxDates", (request, response) => {
 app.put("/consigne/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("update consigne set isActive = 0 WHERE id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de la consigne OK")
   });
 });
@@ -2429,7 +2816,7 @@ app.put("/consigne/:id",middleware, (request, response) => {
 app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, response) => {
   const reqQ=request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename}`;
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
   var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+reqQ.rondeId+", "+reqQ.zoneId+", '"+reqQ.commentaire+"', '"+url+"')";
   pool.query(query,(err,result,fields) => {
@@ -2445,7 +2832,9 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
 app.get("/anomalies/:id",(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM anomalie WHERE rondeId = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2453,10 +2842,11 @@ app.get("/anomalies/:id",(request, response) => {
 
 //Récupérer les anomalies d'une ronde
 app.get("/getAnomaliesOfOneRonde",(request, response) => {
-  const reqQ=request.query
-  console.log("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+ "%' and quart = " +reqQ.quart )
-  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart  , (err,data) => {
-    if(err) throw err;
+  const reqQ=request.query;
+  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart+" AND r.idUsine = " +reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2473,7 +2863,9 @@ app.get("/anomaliesEntreDeuxDates",(request, response) => {
   var dateDeFin = `${year2}-${month2}-${day2}`
   pool.query("select a.*, r.dateHeure, r.quart from anomalie a join ronde r on r.Id = a.rondeId where r.IdUsine = " + reqQ.idUsine +" and (convert(datetime, r.dateHeure, 103)) BETWEEN '"+ dateDeDebut +"' and '"+ dateDeFin +"'"
     , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2484,7 +2876,9 @@ app.get("/anomaliesEntreDeuxDates",(request, response) => {
 app.put("/updateAnomalie", (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE anomalie SET commentaire = '" + reqQ.commentaire + "' WHERE rondeId ="+ reqQ.rondeId +" AND zoneId =" + reqQ.zoneId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("OK")
   });
 });
@@ -2494,7 +2888,9 @@ app.put("/updateAnomalie", (request, response) => {
 app.put("/createAnomalie", (request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO anomalie(rondeId, zoneId, commentaire) VALUES ("+ reqQ.rondeId + "," + reqQ.zoneId + ",'" + reqQ.commentaire +"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("OK")
   });
 });
@@ -2511,18 +2907,36 @@ app.put("/equipe",middleware, (request, response) => {
   const reqQ = request.query
   const nomEquipe = reqQ.nomEquipe.replace(/'/g, "''");
   pool.query("INSERT INTO equipe(equipe,quart,idChefQuart,date) OUTPUT INSERTED.Id VALUES('"+nomEquipe+"',"+reqQ.quart+","+reqQ.idChefQuart+",'"+reqQ.date+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
 //Créer les nouveau rondier d'une équipe
-//?nomEquipe=test&quart=1&idChefQuart=1
+//?idRondier=2&idEquipe=1&idZone=1&poste=admin&heure_deb=05:00&heure_fin=13:00
 app.put("/affectationEquipe",middleware, (request, response) => {
   const reqQ = request.query
-  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+","+reqQ.idZone+",'"+reqQ.poste+"')", (err,data) => {
-    if(err) throw err;
+  pool.query("INSERT INTO affectation_equipe(idRondier,idEquipe,idZone,poste,heure_deb,heure_fin) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+","+reqQ.idZone+",'"+reqQ.poste+"','"+reqQ.heure_deb+"','"+reqQ.heure_fin+"')", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    //if (err) console.log(err);
+    response.json("Ajout ok");
+  });
+});
+
+//Changer les infos d'heures de quart pour les utilisateurs d'une equipe
+//?idRondier=1&idEquipe=1&typeInfo=heure_fin&valueInfo=13:00
+app.put("/updateInfosAffectationEquipe",middleware, (request, response) => {
+  const reqQ = request.query;
+  pool.query("UPDATE affectation_equipe SET "+reqQ.typeInfo+" = '"+reqQ.valueInfo+"' WHERE idRondier = "+reqQ.idRondier+" AND idEquipe = "+reqQ.idEquipe, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    //if (err) console.log(err);
     response.json("Ajout ok");
   });
 });
@@ -2533,7 +2947,9 @@ app.get("/usersRondierSansEquipe", middleware,(request, response) => {
   const reqQ=request.query
   //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
   pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " ORDER BY Nom", (err,data) => {
-  if(err) throw err;
+  if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2545,8 +2961,9 @@ app.get("/equipes", middleware,async (request, response) => {
   const reqQ=request.query
   pool.query("SELECT equipe.id, equipe.quart, equipe.equipe, users.Nom, users.Prenom, users.idUsine from equipe JOIN users ON users.Id = equipe.idChefQuart WHERE users.idUsine =" + reqQ.idUsine + " order by equipe.quart asc",
     async (err, data) => {
-      if (err)
-        throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       data = data['recordset'];
       for await (const equipe of data) {
         await getUsersEquipe(equipe);
@@ -2560,8 +2977,9 @@ function getUsersEquipe(equipe) {
   return new Promise((resolve) => {
     //Récupération des users d'une équipe
     pool.query("SELECT u.Nom, u.Prenom, z.nom as nomZone, a.poste FROM affectation_equipe a JOIN users u ON u.Id = a.idRondier LEFT OUTER JOIN zonecontrole z on z.Id = a.idZone WHERE a.idEquipe = " + equipe.id, (err, data) => {
-      if (err)
-        throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       data = data['recordset'];
       let OneEquipe = {
         id: equipe.id,
@@ -2581,8 +2999,10 @@ function getUsersEquipe(equipe) {
 //?idUsine=1&idEquipe=28
 app.get("/getOneEquipe", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart' FROM equipe FULL OUTER JOIN affectation_equipe ON equipe.Id = affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = affectation_equipe.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+reqQ.idEquipe, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT idRondier, zonecontrole.Id as 'idZone',equipe.id, equipe.equipe, equipe.quart, zonecontrole.nom as 'zone', poste, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' , chefQuart.Nom as 'nomChefQuart' , chefQuart.Prenom as 'prenomChefQuart', ae.heure_deb, ae.heure_fin, ae.heure_tp, ae.comm_tp FROM equipe FULL OUTER JOIN affectation_equipe ae ON equipe.Id = ae.idEquipe FULL OUTER JOIN users ON users.Id = ae.idRondier JOIN users as chefQuart ON chefQuart.Id = equipe.idChefQuart LEFT OUTER JOIN zonecontrole ON zonecontrole.Id = idZone WHERE equipe.id ="+reqQ.idEquipe, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2593,7 +3013,9 @@ app.get("/getOneEquipe", middleware,(request, response) => {
 app.put("/updateEquipe",middleware, (request, response) => {
   const reqQ = request.query
   pool.query("update equipe set equipe = '"+reqQ.nomEquipe +"', quart = "+reqQ.quart+" , idChefQuart = "+ reqQ.idChefQuart  +"where id = "+reqQ.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Update ok");
   });
 });
@@ -2602,7 +3024,9 @@ app.put("/updateEquipe",middleware, (request, response) => {
 app.delete("/deleteEquipe/:idEquipe", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM equipe WHERE id = "+reqP.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des Rondiers OK")
   });
 });
@@ -2611,17 +3035,21 @@ app.delete("/deleteEquipe/:idEquipe", middleware,(request, response) => {
 app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM affectation_equipe WHERE idEquipe = "+reqP.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des Rondiers OK")
   });
 });
 
 //Récupérer l'équipe d'un utilisateur POUR RONDIER
-//?idRondier
+//?idRondier=1
 app.get("/getEquipeUser", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +" ORDER BY e.date DESC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2632,7 +3060,9 @@ app.get("/getEquipeUser", (request, response) => {
 app.get("/getEquipeUserCahierQuart", (request, response) => {
   const reqQ=request.query
   pool.query("SELECT u.idRondier, e.quart, e.idChefQuart FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier + " and e.quart = " + reqQ.quart, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2645,7 +3075,9 @@ app.get("/getEquipeQuart", (request, response) => {
   const reqQ=request.query
   pool.query("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + reqQ.idUsine +" and e.quart =" + reqQ.quart +"and e.date='"+reqQ.date+"'", (err,data) => {
     if(err) {
+      //console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + reqQ.idUsine +" and e.quart =" + reqQ.quart +"and e.date='"+reqQ.date+"'");
       console.log(err);
+      //console.log("SELECT e.id from equipe e join affectation_equipe a ON a.idEquipe = e.id JOIN users u ON u.id = a.idRondier where u.idUsine =" + reqQ.idUsine +" and e.quart =" + reqQ.quart +"and e.date='"+reqQ.date+"'");
       response.json("erreur");
     }
     else {
@@ -2669,7 +3101,9 @@ app.get("/getEquipeQuart", (request, response) => {
 app.put("/enregistrementEquipe",middleware, (request, response) => {
   const reqQ = request.query
   pool.query("INSERT INTO enregistrement_equipe(equipe) OUTPUT INSERTED.Id VALUES('"+reqQ.nomEquipe+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2679,7 +3113,9 @@ app.put("/enregistrementEquipe",middleware, (request, response) => {
 app.delete("/deleteEnregistrementAffectationEquipe/:idEquipe", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM enregistrement_affectation_equipe WHERE idEquipe = "+reqP.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des Rondiers OK")
   });
 });
@@ -2689,7 +3125,9 @@ app.delete("/deleteEnregistrementAffectationEquipe/:idEquipe", middleware,(reque
 app.delete("/deleteEnregistrementEquipe/:idEquipe", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM enregistrement_equipe WHERE id = "+reqP.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression des Rondiers OK")
   });
 });
@@ -2700,7 +3138,9 @@ app.delete("/deleteEnregistrementEquipe/:idEquipe", middleware,(request, respons
 app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
   const reqQ = request.query
   pool.query("update enregistrement_equipe set equipe = '"+reqQ.nomEquipe+"' where id = "+reqQ.idEquipe, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Update ok");
   });
 });
@@ -2709,8 +3149,10 @@ app.put("/updateEnregistrementEquipe",middleware, (request, response) => {
 //idEquipe=28
 app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier' FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+reqQ.idEquipe, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT idRondier, enregistrement_equipe.id, enregistrement_equipe.equipe, users.Nom as 'nomRondier', users.Prenom as 'prenomRondier', users.posteUser FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE enregistrement_equipe.id ="+reqQ.idEquipe, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2721,7 +3163,9 @@ app.get("/getOneEnregistrementEquipe", middleware,(request, response) => {
 app.get("/getNomsEquipesEnregistrees", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT distinct enregistrement_equipe.id, enregistrement_equipe.equipe FROM enregistrement_equipe FULL OUTER JOIN enregistrement_affectation_equipe ON enregistrement_equipe.Id = enregistrement_affectation_equipe.idEquipe FULL OUTER JOIN users ON users.Id = enregistrement_affectation_equipe.idRondier WHERE users.idUsine =" +reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2733,8 +3177,9 @@ app.get("/getEquipesEnregistrees", middleware,async (request, response) => {
   const reqQ=request.query
   pool.query("SELECT distinct e.id, e.equipe from enregistrement_equipe e JOIN enregistrement_affectation_equipe a ON a.idEquipe = e.id JOIN users u on u.Id = a.idRondier WHERE u.idUsine =" + reqQ.idUsine ,
     async (err, data) => {
-      if (err)
-        throw err;
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       data = data['recordset'];
       for await (const equipe of data) {
         await getUsersEnregistrementEquipe(equipe);
@@ -2747,9 +3192,10 @@ app.get("/getEquipesEnregistrees", middleware,async (request, response) => {
 function getUsersEnregistrementEquipe(equipe) {
   return new Promise((resolve) => {
     //Récupération des users d'une équipe
-    pool.query("SELECT u.Nom, u.Prenom FROM enregistrement_affectation_equipe a JOIN users u ON u.Id = a.idRondier WHERE a.idEquipe = " + equipe.id, (err, data) => {
-      if (err)
-        throw err;
+    pool.query("SELECT u.Nom, u.Prenom, u.posteUser FROM enregistrement_affectation_equipe a JOIN users u ON u.Id = a.idRondier WHERE a.idEquipe = " + equipe.id, (err, data) => {
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
       data = data['recordset'];
       let OneEquipe = {
         id: equipe.id,
@@ -2767,7 +3213,9 @@ function getUsersEnregistrementEquipe(equipe) {
 app.put("/enregistrementAffectationEquipe",middleware, (request, response) => {
   const reqQ = request.query
   pool.query("INSERT INTO enregistrement_affectation_equipe(idRondier,idEquipe) VALUES("+reqQ.idRondier+","+reqQ.idEquipe+")", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Ajout ok");
   });
 });
@@ -2788,7 +3236,9 @@ app.put("/enregistrementAffectationEquipe",middleware, (request, response) => {
 app.get("/getOneLocalisation/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT localisation FROM site WHERE id = " + reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2799,7 +3249,9 @@ app.get("/getOneLocalisation/:id", middleware,(request, response) => {
 app.get("/sites", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' ORDER BY localisation ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2810,7 +3262,9 @@ app.get("/sites", middleware,(request, response) => {
 app.get("/sitesAveva", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM site WHERE codeUsine NOT LIKE '000' and ipAveva !='' ORDER BY localisation ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2821,7 +3275,9 @@ app.get("/sitesAveva", middleware,(request, response) => {
 app.get("/nbLigne/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT nbLigne FROM site WHERE id ="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2832,7 +3288,9 @@ app.get("/nbLigne/:id", middleware,(request, response) => {
 app.get("/nbLigneChiffre/:id",(request, response) => {
   const reqP=request.params
   pool.query("SELECT nbLigne FROM site WHERE id ="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length>0){
       response.json(data[0].nbLigne)
@@ -2845,7 +3303,9 @@ app.get("/nbLigneChiffre/:id",(request, response) => {
 app.get("/nbGTA/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT nbGTA FROM site WHERE id ="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2855,7 +3315,9 @@ app.get("/nbGTA/:id", middleware,(request, response) => {
 app.get("/nbRCU/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT nbReseauChaleur FROM site WHERE id ="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2865,7 +3327,9 @@ app.get("/nbRCU/:id", middleware,(request, response) => {
 app.get("/typeImport/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT typeImport FROM site WHERE id ="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2876,7 +3340,9 @@ app.get("/typeImport/:id",middleware, (request, response) => {
 app.get("/typeRondier/:id",(request, response) => {
   const reqP=request.params
   pool.query("SELECT typeRondier FROM site WHERE id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length>0){
       response.json(data[0].typeRondier)
@@ -2899,7 +3365,9 @@ app.get("/typeRondier/:id",(request, response) => {
 app.get("/rapports/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM rapport WHERE idUsine="+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -2919,7 +3387,9 @@ app.get("/rapports/:id",middleware, (request, response) => {
 app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM products_new WHERE (TAG IS NULL OR TAG = '/') AND idUsine = " +reqP.id+ " ORDER BY Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -2930,7 +3400,9 @@ app.get("/ProductWithoutTag/:id", middleware,(request, response) => {
 app.get("/ProductEveler", middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new WHERE TAG LIKE 'EVELER%'", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -2942,7 +3414,9 @@ app.put("/productTAG/:id", middleware,(request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE products_new SET TAG = '" + reqQ.TAG + "', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = null WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du TAG OK")
   });
 });
@@ -2955,7 +3429,9 @@ app.put("/productElementRondier", middleware,(request, response) => {
   if(reqQ.idElementRondier == 0) idElem = null 
   else idElem = reqQ.idElementRondier
   pool.query("UPDATE products_new SET TAG = '', LastModifiedDate = convert(varchar, getdate(), 120), idElementRondier = " + idElem + " WHERE Id = "+reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du TAG OK")
   });
 });
@@ -2966,7 +3442,9 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE products_new SET CodeEquipement = '" + reqQ.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du Code OK")
   });
 });
@@ -2977,7 +3455,9 @@ app.put("/productCodeEquipement/:id",middleware, (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE products_new SET CodeEquipement = '" + reqQ.CodeEquipement + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du Code OK")
   });
 });
@@ -2988,7 +3468,9 @@ app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
   const reqQ=request.query
   const reqP=request.params
   pool.query("UPDATE products_new SET Coefficient = '" + reqQ.coeff + "', LastModifiedDate = convert(varchar, getdate(), 120) WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour du Coeff OK")
   });
 });
@@ -3006,7 +3488,9 @@ app.put("/productUpdateCoeff/:id",middleware, (request, response) => {
 app.get("/Maintenance", middleware, (request, response) => {
   const reqQ=request.query
   pool.query("SELECT FORMAT(dateHeureDebut, 'dd/MM/yyyy HH:mm:ss') as dateHeureDebut, FORMAT(dateHeureFin, 'dd/MM/yyyy HH:mm:ss') as dateHeureFin FROM maintenance WHERE getDate() < dateHeureDebut", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     if(data.length>0){
       response.json(data[0])
@@ -3030,7 +3514,9 @@ app.put("/accesToken", middleware,(request, response) => {
   const token =  jwt.sign({token :"ffrezqskz7f" }, process.env.ACESS_TOKEN_SECRET);
   const reqQ=request.query
   pool.query("INSERT INTO token(token,affectation) VALUES ('Bearer " + token + "', '" + reqQ.affectation + "')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json(token);
   });
 });
@@ -3038,7 +3524,9 @@ app.put("/accesToken", middleware,(request, response) => {
 //Requête permettant de récupérer les tokens actifs générés manuellement.
 app.get("/allAccesTokens", middleware,(request, response) => {
   pool.query("SELECT * FROM token where Enabled = 1", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3049,7 +3537,9 @@ app.get("/allAccesTokens", middleware,(request, response) => {
 app.put("/desactivateToken", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE token SET Enabled = 0 WHERE Id = "+reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du token OK")
   });
 });
@@ -3059,7 +3549,9 @@ app.put("/desactivateToken", middleware,(request, response) => {
 app.put("/updateToken", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("UPDATE token SET affectation = '" + reqQ.affectation +"' WHERE Id = "+reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3068,7 +3560,9 @@ app.put("/updateToken", middleware,(request, response) => {
 app.get("/unauthorizedTokens",
 (request, response) => {
   pool.query("SELECT token FROM token where Enabled = 0", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3092,7 +3586,9 @@ app.get("/getMoralEntitiesAndCorrespondance",middleware,(request, response) => {
   "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
   "FULL OUTER JOIN import_tonnage i ON i.ProducerId = mr.Id "+
   "WHERE mr.idUsine = "+reqQ.idUsine+" AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Enabled = 1 AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY mr.Name ASC", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3104,7 +3600,9 @@ app.get("/getSortantsAndCorrespondance",middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new p JOIN import_tonnageSortants i ON i.ProductId = p.Id WHERE p.typeId = 5 and p.idUsine = " +reqQ.idUsine + "and p.Code LIKE '" +reqQ.Code +"%'"
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3116,7 +3614,9 @@ app.get("/getReactifsAndCorrespondance",middleware,(request, response) => {
   const reqQ=request.query
   pool.query("SELECT * FROM products_new p JOIN import_tonnageReactifs i ON i.ProductId = p.Id WHERE p.idUsine = " +reqQ.idUsine 
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3129,7 +3629,9 @@ app.get("/getReactifsAndCorrespondance",middleware,(request, response) => {
 app.put("/import_tonnage",middleware,(request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO import_tonnage (ProductId, ProducerId,idUsine, nomImport, productImport) VALUES ("+reqQ.ProductId+","+reqQ.ProducerId+","+reqQ.idUsine+",'"+reqQ.nomImport+"','"+reqQ.productImport+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3138,7 +3640,9 @@ app.put("/import_tonnage",middleware,(request, response) => {
 app.put("/import_tonnageSortant",middleware,(request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO import_tonnageSortants (ProductId,idUsine, productImport) VALUES ("+reqQ.ProductId+","+reqQ.idUsine+",'"+reqQ.productImport+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3147,7 +3651,9 @@ app.put("/import_tonnageSortant",middleware,(request, response) => {
 app.put("/import_tonnageReactif",middleware,(request, response) => {
   const reqQ=request.query
   pool.query("INSERT INTO import_tonnageReactifs (ProductId,idUsine, productImport) VALUES ("+reqQ.ProductId+","+reqQ.idUsine+",'"+reqQ.productImport+"')", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3157,7 +3663,9 @@ app.put("/import_tonnageReactif",middleware,(request, response) => {
 app.get("/correspondance/:Id",middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM import_tonnage where ProducerId ="+reqP.Id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3167,7 +3675,9 @@ app.get("/correspondance/:Id",middleware,(request, response) => {
 app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM import_tonnageSortants WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de la correspondance OK")
   });
 });
@@ -3176,7 +3686,9 @@ app.delete("/deleteCorrespondance/:id", middleware,(request, response) => {
 app.delete("/deleteCorrespondanceReactif/:id", middleware,(request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM import_tonnageReactifs WHERE Id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de la correspondance OK")
   });
 });
@@ -3185,7 +3697,9 @@ app.delete("/deleteCorrespondanceReactif/:id", middleware,(request, response) =>
 app.put("/updateCorrespondance",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE import_tonnage SET nomImport='"+ reqQ.nomImport+"', productImport ='"+ reqQ.productImport+"' WHERE ProducerId =" +reqQ.ProducerId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3195,7 +3709,9 @@ app.put("/updateCorrespondance",middleware, (request, response) => {
 app.put("/updateNomImportCorrespondanceSortant",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE import_tonnageSortants SET productImport ='"+ reqQ.productImport+"' WHERE ProductId =" +reqQ.ProductId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3205,7 +3721,9 @@ app.put("/updateNomImportCorrespondanceSortant",middleware, (request, response) 
 app.put("/updateProductImportCorrespondanceSortant",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE import_tonnageSortants SET ProductId =" +reqQ.ProductId +"WHERE id =" + reqQ.idCorrespondance, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3215,7 +3733,9 @@ app.put("/updateProductImportCorrespondanceSortant",middleware, (request, respon
 app.put("/updateNomImportCorrespondanceReactif",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE import_tonnageReactifs SET productImport ='"+ reqQ.productImport+"' WHERE ProductId =" +reqQ.ProductId, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3225,7 +3745,9 @@ app.put("/updateNomImportCorrespondanceReactif",middleware, (request, response) 
 app.put("/updateProductImportCorrespondanceReactif",middleware, (request, response) => {
   const reqQ=request.query
   pool.query("UPDATE import_tonnageReactifs SET ProductId =" +reqQ.ProductId +"WHERE id =" + reqQ.idCorrespondance, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Mise à jour OK")
   });
 });
@@ -3234,7 +3756,9 @@ app.put("/updateProductImportCorrespondanceReactif",middleware, (request, respon
 app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM import_tonnage where idUsine ="+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3244,7 +3768,9 @@ app.get("/getCorrespondance/:idUsine",middleware,(request, response) => {
 app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM import_tonnageSortants where idUsine ="+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3254,7 +3780,9 @@ app.get("/getCorrespondanceSortants/:idUsine",middleware,(request, response) => 
 app.get("/getCorrespondanceReactifs/:idUsine",middleware,(request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM import_tonnageReactifs where idUsine ="+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3263,7 +3791,9 @@ app.get("/getCorrespondanceReactifs/:idUsine",middleware,(request, response) => 
 //Requête permettant de récupérer toutes les conversion de mesure disponibles
 app.get("/getConversions",middleware,(request, response) => {
   pool.query("SELECT * FROM conversion", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data}) 
   });
@@ -3296,7 +3826,9 @@ app.put("/formulaire", middleware,(request, response) => {
 app.get("/formulaires", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT * FROM formulaire WHERE idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3317,7 +3849,9 @@ app.get("/formulaires", middleware,(request, response) => {
 app.get("/getOneConsigne", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT * FROM consigne WHERE id = "+reqQ.idConsigne, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3326,29 +3860,81 @@ app.get("/getOneConsigne", middleware,(request, response) => {
 //////////ACTU//////////
 
 //Créer une actu
-//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idUsine=30&description=deeeeeeec&isQuart=1&maillist=jsjsjs
 app.put("/actu", middleware,(request, response) => {
   const reqQ=request.query;
   const titre = reqQ.titre.replace(/'/g, "''");
   const description = reqQ.description.replace(/'/g, "''");
+  /* MAIL */
+  //SI on a une maillist => on va envoyer un mail pour notifier les destinataires de la création de l'actu
+  if(reqQ.maillist != ""){
+    //Transciption int importance en chaine
+    let importanceString = "";
+    let importanceColor = "";
+    let colorTitre = "";
+    if(reqQ.importance == 0) {
+      importanceString = "Faible";
+      importanceColor = "rgb(154,196,89)";
+    }
+    else if(reqQ.importance == 1) {
+      importanceString = "Neutre";
+      importanceColor = "orange";
+    } 
+    else {
+      importanceString = "Elevée";
+      importanceColor = "red";
+      colorTitre = " color:red;";
+    }
+    //On va split la description par rapport au passage à la ligne
+    let tabDescription = description.split("\n");
+    let htmlDescription = "";
+    tabDescription.forEach((desc) => {
+      htmlDescription += "<p style='color:rgb(27,37,51);'>"+desc+"</p>";
+    });
+    htmlDescription += "<p style='color:"+importanceColor+"'>Importance : "+importanceString+"</p>";
+    //on va créer des formats de date plus sympa
+    let dateDebFormat = reqQ.dateDeb.substring(8,10)+"/"+reqQ.dateDeb.substring(5,7)+"/"+reqQ.dateDeb.substring(0,4)+" "+reqQ.dateDeb.substring(11,16);
+    let dateFinFormat = reqQ.dateFin.substring(8,10)+"/"+reqQ.dateFin.substring(5,7)+"/"+reqQ.dateFin.substring(0,4)+" "+reqQ.dateFin.substring(11,16);
+    //Préparation du mail
+    const message = {
+      from: process.env.USER_SMTP, // Sender address
+      to: reqQ.maillist,
+      subject: 'Actualité du '+dateDebFormat+' au '+dateFinFormat, // Subject line
+      html: "<h3>Voici les informations concernant l'actualité sur la période suivante : "+dateDebFormat+" au "+dateFinFormat+"</h3>"+
+      "<div style='height:max-content; box-shadow: 7px 7px 6px lightgray; border-radius : 10px; display:flex; margin: 2em; border: 1px solid rgba(0, 0, 0, 0.125); background-color:rgb(84,149,216); padding:1px;'>"+
+      "<div>"+
+      "<h3 style='text-shadow:none; margin-top:1em; border-bottom:solid white 2px; padding-bottom:1em;"+colorTitre+"'>"+titre+"</h3>"+htmlDescription+
+      "</div></div>"//Cors du mail en HTML
+    };
+
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        //currentLineError=currentLine(); throw err;
+      } else {
+        console.log('***'+new Date()+' - Email sent to '+reqQ.maillist+' : ' + info.response);
+      }
+    });
+  }
+  /* FIN MAIL */
   pool.query("INSERT INTO quart_actualite(idUsine,titre,importance,date_heure_debut,date_heure_Fin,isValide,description) OUTPUT INSERTED.Id "
-            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"',0,'"+description+"')"
+            +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"','"+reqQ.isQuart+"','"+description+"')"
   ,(err,data) => {
-    if(err) throw(err)
+    if(err) throw err
     data = data['recordset'];
     response.json({data});
   });
 });
 
 //Modifier une actu
-//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1&description=deeeeeeec
+//?titre=test&importance=0&dateDeb=2024-01-10 10:00&dateFin=2024-01-10 10:00&idActu=1&description=deeeeeeec&isQuart=1
 app.put("/updateActu", middleware,(request, response) => {
   const reqQ=request.query;
   const titre = reqQ.titre.replace(/'/g, "''");
   const description = reqQ.description.replace(/'/g, "''");
-  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', description = '"+description+"' WHERE id="+reqQ.idActu
+  pool.query("UPDATE quart_actualite SET titre ='" +titre +"',importance="+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', description = '"+description+"', isValide = '"+reqQ.isQuart+"' WHERE id="+reqQ.idActu
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'actu OK !");
   });
 });
@@ -3358,7 +3944,9 @@ app.put("/updateActu", middleware,(request, response) => {
 app.get("/getActusRonde", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT a.id, a.titre, a.description, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance FROM quart_actualite a WHERE a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3369,7 +3957,9 @@ app.get("/getActusRonde", middleware,(request, response) => {
 app.get("/getOneActu", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT * FROM quart_actualite WHERE id = "+reqQ.idActu, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3380,7 +3970,9 @@ app.get("/getOneActu", middleware,(request, response) => {
 app.get("/getAllActu", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a WHERE idUsine = "+reqQ.idUsine +" ORDER BY date_heure_debut desc", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3395,43 +3987,71 @@ app.get("/getActusEntreDeuxDates", middleware,(request, response) => {
     importance = ''
   }
   pool.query("SELECT 'Actualité' as 'typeDonnee', a.id, a.description, a.titre as 'nom', a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide  FROM quart_actualite a where  a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and a.titre like '%"+reqQ.titre+"%' and a.importance like '%"+importance+"%' and a.idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
 
-//Récupérer toutes les actualités actives
-//?idUsine=7
-app.get("/getActusActives", middleware,(request, response) => {
+//Récupérer toutes les actualités avec isActive en param, actives -> étant lié à un quart
+//?idUsine=7&isQuart=1
+app.get("/getActusQuart", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.isValide = "+reqQ.isQuart+" AND a.date_heure_debut <= GETDATE() AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
-//Terminer une actu
+//Récupérer toutes les actualités ayant la date courante entre la date de début et la date de fin
+//?idUsine=7
+app.get("/getAllActuDateCourante", middleware,(request, response) => {
+  const reqQ=request.query;
+  pool.query("SELECT a.id, a.titre, a.description, a.idUsine, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.importance, a.isValide FROM quart_actualite a WHERE a.date_heure_debut <= GETDATE() AND a.date_heure_fin >= GETDATE() and  idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//passer une actu à isActive 1 pour l'afficher dans un récap de quart
 //?idActu=1
 app.put("/validerActu", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE quart_actualite SET isValide = 1 WHERE id="+reqQ.idActu
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'actu OK !");
   });
 });
 
-//Terminer une actu
+//passer une actu à isActive 0 pour l'afficher dans l'acceuil
 //?idActu=1
 app.put("/invaliderActu", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE quart_actualite SET isValide = 0 WHERE id="+reqQ.idActu
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'actu OK !");
+  });
+});
+
+//DELETE actu
+app.put("/deleteActu/:id",middleware, (request, response) => {
+  const reqP=request.params
+  pool.query("DELETE FROM quart_actualite WHERE id = "+reqP.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Suppression de l'actu OK")
   });
 });
 
@@ -3456,7 +4076,7 @@ app.put("/evenement",multer({storage: storage}).single('fichier'),(request, resp
   pool.query("INSERT INTO quart_evenement(idUsine,titre,importance,date_heure_debut,date_heure_Fin,groupementGMAO, equipementGMAO, description, cause, consigne, demande_travaux,url) OUTPUT INSERTED.Id "
             +"VALUES("+reqQ.idUsine+",'"+titre+"',"+reqQ.importance+",'"+reqQ.dateDeb+"','"+reqQ.dateFin+"','"+groupementGMAO+"','"+equipementGMAO+"','"+description+"','"+cause+"',"+reqQ.consigne+",'"+reqQ.demandeTravaux+"','"+url+"')"
   ,(err,data) => {
-      if(err) throw(err)
+      if(err) throw err
       else {  
         data = data['recordset'];
         response.json({data});
@@ -3475,7 +4095,7 @@ app.put("/updateEvenement",middleware,(request, response) => {
   const description = reqQ.description.replace(/'/g, "''");
   pool.query("UPDATE quart_evenement SET titre = '"+titre+"',importance = "+reqQ.importance+",date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"',groupementGMAO='"+groupementGMAO+"', equipementGMAO='"+equipementGMAO+"', description='"+description+"', cause='"+cause+"', consigne="+reqQ.consigne+", demande_travaux='"+reqQ.demandeTravaux+"' where id="+reqQ.idEvenement
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modification de l'evenement OK !");
   });
 });
@@ -3485,7 +4105,9 @@ app.put("/updateEvenement",middleware,(request, response) => {
 app.get("/getOneEvenement", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT * FROM quart_evenement WHERE id = "+reqQ.idEvenement, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3495,8 +4117,10 @@ app.get("/getOneEvenement", middleware,(request, response) => {
 //?idUsine=7
 app.get("/getAllEvenement", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url FROM quart_evenement e WHERE e.isActive = 1 and idUsine = "+reqQ.idUsine+" ORDER BY e.date_heure_debut DESC", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3515,7 +4139,9 @@ app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
   const equipementGMAO = reqQ.equipementGMAO.replace(/'/g, "''");
   pool.query("SELECT 'Evènement' as 'typeDonnee', e.id, e.titre as 'nom', e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e where  e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and e.titre like '%"+titre+"%' and e.groupementGMAO like '%"+groupementGMAO+"%' and e.importance like '%"+importance+"%' and e.equipementGMAO like '%"+equipementGMAO+"%' and e.isActive = 1 and e.idUsine = "+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3525,7 +4151,9 @@ app.get("/getEvenementsEntreDeuxDates", middleware,(request, response) => {
 app.put("/deleteEvenement/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("UPDATE quart_evenement set isActive = 0 WHERE id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de l'evenement OK")
   });
 });
@@ -3539,7 +4167,9 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3550,7 +4180,9 @@ app.get("/getAllZonesCalendrier", middleware,(request, response) => {
 app.get("/getAllActionsCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select a.nom, c.* from quart_calendrier c full outer join quart_action a on a.id = c.idAction where c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3563,19 +4195,19 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
   pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
             +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Création de l'instance OK !");
   });
 });
 
 //Créer une instance pour les ACTIONS
-//?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1
+//?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1&termine=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Création de l'instance OK !");
   });
 });
@@ -3588,7 +4220,10 @@ app.put("/newAction", middleware,(request, response) => {
   pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
             +"VALUES("+reqQ.idUsine+",'"+nom+"','"+reqQ.dateDeb+"','"+reqQ.dateFin+"')"
     ,(err,data) => {
-    if(err) throw(err)
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    //if(err) console.log(err);
     data = data['recordset'];
     response.json({data});
   });
@@ -3598,21 +4233,60 @@ app.put("/newAction", middleware,(request, response) => {
 app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("DELETE FROM quart_calendrier WHERE id = "+reqP.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de l'evenement du calendrier OK")
+  });
+});
+
+//Récupérer les évènement suivant de l'occurence pour supprimer une occurence complète
+app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
+  const reqP=request.params
+  //ON récupère déjà les infos de l'event choisi
+  pool.query("SELECT * from quart_calendrier WHERE id = "+reqP.id, (err,event) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    event = event['recordset'][0];
+    //ON récupère les infos de l'action associé
+    pool.query("SELECT * from quart_action WHERE id = "+event.idAction, (err,action) => {
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
+      action = action['recordset'][0];
+      //On récupère la liste des actions lié
+      pool.query("SELECT id FROM quart_action WHERE idUsine = "+action.idUsine+" AND nom = '"+action.nom+"'", (err,data) => {
+        if(err){
+          currentLineError=currentLine(); throw err;
+        }
+        data = data['recordset'];
+        //Pour chaque action on supprime dans le calendrier celle sur le quart
+        for (const actions of data) {
+          pool.query("DELETE FROM quart_calendrier WHERE idAction = "+actions.id+" AND quart = "+event.quart, (err,data) => {
+            if(err){
+              //currentLineError=currentLine(); throw err;
+              console.log(err);
+            }
+          });
+        };
+        response.json("Suppression de l'occurence du calendrier OK");
+      });
+    });
   });
 });
 
 
 //ACCUEIL /////
 
-//Récupérer toutes les zones présentes dans la table calndrier pour une usine
+//Récupérer tout les evenements d'un quart
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getEvenementsRonde", middleware,(request, response) => {
   const reqQ=request.query;
-  console.log("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine,)
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.isActive = 1 and e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3624,19 +4298,29 @@ app.get("/getActionsRonde", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+reqQ.dateDeb+"' and a.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
 
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
 //Récupérer les zone affectée à une ronde
-//?idUsine=1&datedeb=''&dateFin=''
+//?idUsine=1&datedeb=''&idZone=3
 app.get("/getZonesCalendrierRonde",(request, response) => {
   const reqQ=request.query;
   BadgeAndElementsOfZone = [];
-  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin',c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and c.idZone is not null and c.idUsine = "+reqQ.idUsine, async (err,data) => {
-    if(err) throw err;
+  let condZone = "";
+  //Si on est sur calce (idUsine 7) alors on récupère seulement 1 zone
+  if(reqQ.idUsine == 7 && reqQ.idZone){
+    condZone = "c.idZone = "+reqQ.idZone
+  }
+  else condZone = "c.idZone is not null"
+  pool.query("select c.id, c.idUsine, c.idZone, u.nom as 'nomRondier', u.prenom as 'prenomRondier', c.idZone as 'zoneId', z.nom as 'nomZone', z.commentaire, z.four , c.idAction, CONVERT(varchar, c.date_heure_debut, 103)+ ' ' + CONVERT(varchar, c.date_heure_debut, 108) as 'date_heure_debut',CONVERT(varchar, c.date_heure_fin, 103)+ ' ' + CONVERT(varchar, c.date_heure_fin, 108) as 'date_heure_fin', c.quart, c.termine, b.uid as 'uidBadge' from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone full outer join users u on u.id = c.idUser full outer join badge b on b.zoneId = z.id where c.date_heure_debut = '"+reqQ.dateDeb+"' and "+condZone+" and c.idUsine = "+reqQ.idUsine, async (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
@@ -3650,7 +4334,6 @@ app.get("/getZonesCalendrierRonde",(request, response) => {
   });
 });
 
-
 ////FIN ACCUEIL///
 
 //ACTIONS////
@@ -3660,7 +4343,9 @@ app.get("/getZonesCalendrierRonde",(request, response) => {
 app.get("/getAllAction", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin' from quart_action a where a.idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3671,7 +4356,9 @@ app.get("/getAllAction", middleware,(request, response) => {
 app.get("/getOneAction", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("SELECT * FROM quart_action WHERE id = "+reqQ.idAction, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3684,7 +4371,7 @@ app.put("/updateAction", middleware,(request, response) => {
   const nom = reqQ.nom.replace(/'/g, "''");
   pool.query("UPDATE quart_action SET nom ='" +nom +"',date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"' WHERE id="+reqQ.idAction
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'actu OK !");
   });
 });
@@ -3695,7 +4382,7 @@ app.put("/updateCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE quart_calendrier SET date_heure_debut='"+reqQ.dateDeb+"',date_heure_Fin='"+reqQ.dateFin+"', quart="+reqQ.quart+" WHERE idAction="+reqQ.idAction
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'actu OK !");
   });
 });
@@ -3706,13 +4393,56 @@ app.put("/updateCalendrierAction", middleware,(request, response) => {
 app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select 'Action' as 'typeDonnee', a.nom, CONVERT(varchar, a.date_heure_debut, 103)+ ' ' + CONVERT(varchar, a.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, a.date_heure_fin, 103)+ ' ' + CONVERT(varchar, a.date_heure_fin, 108) as 'date_heure_fin', a.id from quart_action a where  a.date_heure_debut < '"+reqQ.dateFin+"' and a.date_heure_fin > '"+reqQ.dateDeb+"' and a.nom like '%"+reqQ.titre+"%' and a.idUsine = "+reqQ.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
 });
 
 
+/** Stockage des fichiers PDF de fin de quart */
+//?idUsine=1&quart=Matin&date=
+//passage du fichier dans un formData portant le nom 'fichier'
+app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (request, response) => {
+  const reqQ=request.query;
+  let maillist = '';
+  //création de l'url de stockage du fichier
+  //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //on utilise l'url publique
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  pool.query("SELECT * FROM users WHERE isAdmin = 1 AND idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    data.forEach(user => {
+      if(user.email.length > 0) maillist += user.email+';';
+    });
+
+    /** ENVOI MAIL */
+    //Préparation du mail
+    const message = {
+      from: process.env.USER_SMTP, // Sender address
+      to: maillist,
+      subject: "Récapitulatif quart : "+reqQ.quart+" - "+reqQ.date, // Subject line
+      html: "<h3>Voici le lien pour visualiser le PDF de récap de quart : <a href='"+url+"'>"+url+"</a></h3>"//Cors du mail en HTML
+    };
+
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        response.json("Envoi mail KO");
+        //currentLineError=currentLine(); throw err;
+      } else {
+        console.log('*** Récap PDF ***'+new Date()+' - Email sent to '+maillist+' : ' + info.response);
+        response.json("Envoi mail OK");
+      }
+    });
+    /** FIN ENVOI MAIL */
+  });
+});
 
 
 //////////////////////////
@@ -3818,7 +4548,7 @@ app.put("/registreDNDTS", middleware,(request, response) => {
     +"'"+request.body.data[i].siret+"')"
     +"END;"
     ,(err,result) => {
-        if(err) throw(err)
+        if(err) throw err
     });
   }
   response.json("Insertion");
@@ -3831,7 +4561,9 @@ app.get("/getRegistreDNDTSEntrants", middleware,(request, response) => {
   // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
   pool.query("select numDePesee as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateReception', LEFT(RIGHT(date1,8),5) as 'heurePeseeDechet', REPLACE(RIGHT(nomProduit,8),'-',' ') as 'codeDechet', nomProduit as 'denominationUsuelle', 'B3020' as 'codeDechetBale', REPLACE(CAST(net AS INT)/1000.000,',','.') as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle', 'ENTREPRISE_FR' as 'expediteur.type', '' as 'expediteur.adressePriseEnCharge', nomClient as 'expediteur.raisonSociale', siret as 'expediteur.numeroIdentification', codePostalClient as 'expediteur.adresse.codePostal', villeClient as 'epediteur.adresse.commune', 'FR' as 'expediteur.adresse.pays', adresseClient as 'expediteur.adresse.libelle', 'ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', 'R1' as 'codeTraitement', '' as 'numeroDocument', '' as 'numeroNotification',numDePesee as 'numeroSaisie' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"' and type='RECEPTION' and idUsine ="+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3844,7 +4576,9 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
   // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
   pool.query("select '' as 'identifiantMetier', 'NON' as 'dechetPOP', LEFT(date1,10) as 'dateExpedition', RIGHT(nomProduit,8) as 'codeDechet',nomProduit as 'denominationUsuelle', '' as 'codeDechetBale', CAST(net AS INT)/1000.000 as 'quantite', 'T' as 'codeUnite', 'ENTREPRISE_FR' as 'producteur.type', nomClient as 'producteur.raisonSociale', siret as 'producteur.numeroIdentification', codePostalClient as 'porducteur.codePostal', villeClient as 'producteur.adresse.commune', 'FR' as 'producteur.adresse.pays', adresseClient as 'producteur.adresse.libelle', '' as 'communes.codeInsee', '' as 'communes.libelle','ENTREPRISE_FR' as 'transporteur.type', nomClient as 'transporteur.raisonSociale', siret as 'transporteur.numeroIdentification', codePostalClient as 'transporteur.adresse.codePostal', villeClient as 'tansporteur.adresse.commune', 'FR' as 'transporteur.adresse.pays', adresseClient as 'transporteur.adresse.libelle','' as 'transporteurs.numeroRecipisse', '' as 'courtier.type', '' as 'courtier.numeroRecipisse', '' as 'courtier.raisonSociale', '' as 'courtier.numeroIdentification', '' as 'ecoOrganisme.type', '' as 'ecoOrganisme.raisonSociale', '' as 'ecoOrganisme.numeroIdentification', '' AS 'destinataire.type', '' AS 'destinataire.raisonSociale', '' as 'destinataire.numeroIdentification', '' as 'destinataire.adresse.codePostal', '' as 'destinataire.adresse.commune', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.pays', '' as 'destinataire.adresse.libelle', '' as 'destinataire.adresseDestination', 'R1' as 'codeTraitement', '' as 'codeQualification', '' as 'numeroDocument', '' as 'numeroNotification', '' as 'numeroSaisie', '' as 'etablissementOrigine.adresse.codePostal', '' as 'etablissementOrigine.adresse.commune', '' as 'etablissementOrigine.adresse.pays', '' as 'etablissementOrigine.adress.libelle', '' as 'etablissementOrigine.adressePriseEnCharge' from registre_DNDTS where CONVERT(DATE,date1,103) BETWEEN '"+reqQ.dateDeb+"' AND '"+reqQ.dateFin+"' and type='EXPEDITION' and idUsine ="+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3861,9 +4595,11 @@ app.get("/getRegistreDNDTSSortants", middleware,(request, response) => {
 app.get("/getAllAnomalies", middleware,(request, response) => {
   const reqQ=request.query;
   // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
-  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+reqQ.idUsine
+  pool.query("select z.nom, * from anomalie a join ronde r on r.id = a.rondeId join zonecontrole z on z.id = a.zoneId where r.idUsine = "+reqQ.idUsine+" ORDER BY a.id DESC"
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3875,7 +4611,7 @@ app.put("/updateAnomalieSetEvenement", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE anomalie SET evenement = 1 WHERE id="+reqQ.idAnomalie
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif de l'anomalie OK !");
   });
 });
@@ -3887,7 +4623,9 @@ app.get("/getOneAnomalie", middleware,(request, response) => {
   // +" and date1 >'"+reqQ.dateDeb+"' and date1 <'"+reqQ.dateFin+"'order by date1"
   pool.query("select * from anomalie where id = "+reqQ.idAnomalie
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3906,7 +4644,9 @@ app.get("/getOneLienExterne", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select * from quart_liensExternes where id = "+reqQ.idLien
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3919,7 +4659,9 @@ app.get("/getAllLiensExternes", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select * from quart_liensExternes where idUsine = "+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3931,7 +4673,9 @@ app.get("/getActifsLiensExternes", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("select * from quart_liensExternes where actif = 1 and idUsine = "+reqQ.idUsine
   , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -3945,7 +4689,7 @@ app.put("/updateLienExterne",middleware,(request, response) => {
   const url = reqQ.url.replace(/'/g, "''");
   pool.query("UPDATE quart_liensExternes SET nom = '"+nom+"',url='"+url+"' where id="+reqQ.idLien
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif du lien OK !");
   });
 });
@@ -3958,7 +4702,7 @@ app.put("/newLienExterne",middleware,(request, response) => {
   const url = reqQ.url.replace(/'/g, "''");
   pool.query("INSERT INTO quart_liensExternes(nom,url,actif,idUsine) VALUES('"+nom+"','"+url+"',0,"+reqQ.idUsine+")"
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Création du lien OK !");
   });
 });
@@ -3969,7 +4713,7 @@ app.put("/activerLien",middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE quart_liensExternes SET actif = 1 where id="+reqQ.idLien
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif du lien OK !");
   });
 });
@@ -3980,7 +4724,7 @@ app.put("/desactiverLien",middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("UPDATE quart_liensExternes SET actif = 0 where id="+reqQ.idLien
   ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Modif du lien OK !");
   });
 });
@@ -3990,7 +4734,9 @@ app.put("/desactiverLien",middleware,(request, response) => {
 app.delete("/deleteLienExterne", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("delete from quart_liensExternes where id ="+reqQ.idLien, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression du lien OK")
   });
 });
@@ -4009,7 +4755,7 @@ app.put("/historiqueEvenementCreate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4020,7 +4766,7 @@ app.put("/historiqueEvenementUpdate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4031,7 +4777,7 @@ app.put("/historiqueEvenementDelete", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idEvenement,suppression,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idEvenement+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4042,7 +4788,7 @@ app.put("/historiquePriseQuart", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,priseQuart,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4054,7 +4800,7 @@ app.put("/historiqueActuCreate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idActu+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4066,7 +4812,7 @@ app.put("/historiqueActuUpdate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idActu,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idActu+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4077,7 +4823,7 @@ app.put("/historiqueConsigneCreate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,creation,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4089,7 +4835,7 @@ app.put("/historiqueConsigneUpdate", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,edition,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4100,7 +4846,7 @@ app.put("/historiqueConsigneDelete", middleware,(request, response) => {
   const reqQ=request.query;
   pool.query("INSERT INTO quart_historique(idUser,dateHeure,idConsigne,suppression,idUsine) VALUES("+reqQ.idUser+",'"+reqQ.dateHeure+"',"+reqQ.idConsigne+",1,"+reqQ.idUsine+")"
     ,(err,result) => {
-      if(err) throw(err)
+      if(err) throw err
       else response.json("Ajout OK !");
   });
 });
@@ -4118,7 +4864,9 @@ app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
   pool.query("SELECT a.nom, a.id FROM [dolibarr].[dbo].[quart_calendrier] c INNER JOIN [dolibarr].[dbo].[quart_action] a ON a.id = c.idAction "
   +"WHERE c.idUsine = "+reqP.idUsine+" AND c.quart = "+reqP.quart+" AND c.termine = 0 "
   +"AND c.date_heure_debut = '"+reqQ.date_heure_debut+"'",(err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -4126,10 +4874,13 @@ app.get("/actionsDuQuart/:idUsine/:quart",(request, response) => {
 
 //Controler s'il y a des zones sur la ronde du quart
 app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
-  const reqP=request.params
+  const reqP=request.params;
+  const reqQ=request.query;
   pool.query("SELECT COUNT(idZone) as nombreDeZones FROM quart_calendrier c WHERE c.quart = "+reqP.quart+" AND c.idUsine = "+reqP.idUsine+" AND c.date_heure_debut = '"+reqQ.date_heure_debut+"' AND c.idZone is NOT NULL"
   ,(err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json(data[0].nombreDeZones);
   });
@@ -4137,12 +4888,16 @@ app.get("/recupZonesQuart/:idUsine/:quart",(request, response) => {
 
 //a la validation de zone, on update calendrier zone sur termine = 1
 //Mise à jour des information d'une zone sur le quart calendrier
-//?idUsine=1&quart=1
+//?idUser=1&idZone=1&date_heure_debut=
 app.put("/terminerCalendrierZone/:idUsine/:quart", (request, response) => {
   const reqQ = request.query
   const reqP=request.params
   pool.query("update quart_calendrier set termine = 1, idUser = "+reqQ.idUser+" where quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine+" AND idZone = "+reqQ.idZone+" AND date_heure_debut = '"+reqQ.date_heure_debut+"'" , (err,data) => {
-    if(err) throw err;
+    if(err){
+      //TODO à régler
+      //currentLineError=currentLine(); throw err;
+    }
+    //if(err) console.log(err + " - "+reqP.idUsine);
     response.json("Update zone du calendrier ok");
   });
 });
@@ -4153,8 +4908,28 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
   const reqQ = request.query
   const reqP=request.params
   pool.query("update quart_calendrier set termine = 1, idUser = "+reqQ.idUser+" where quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine+" AND idAction = "+reqQ.idAction+" AND date_heure_debut = '"+reqQ.date_heure_debut+"'" , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Update action du calendrier ok");
+  });
+});
+
+//update du champ terminé d'une action du calendrier
+//?id=1&termine=1
+app.put("/changeTermineCalendrier", (request, response) => {
+  const reqQ = request.query;
+  let termine = 1;
+  console.log(reqQ.termine)
+  if(reqQ.termine === "false"){
+    termine = 0;
+  }
+  pool.query("update quart_calendrier set termine = "+termine+" where id = "+reqQ.id , (err,data) => {
+    console.log("update quart_calendrier set termine = "+termine+" where id = "+reqQ.id)
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Update action du calendrier OK");
   });
 });
 
@@ -4167,7 +4942,9 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
 app.put("/createRepriseDeRonde", (request, response) => {
   const reqQ = request.query
   pool.query("INSERT INTO repriseRonde(date,quart,idUsine,termine) VALUES ('"+reqQ.date+"',"+reqQ.quart+","+reqQ.idUsine+",0)" , (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Update action du calendrier ok");
   });
 });
@@ -4177,7 +4954,9 @@ app.get("/getReprisesRonde/:idUsine",(request, response) => {
   const reqP=request.params
   pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = "+reqP.idUsine
   ,(err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
     response.json({data});
   });
@@ -4188,7 +4967,9 @@ app.get("/getReprisesRonde/:idUsine",(request, response) => {
 app.delete("/deleteRepriseRonde", middleware,(request, response) => {
   const reqQ=request.query
   pool.query("delete from repriseRonde where id =" + reqQ.id, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Suppression de la reprise OK")
   });
 });
@@ -4197,7 +4978,9 @@ app.delete("/deleteRepriseRonde", middleware,(request, response) => {
 app.put("/updateTermineRondeAnterieur/:date/:quart/:idUsine", (request, response) => {
   const reqP = request.params
   pool.query("update repriseRonde set termine = 1 where date = '"+reqP.date+"' AND quart = "+reqP.quart+" AND idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     response.json("Update ronde anterieure ok");
   });
 });
@@ -4206,9 +4989,10 @@ app.put("/updateTermineRondeAnterieur/:date/:quart/:idUsine", (request, response
 app.get("/rondeAnterieur/:idUsine", (request, response) => {
   const reqP = request.params
   pool.query("SELECT * FROM repriseRonde WHERE termine = 0 AND idUsine = "+reqP.idUsine, (err,data) => {
-    if(err) throw err;
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
     data = data['recordset'];
-    console.log(data);
     response.json({data});
   });
 });
