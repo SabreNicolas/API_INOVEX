@@ -2,6 +2,8 @@ import requests
 import mysql.connector
 from datetime import datetime, timedelta
 import warnings
+import re
+
 #Disable warnings
 warnings.filterwarnings("ignore")
 
@@ -53,7 +55,7 @@ for site in listeSites['data'] :
         value = response.json()
         value = value['data']
         for val in value :
-            if val['value'] != '/' and val['value'].replace(".","").replace(',','').isnumeric() == True:
+            if val['value'] != '/' and re.match(r'^\d+(\.\d+)?$',val['value']) == True:
                 print(val['value'] + "\n")
                 req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(val['value']) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                 response = requests.put(req, headers = headers, verify=False)
