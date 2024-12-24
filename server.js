@@ -48,6 +48,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 const dateFormat = require('date-and-time');
 const currentLine = require('get-current-line').default;
 
+app.use(middleware)
 //Gestion des fichiers avec multer
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
@@ -101,6 +102,10 @@ let currentLineError = '';
 let reqSQL = '';
 
 pool.connect();
+
+const moralEntitiesRoutes = require('./routes/moralEntities');
+
+app.use("/moralEntities", moralEntitiesRoutes);
 
 var server = httpsServer.listen(port, function() {
 //var server = app.listen(port, function() {
@@ -196,20 +201,7 @@ app.get('/sendmail/:dateDeb/:heureDeb/:duree/:typeArret/:commentaire/:idUsine', 
 
 
 /* MORAL ENTITIES*/
-//get all MoralEntities where Enabled = 1
-//?Code=34343&idUsine=1
-app.get("/moralEntities", middleware,(request, response) => {
-    const reqQ=request.query
-    pool.query("SELECT mr.Id, mr.CreateDate, mr.LastModifiedDate, mr.Name, mr.Address, mr.Enabled, mr.Code, mr.UnitPrice, p.Id as productId, LEFT(p.Name,CHARINDEX(' ',p.Name)) as produit, SUBSTRING(p.Name,CHARINDEX(' ',p.Name),500000) as collecteur FROM moralentities_new as mr "+ 
-    "INNER JOIN products_new as p ON LEFT(p.Code,5) LIKE LEFT(mr.Code,5) AND p.idUsine = mr.idUsine "+
-    "WHERE mr.idUsine = "+reqQ.idUsine+" AND mr.Enabled = 1 AND p.Code = LEFT(mr.Code,LEN(p.Code)) AND mr.Code LIKE '" + reqQ.Code + "%' ORDER BY Name ASC", (err,data) => {
-      if(err){
-      currentLineError=currentLine(); throw err;
-    }
-      data = data['recordset'];
-      response.json({data});
-    });
-});
+
 
 //Supprimer les mesures des entrants entre deux dates pour une usine
 //?idUsine=7&dateDeb=YYYY-mm-dd&dateFin=YYYY-mm-dd
