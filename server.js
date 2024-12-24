@@ -23,11 +23,12 @@ var smtpTransport = require('nodemailer-smtp-transport');
 const app = express();
 const path = require('path');
 const fs = require('fs');
-
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
+var privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/serverV2.crt','utf8');
+var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
-
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
 // parse requests of content-type: application/x-www-form-urlencoded
@@ -44,7 +45,8 @@ const swaggerDocument = require('./swagger.json');
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 /**Documentation avec Swagger UI**/
 
-const dateFormat = require('date-and-time')
+const dateFormat = require('date-and-time');
+const currentLine = require('get-current-line').default;
 
 //Gestion des fichiers avec multer
 const storage = multer.diskStorage({
@@ -71,14 +73,7 @@ var previousId = 0;
 const sql = require('mssql');
 const { response } = require("express");
 
-let database;
-
-if(process.env.NODE_ENV === "production"){
-  database = process.env.DATABASE_PROD
-} else {
-  database = process.env.DATABASE_DEV
-}
-console.log(database)
+const port = process.env.PORT;
 //Chaine de connexion
 var sqlConfig = {
   server : process.env.HOST,
@@ -92,37 +87,44 @@ var sqlConfig = {
   options : {
     //Si utilisation de Microsoft Azure, besoin d'encrypter
     encrypt : false,
-    database : database
+    database : process.env.DATABASE
   }
 }
 
+var httpsServer = https.createServer(credentials,app);
+
 var pool =  new sql.ConnectionPool(sqlConfig);
 
-let server;
-let port;
-if (process.env.NODE_ENV === "production") {
-    console.log("Environnement de production : utilisation d'HTTPS");
-    const privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key', 'utf8');
-    const certificate = fs.readFileSync('E:/INOVEX/serverV2.crt', 'utf8');
-    const credentials = { key: privateKey, cert: certificate };
-    server = require('https').createServer(credentials, app);
-    port = process.env.PORT_PROD
-} else if(process.env.NODE_ENV === "preprod"){
-  console.log("Environnement de développement : utilisation d'HTTP");
-  const privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key', 'utf8');
-  const certificate = fs.readFileSync('E:/INOVEX/serverV2.crt', 'utf8');
-  const credentials = { key: privateKey, cert: certificate };
-  server = require('https').createServer(credentials, app);
-  port = process.env.PORT_DEV
-} else {
-    console.log("Environnement local : utilisation d'HTTP");
-    server = require('http').createServer(app);
-    port = process.env.PORT_LOCAL
-}
+//Stockage de la ligne d'erreur pour envoi de mail
+let currentLineError = '';
+//Stockage de la requête SQL en cas d'erreur
+let reqSQL = '';
 
-// Lancer le serveur
-server.listen(port, () => {
-    console.log(`Serveur en écoute sur ${process.env.NODE_ENV ? 'https' : 'http'}://localhost:${port}`);
+pool.connect();
+
+var server = httpsServer.listen(port, function() {
+//var server = app.listen(port, function() {
+  var host = server.address().address;
+  var port = server.address().port;
+
+  console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s",host,port);
+});
+
+//Permet de récupérer les throw err pour ne pas faire crasher l'API et créer un ticket chez Kerlan
+process.on('uncaughtException', (err, origin) => {
+  messagePlantage.html = '<h1>'+err.name+'</h1>';
+  messagePlantage.html += '<h2> Sur la ligne : '+currentLineError.line+'</h2>';
+  messagePlantage.html += '<h3>'+err.message+'</h3>';
+  messagePlantage.html += '<p>'+err.stack+'</p><br>';
+  messagePlantage.html += '<p>'+reqSQL+'</p>';
+  transporter.sendMail(messagePlantage, function(errMail, info) {
+    if (errMail) {
+      console.log(errMail);
+      //currentLineError=currentLine(); throw err;
+    } else {
+      console.log('Email sent: ' + info.response);
+    }
+  });
 });
 
 // simple route
@@ -4283,7 +4285,7 @@ app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getEvenementsRonde", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.isActive = 1 and e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
