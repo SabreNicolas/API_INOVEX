@@ -30,8 +30,9 @@ listConversions = listConversions["data"]
 # #Boucle sur les sites pour insérer les valeur site par site
 for site in listeSites['data'] :
 
+    ############TAG CLASSIQUE
     #Récupération de la liste des produits avec un TAG dans chaque usine
-    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
@@ -58,36 +59,57 @@ for site in listeSites['data'] :
                         recup = listData['value'][0]['Average']
 
             #Si l'unité Aveva est différente de l'unité CAP Exploitation
-            if product['Unit'] != listData['value'][0]['Unit'] :
-                #On parcourt la liste des conversion de CAP Exploitation
-                for conversion in listConversions :
-                    count = 0
-                    #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
-                    if listData['value'][0]['Unit'].lower() == conversion['uniteBase'].lower() and product['Unit'].lower() == conversion['uniteCible'].lower() :
-                        #On récupère l'opérateur de la conversion qui est le premier caractère
-                        operateur = conversion['conversion'][0]
-                        #On récupère la valeur en int du calcul
-                        valeur = int(conversion['conversion'][1:])
-                        count = count + 1
-                        # print(recup)
-                        #On regarde quel opérateur est utilisé et on fait le calcul
-                        if operateur == "*" :
-                            recup = recup * valeur
-                        else :
-                            if operateur == "/" :
-                                recup = recup / valeur
-                        # print(recup)
-            print("Unite Aveva : " +listData['value'][0]['Unit'])
-            print("Unite CAP : " + product['Unit'])
-            print(product['Name'])
-            print("*******************************")
+            if "Unit" in listData['value'][0] :
+                if product['Unit'] != listData['value'][0]['Unit'] :
+                    #On parcourt la liste des conversion de CAP Exploitation
+                    for conversion in listConversions :
+                        count = 0
+                        #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
+                        if listData['value'][0]['Unit'].lower() == conversion['uniteBase'].lower() and product['Unit'].lower() == conversion['uniteCible'].lower() :
+                            #On récupère l'opérateur de la conversion qui est le premier caractère
+                            operateur = conversion['conversion'][0]
+                            #On récupère la valeur en int du calcul
+                            valeur = int(conversion['conversion'][1:])
+                            count = count + 1
+                            # print(recup)
+                            #On regarde quel opérateur est utilisé et on fait le calcul
+                            if operateur == "*" :
+                                recup = recup * valeur
+                            else :
+                                if operateur == "/" :
+                                    recup = recup / valeur
+                            # print(recup)
+                    
 
             #ATTENTION => A automatiser quand CHARLES enverra l'unité
             #Permet de faire *24 sur un compteur d'eau qui ets un débit mètre et qui renvoi la moyenne
-            if(product["TAG"] == '0GHA21CF001FT/MESURE.U'): 
+            if(product["TAG"] == 'P_Active/MESURE.U' or product["TAG"] == '0MKA60CE100ET/MESURE.U' or product["TAG"] == '0MKA60CE108/MESURE.U' or product["TAG"] == '1LBA10CF901FT/MESURE.U' or product["TAG"] == '2LBA10CF901FT/MESURE.U' or product["TAG"] == '3LBA10CF001FT/MESURE.U'): 
                 recup = recup * 24
+            if(recup != 'NaN'):
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + "&ProductId=" + str(product['Id']) + "&ProducerId=0"
+                response = requests.put(req, headers = headers, verify=False)
 
-            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            response = requests.put(req, headers = headers, verify=False)
+    ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
+    #Récupération de la liste des produits avec un TAG dans chaque usine (UNIQUEMENT ceux pour lesquelles ont veut seulement la dernière valeur du jour)
+    req = "https://fr-couvinove301:3100/getProductsWithTagDerniere?idUsine=" + str(site['id'])
+    response = requests.get(req, headers = headers, verify=False)
+    listProducts = response.json()
+    listProducts = listProducts["data"]
+
+    for product in listProducts :
+
+        #Récupération de la dernière données du jour
+        req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&RetrievalMode=Cyclic"
+        print(req)
+        response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+        listData = response.json()
+        print(listData)
+        #Si on l'api nous retourne une valeur, on créé une mesure
+        if len(listData['value']) != 0:
+            recup = listData['value'][0]['Average']
+            if(recup != 'NaN'):
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + "&ProductId=" + str(product['Id']) + "&ProducerId=0"
+                print(req)
+                response = requests.put(req, headers = headers, verify=False)
 
 print("Fin du script !")

@@ -60,6 +60,8 @@ for site in listeSites['data'] :
         req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=86400000"
         print(req)
         response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+        print("boucle1")
+        print(response)
         listData = response.json()
         print(listData['value'])
         # #Si on l'api nous retourne une valeur, on créé une mesure
@@ -109,10 +111,10 @@ for site in listeSites['data'] :
             #Permet de faire *24 sur un compteur qui est un débit mètre ou autre et qui renvoi la moyenne
             if(product["TAG"] == 'P_Active/MESURE.U' or product["TAG"] == '0MKA60CE100ET/MESURE.U' or product["TAG"] == '0MKA60CE108/MESURE.U' or product["TAG"] == '1LBA10CF901FT/MESURE.U' or product["TAG"] == '2LBA10CF901FT/MESURE.U' or product["TAG"] == '3LBA10CF001FT/MESURE.U'): 
                 recup = recup * 24
-
-            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            #print(req)
-            response = requests.put(req, headers = headers, verify=False)
+            if(recup != 'NaN'):
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                #print(req)
+                response = requests.put(req, headers = headers, verify=False)
 
 
     ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
@@ -128,14 +130,16 @@ for site in listeSites['data'] :
         req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+dernierAvevaDebut+"+and+EndDateTime+le+"+dernierAvevaFin+"&RetrievalMode=Cyclic"
         print(req)
         response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+        print("boucle2")
+        print(response)
         listData = response.json()
         #print(listData)
         #Si on l'api nous retourne une valeur, on créé une mesure
         if len(listData['value']) != 0:
             recup = listData['value'][0]['Average']
-
-            req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-            #print(req)
-            response = requests.put(req, headers = headers, verify=False)
+            if(recup != 'NaN'):
+                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                #print(req)
+                response = requests.put(req, headers = headers, verify=False)
 
 print("Fin du script !"  + "\n")
