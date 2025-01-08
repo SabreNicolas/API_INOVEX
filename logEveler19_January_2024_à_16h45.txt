@@ -1,8 +1,0 @@
-Debut du script Eveler Le 2024-01-19
-**************26663ELECTRICITE ACTIVE VENDUE (MWh)115742active
-total : 1712.5029999999977
-<Response [200]>
-**************26664ELECTRICITE ACTIVE ACHETEE (MWh)115743active
-total : 0.0
-<Response [200]>
-**************27802ELECTRICITE ACTIVE VENDUE (MWh)35346active
