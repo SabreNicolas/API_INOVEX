@@ -4177,6 +4177,17 @@ app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   });
 });
 
+//Recuperer un evenemen t de calendrier avec son id
+app.get("/getOneEvenementCalendrier/:id", middleware,(request, response) => {
+  const reqP=request.params;
+  pool.query("select * from quart_calendrier where id = "+reqP.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
 //Récupérer toutes les actions présentes dans la table calndrier pour une usine
 //?idUsine=
 app.get("/getAllActionsCalendrier", middleware,(request, response) => {
@@ -4239,6 +4250,31 @@ app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
       currentLineError=currentLine(); throw err;
     }
     response.json("Suppression de l'evenement du calendrier OK")
+  });
+});
+
+//DELETE évènement
+app.delete("/deleteActionCalendrier/:idAction",middleware, (request, response) => {
+  const reqP=request.params
+  pool.query("DELETE FROM quart_calendrier WHERE date_heure_fin > CAST(GETDATE() AS DATE) and idAction = "+reqP.idAction, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Suppression des actions du calendrier OK")
+  });
+});
+
+
+//DELETE évènement
+//?quart=
+app.delete("/deleteZoneCalendrier/:idZone",middleware, (request, response) => {
+  const reqP=request.params
+  const reqQ=request.query
+  pool.query("DELETE FROM quart_calendrier WHERE date_heure_fin > CAST(GETDATE() AS DATE) and idZone = "+reqP.idZone + " and quart = " + reqQ.quart, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Suppression des zones du calendrier OK")
   });
 });
 
@@ -4996,5 +5032,61 @@ app.get("/rondeAnterieur/:idUsine", (request, response) => {
     }
     data = data['recordset'];
     response.json({data});
+  });
+});
+
+//Action enregistrement
+//Récupérer la liste des rondes à des dates anterieurs
+app.get("/getActionsEnregistrement/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT * FROM actions_enregistrement WHERE idUsine = "+reqP.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+
+//Mise à jour des informations - cloture d'une ronde anterieure
+//?nom
+app.put("/createActionEnregistrement/:idUsine", (request, response) => {
+  const reqP = request.params
+  const reqQ = request.query
+  const nom = reqQ.nom.replace(/'/g, "''");
+  pool.query("insert into actions_enregistrement(nom,idUsine) VALUES ('" + nom + "'," + reqP.idUsine + ")", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("create action enregistrement ok");
+  });
+});
+
+//Mise à jour des informations - cloture d'une ronde anterieure
+//?nom=''
+app.put("/updateActionEnregistrement/:idAction", (request, response) => {
+  const reqP = request.params
+  const reqQ = request.query
+  const nom = reqQ.nom.replace(/'/g, "''");
+  console.log(nom)
+  pool.query("update actions_enregistrement set nom ='" + nom + "' where id = " + reqP.idAction, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    console.log(data)
+    response.json("Update action enregistrement ok");
+  });
+});
+
+//Supprimer les mesures des sortants entre deux dates pour une usine
+app.delete("/deleteActionEnregistrement/:idAction", middleware,(request, response) => {
+  const reqP=request.params
+  console.log("delete from actions_enregistrement where id =" + reqP.id)
+  pool.query("delete from actions_enregistrement where id =" + reqP.idAction, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Suppression de l'action enregistrée OK")
   });
 });
