@@ -698,7 +698,7 @@ app.get("/ProductsAndElementRondier/:TypeId", middleware,(request, response) => 
 //?idUsine=1
 app.get("/getProductsWithTagClassique", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND (typeRecupEMonitoring NOT LIKE 'derniere' OR typeRecupEMonitoring IS NULL) AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND TAG NOT LIKE '%EVELER%' AND (typeRecupEMonitoring NOT LIKE 'derniere' OR typeRecupEMonitoring IS NULL) AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -711,7 +711,7 @@ app.get("/getProductsWithTagClassique", middleware,(request, response) => {
 //?idUsine=1
 app.get("/getProductsWithTagDerniere", middleware,(request, response) => {
   const reqQ=request.query
-  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND typeRecupEMonitoring LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
+  pool.query("SELECT *  FROM products_new WHERE TAG IS NOT NULL AND TAG NOT LIKE '%EVELER%' AND typeRecupEMonitoring LIKE 'derniere' AND LEN(TAG) > 0 and idUsine = " + reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -2495,8 +2495,8 @@ app.put("/mesureRondier", (request, response) => {
 /*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
 app.put("/mesureRondierOneRequest", (request, response) => {
   const tableauDonnees = request.body;
-  const nbErreur = 0;
-  const listElemErreur = "";
+  let nbErreur = 0;
+  let listElemErreur = "";
   tableauDonnees.values.forEach(element => {
     let e = element.nameValuePairs;
     pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+e.elementId+", '"+e.modeRegulateur+"', '"+e.value+"', "+e.rondeId+")"
