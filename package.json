@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "test": "nodemon server.js",
-    "start": "pm2 start server.js -i max --name API_CAP_EXPLOITATION"
+    "start": "pm2 start server.js -i max --name API_CAP_EXPLOITATION_PREPROD"
   },
   "repository": {
     "type": "git",
