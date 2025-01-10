@@ -4168,7 +4168,7 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4205,8 +4205,8 @@ app.get("/getAllActionsCalendrier", middleware,(request, response) => {
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
 app.put("/newCalendrierZone", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
+  pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4217,8 +4217,8 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
 //?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1&termine=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
+  pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4254,9 +4254,11 @@ app.delete("/deleteCalendrier/:id",middleware, (request, response) => {
 });
 
 //DELETE évènement
+//?dateDeb
 app.delete("/deleteActionCalendrier/:idAction",middleware, (request, response) => {
   const reqP=request.params
-  pool.query("DELETE FROM quart_calendrier WHERE date_heure_fin > CAST(GETDATE() AS DATE) and idAction = "+reqP.idAction, (err,data) => {
+  const reqQ=request.query
+  pool.query("DELETE FROM quart_calendrier WHERE date_heure_debut >= '"+ reqQ.dateDeb + "' and date_heure_fin > CAST(GETDATE() AS DATE) and idAction = "+reqP.idAction, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4266,11 +4268,11 @@ app.delete("/deleteActionCalendrier/:idAction",middleware, (request, response) =
 
 
 //DELETE évènement
-//?quart=
+//?quart=1&?dateDeb
 app.delete("/deleteZoneCalendrier/:idZone",middleware, (request, response) => {
   const reqP=request.params
   const reqQ=request.query
-  pool.query("DELETE FROM quart_calendrier WHERE date_heure_fin > CAST(GETDATE() AS DATE) and idZone = "+reqP.idZone + " and quart = " + reqQ.quart, (err,data) => {
+  pool.query("DELETE FROM quart_calendrier WHERE date_heure_debut >= '"+ reqQ.dateDeb + "' and date_heure_fin > CAST(GETDATE() AS DATE) and idZone = "+reqP.idZone + " and quart = " + reqQ.quart, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4321,7 +4323,7 @@ app.delete("/deleteEventsSuivant/:id",middleware, (request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getEvenementsRonde", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("SELECT e.id, e.titre, e.idUsine, CONVERT(varchar, e.date_heure_debut, 103)+ ' ' + CONVERT(varchar, e.date_heure_debut, 108) as 'date_heure_debut', CONVERT(varchar, e.date_heure_fin, 103)+ ' ' + CONVERT(varchar, e.date_heure_fin, 108) as 'date_heure_fin', e.importance, e.groupementGMAO, e.equipementGMAO, e.cause, e.description, e.demande_travaux, e.consigne, e.url  FROM quart_evenement e WHERE e.isActive = 1 and e.date_heure_debut < '"+reqQ.dateFin+"' and e.date_heure_fin > '"+reqQ.dateDeb+"' and idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -5082,7 +5084,6 @@ app.put("/updateActionEnregistrement/:idAction", (request, response) => {
 //Supprimer les mesures des sortants entre deux dates pour une usine
 app.delete("/deleteActionEnregistrement/:idAction", middleware,(request, response) => {
   const reqP=request.params
-  console.log("delete from actions_enregistrement where id =" + reqP.id)
   pool.query("delete from actions_enregistrement where id =" + reqP.idAction, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
