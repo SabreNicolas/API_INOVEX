@@ -25,8 +25,8 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key','utf8');
-var certificate = fs.readFileSync('E:/INOVEX/serverV2.crt','utf8');
+var privateKey = fs.readFileSync('C:/Workspace/CAP/API_INOVEX/serverV2-decrypted.key','utf8');
+var certificate = fs.readFileSync('C:/Workspace/CAP/API_INOVEX/serverV2.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
@@ -1751,32 +1751,32 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
 function getElementsHorsLigne(zone) {
   return new Promise((resolve) => {
     let modesOp;
-    //Récupération des modesOP
-    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = "+zone.zoneId, (err,data) => {
-      if(err){
-        currentLineError=currentLine(); throw err;
-      }
-      else{
+    // Récupération des modesOP
+    pool.query("SELECT * FROM modeoperatoire m WHERE zoneId = " + zone.zoneId, (err, data) => {
+      if (err) {
+        currentLineError = currentLine();
+        throw err;
+      } else {
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.id, e.ordre ASC", (err,data) => {
-          if(err){
-            currentLineError=currentLine(); throw err;
-          }
-          else{
+        pool.query(`SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId WHERE e.zoneId = ${zone.zoneId} ORDER BY e.ordre ASC`, (err, data) => {
+          if (err) {
+            currentLineError = currentLine();
+            throw err;
+          } else {
             data = data['recordset'];
             let OneBadgeAndElementsOfZone = {
-              id : zone.id,
-              zoneId : zone.zoneId,
-              zone : zone.nomZone,
-              commentaire : zone.commentaire,
-              badge : zone.uidBadge,
-              four : zone.four,
-              groupement : zone.groupement,
-              modeOP : modesOp,
+              id: zone.id,
+              zoneId: zone.zoneId,
+              zone: zone.nomZone,
+              commentaire: zone.commentaire,
+              badge: zone.uidBadge,
+              four: zone.four,
+              groupement: zone.groupement,
+              modeOP: modesOp,
               termine: zone.termine,
               nomRondier: zone.nomRondier,
               prenomRondier: zone.prenomRondier,
-              elements : data
+              elements: data
             };
             resolve();
             BadgeAndElementsOfZone.push(OneBadgeAndElementsOfZone);
@@ -2739,27 +2739,42 @@ app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, resp
 
 //TODO : inner join avec Ronde ??? Zone ???
 //Récupérer les anomalies d'une ronde
-app.get("/anomalies/:id",(request, response) => {
-  const reqP=request.params
-  pool.query("SELECT * FROM anomalie WHERE rondeId = "+reqP.id, (err,data) => {
-    if(err){
-      currentLineError=currentLine(); throw err;
+app.get("/anomalies", (request, response) => {
+  const { date, quart, idUsine } = request.query;
+  const query = `
+    SELECT a.*
+    FROM anomalies a
+    WHERE a.date = '${date}' AND a.quart = ${quart} AND a.idUsine = ${idUsine}
+  `;
+  pool.query(query, (err, data) => {
+    if (err) {
+      console.error(err);
+      response.status(500).send(err);
+    } else {
+      response.json({ data: data.recordset });
     }
-    data = data['recordset'];
-    response.json({data});
   });
 });
 
 //Récupérer les anomalies d'une ronde
-app.get("/getAnomaliesOfOneRonde",(request, response) => {
-  const reqQ=request.query;
-  pool.query("SELECT a.* from anomalie a join ronde r on r.id = a.rondeId WHERE r.dateHeure LIKE '%"+reqQ.date+"%' and quart = " +reqQ.quart+" AND r.idUsine = " +reqQ.idUsine, (err,data) => {
-    if(err){
-      currentLineError=currentLine(); throw err;
+app.get("/getAnomaliesOfOneRonde", (request, response) => {
+  const reqQ = request.query;
+  pool.query(
+    "SELECT a.*, z.nom as nomZone FROM anomalie a " +
+    "JOIN ronde r ON r.id = a.rondeId " +
+    "JOIN zonecontrole z ON z.Id = a.zoneId " +
+    "WHERE r.dateHeure LIKE '%" + reqQ.date + "%' " +
+    "AND quart = " + reqQ.quart + " " +
+    "AND r.idUsine = " + reqQ.idUsine,
+    (err, data) => {
+      if (err) {
+        currentLineError = currentLine();
+        throw err;
+      }
+      data = data['recordset'];
+      response.json({ data });
     }
-    data = data['recordset'];
-    response.json({data});
-  });
+  );
 });
 
 //Récupérer les anomalies d'une usine entre deux dates
