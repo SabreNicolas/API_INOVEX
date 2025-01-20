@@ -4168,7 +4168,7 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut, quart", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4205,8 +4205,16 @@ app.get("/getAllActionsCalendrier", middleware,(request, response) => {
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
 app.put("/newCalendrierZone", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+  let req = "";
+  if(reqQ.dateFinReccurrence === 'null') {
+    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
+  }
+  else {
+    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
             +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
+  }
+  pool.query(req
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4217,8 +4225,16 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
 //?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1&termine=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
+  let req = "";
+  if(reqQ.dateFinReccurrence === 'null') {
+    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
+  }
+  else {
+    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')";
+  }
+  pool.query(req
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
