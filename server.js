@@ -37,7 +37,7 @@ app.use(bodyParser.urlencoded({ extended: true, limit: '100mb'}));
 app.use(cors({origin: "*" }));
 
 //utilisation des variables d'environnement
-require('dotenv').config();
+require('dotenv').config(); 
 
 /**Documentation avec Swagger UI**/
 const swaggerUi = require('swagger-ui-express');
