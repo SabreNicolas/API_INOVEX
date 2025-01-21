@@ -25,8 +25,8 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('C:/Workspace/CAP/API_INOVEX/serverV2-decrypted.key','utf8');
-var certificate = fs.readFileSync('C:/Workspace/CAP/API_INOVEX/serverV2.crt','utf8');
+var privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/serverV2.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
