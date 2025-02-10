@@ -25,8 +25,8 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/serverV2-decrypted.key','utf8');
-var certificate = fs.readFileSync('E:/INOVEX/serverV2.crt','utf8');
+var privateKey = fs.readFileSync('E:/INOVEX/serverV3-decrypted.key','utf8');
+var certificate = fs.readFileSync('E:/INOVEX/serverV3.crt','utf8');
 var credentials = {key: privateKey, cert: certificate};
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
@@ -72,6 +72,7 @@ var previousId = 0;
 //create sql connection
 const sql = require('mssql');
 const { response } = require("express");
+const { log } = require('console');
 
 const port = process.env.PORT;
 //Chaine de connexion
@@ -108,6 +109,7 @@ var server = httpsServer.listen(port, function() {
   var port = server.address().port;
 
   console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s",host,port);
+  console.log("***RESTART API***");
 });
 
 //Permet de récupérer les throw err pour ne pas faire crasher l'API et créer un ticket chez Kerlan
@@ -1761,14 +1763,14 @@ function getZonesAndAnomaliesOfRonde(ronde){
 app.get("/BadgeAndElementsOfZone/:idUsine", (request, response) => {
   BadgeAndElementsOfZone = [];
   const reqP=request.params
-  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
+  pool.query("SELECT z.Id as zoneId, z.nom as nomZone, z.commentaire, z.four, b.uid as uidBadge from zonecontrole z INNER JOIN badge b ON b.zoneId = z.Id WHERE b.isEnabled = 1 AND z.idUsine = "+reqP.idUsine+ " ORDER BY z.nom ASC", async (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      await getPreviousId(reqP.idUsine);
+      //await getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -1789,7 +1791,7 @@ app.get("/elementsOfUsine/:idUsine", (request, response) => {
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      await getPreviousId(reqP.idUsine);
+      //await getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -1809,7 +1811,7 @@ function getElementsHorsLigne(zone) {
       }
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
           if(err){
             currentLineError=currentLine(); throw err;
           }
@@ -1854,7 +1856,7 @@ app.get("/BadgeAndElementsOfZoneWithValues/:idUsine/:idRonde", (request, respons
     else {
       data = data['recordset'];
       //On récupère l'Id de la ronde précedente
-      getPreviousId(reqP.idUsine);
+      //getPreviousId(reqP.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsWithValues(zone,reqP.idRonde);
@@ -1913,7 +1915,7 @@ app.get("/ElementsOfRonde/:idUsine/:idUser", (request, response) => {
     else {
       //On récupère l'Id de la ronde précedente
       data = data['recordset'];
-      await getPreviousId(reqP.idUsine);
+      //await getPreviousId(reqP.idUsine);
       //On récupère les éléments de la zone
       await getElementsHorsLigneUser(data);
       
@@ -1933,7 +1935,7 @@ function getElementsHorsLigneUser(zone) {
         }
         else{
           modesOp = data['recordset'];
-          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = "+previousId+" FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
+          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
           , (err,data) => {
             if(err){
               currentLineError=currentLine(); throw err;
@@ -2493,27 +2495,55 @@ app.put("/mesureRondier", (request, response) => {
 });
 
 /*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
-app.put("/mesureRondierOneRequest", (request, response) => {
+app.put("/mesureRondierOneRequest", async (request, response) => {
   const tableauDonnees = request.body;
   let nbErreur = 0;
   let listElemErreur = "";
-  tableauDonnees.values.forEach(element => {
-    let e = element.nameValuePairs;
-    pool.query("INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId) VALUES ("+e.elementId+", '"+e.modeRegulateur+"', '"+e.value+"', "+e.rondeId+")"
-    ,(err,result,fields) => {
-        if(err){
-          nbErreur++;
-          listElemErreur = listElemErreur+e.elementId+";";
-        }
-    });
-  });
-  response.json("KO-"+5+"-"+listElemErreur);
-  if(nbErreur > 0){
-    response.json("KO-"+nbErreur+"-"+listElemErreur);
-    currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
+  let e = ""
+  for (const element of tableauDonnees.values) {
+      e = element.nameValuePairs;
+      try {
+          await pool.query(`INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId)
+                            VALUES (${e.elementId}, '${e.modeRegulateur}', '${e.value}', ${e.rondeId})`);
+      } catch (err) {
+          // Tentative d'insertion alternative
+          try {
+              await pool.query(`INSERT INTO mesuresrondier (elementId, modeRegulateur, value, rondeId)
+                                VALUES (${e.elementId}, '', '/', ${e.rondeId})`);
+          } catch (err) {
+            nbErreur++;
+            console.log("nbErreur++ : " + nbErreur);
+            listElemErreur += e.elementId + ";";
+            console.log(`ECHEC INSERTION / sur : ${e.elementId} sur la ronde : ${e.rondeId}`);
+          }
+      }
   }
+
+  console.log("**********************FIN BOUCLE***********************");
+  console.log("nbErreur : " + nbErreur);
+
+  if (nbErreur > 0) {
+      console.log("KO1");
+      response.json(`KO1-${nbErreur}-${listElemErreur}`);
+      currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
+    } 
+  //Si on a pas d'echec, on verifie que le dernier element est bien envoyé
   else{
-    response.json("OK");
+    pool.query("SELECT * FROM mesuresrondier WHERE elementId = "+e.elementId+" AND rondeId = "+e.rondeId, (err,data) => {
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
+      data = data['recordset'];
+      console.log(data)
+      if(data.length > 0) {
+        console.log("OK");
+        response.json("OK");
+      }
+      else {
+        console.log("KO2");
+        response.json("KO2-la derniere valeur n'est pas inséré correctement");
+      }
+    });
   }
 });
 
@@ -2525,7 +2555,21 @@ app.put("/updateMesureRonde", middleware,(request, response) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
-    response.json("Mise à jour de la valeur OK")
+    response.json("Mise à jour de la valeur OK");
+  });
+});
+
+//Récupération du produit CAP Lié a l'élément de controle rondier
+//?id=12
+app.get("/getProductMesureRondier", middleware,(request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT p.Id FROM products_new p INNER JOIN elementcontrole e ON e.id = p.idElementRondier INNER JOIN mesuresrondier m ON m.elementId = e.Id WHERE m.id = "+ reqQ.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    if(data.length > 0) response.json(data[0].Id);
+    else response.json(0);
   });
 });
 
@@ -4168,7 +4212,7 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut,quart", (err,data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut, quart", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -4205,8 +4249,16 @@ app.get("/getAllActionsCalendrier", middleware,(request, response) => {
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
 app.put("/newCalendrierZone", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+  let req = "";
+  if(reqQ.dateFinReccurrence === 'null') {
+    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
+  }
+  else {
+    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
             +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
+  }
+  pool.query(req
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4217,8 +4269,16 @@ app.put("/newCalendrierZone", middleware,(request, response) => {
 //?idUsine=1&idAction=1&datedeb=''&dateFin=''&quart=1&termine=1
 app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
+  let req = "";
+  if(reqQ.dateFinReccurrence === 'null') {
+    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
+  }
+  else {
+    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
+            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')";
+  }
+  pool.query(req
   ,(err,result) => {
       if(err) throw err
       else response.json("Création de l'instance OK !");
@@ -4363,8 +4423,8 @@ app.get("/getZonesCalendrierRonde",(request, response) => {
     }
     else {
       data = data['recordset'];
-      //On récupère l'Id de la ronde précedente
-      await getPreviousId(reqQ.idUsine);
+      //On récupère l'Id de la ronde précedente -> on récupère désormais la dernière valeur connue
+      //await getPreviousId(reqQ.idUsine);
       //On boucle sur chaque zone et son badge pour récupérer ses éléments
       for await (const zone of data) {
         await getElementsHorsLigne(zone);
@@ -4447,11 +4507,23 @@ app.get("/getActionsEntreDeuxDates", middleware,(request, response) => {
 //passage du fichier dans un formData portant le nom 'fichier'
 app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (request, response) => {
   const reqQ=request.query;
+  let dateFormat = reqQ.date.substring(0,2)+'/'+reqQ.date.substring(3,5)+"/"+reqQ.date.substring(6,10);
+  let quartInt = 3;
+  if(reqQ.quart == 'Matin') quartInt = 1;
+  else if (reqQ.quart == 'Apres-midi') quartInt = 2;
+  
   let maillist = '';
   //création de l'url de stockage du fichier
   //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
   //on utilise l'url publique
   const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  //Update de la table ronde pour stocker le PDF
+  pool.query("UPDATE ronde SET urlPDF = '"+url+"' WHERE quart = "+quartInt+" AND dateHeure LIKE '"+dateFormat+"' AND idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+  });
+  //Récupération des utilisateurs admin pour envoyer le PDF par mail
   pool.query("SELECT * FROM users WHERE isAdmin = 1 AND idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
@@ -4481,6 +4553,19 @@ app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (r
       }
     });
     /** FIN ENVOI MAIL */
+  });
+});
+
+//Récupérer l'url du PDF pour le récap de quart
+//?idUsine=1&date=''&quart=''
+app.get("/getURLPDF", middleware,(request, response) => {
+  const reqQ=request.query;
+  pool.query("select DISTINCT urlPDF FROM ronde where dateHeure LIKE '"+reqQ.date+"' and quart = "+reqQ.quart+" and idUsine = "+reqQ.idUsine, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
   });
 });
 
@@ -4955,6 +5040,35 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
   });
 });
 
+//Partie remontée des données dans le récap de quart PDF
+//Récupérer la liste des zones à remonter dans el récap de quart PDF
+//?idUsine=1
+app.get("/recupZonesPDF",(request, response) => {
+  const reqQ=request.query;
+  pool.query("SELECT DISTINCT * FROM zonecontrole WHERE nom LIKE '%PDF%' AND idUsine = "+reqQ.idUsine+" ORDER BY nom" 
+  ,(err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
+//Récupération des éléments de contôle ainsi que leurs valeurs pour une date et un quart en fonction de la zoneId
+//?idZone=656&date=30/01/02025&quart=1
+app.get("/recupElementsPDF",(request, response) => {
+  const reqQ=request.query;
+  pool.query("SELECT z.nom as nomZone , e.nom, m.value FROM elementcontrole e INNER JOIN mesuresrondier m ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.zoneId = "+reqQ.idZone+" and r.quart = "+reqQ.quart+" AND r.dateHeure = '"+reqQ.date+"'"
+  ,(err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({data});
+  });
+});
+
 //update du champ terminé d'une action du calendrier
 //?id=1&termine=1
 app.put("/changeTermineCalendrier", (request, response) => {
@@ -5041,7 +5155,7 @@ app.get("/rondeAnterieur/:idUsine", (request, response) => {
 //Récupérer la liste des rondes à des dates anterieurs
 app.get("/getActionsEnregistrement/:idUsine", (request, response) => {
   const reqP = request.params
-  pool.query("SELECT * FROM actions_enregistrement WHERE idUsine = "+reqP.idUsine, (err,data) => {
+  pool.query("SELECT * FROM actions_enregistrement WHERE idUsine = "+reqP.idUsine +" ORDER BY nom", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
