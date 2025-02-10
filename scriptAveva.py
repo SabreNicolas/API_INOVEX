@@ -58,6 +58,10 @@ for site in listeSites['data'] :
         if product['typeRecupEMonitoring'] == "cumul":
             req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=600000"
             response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+            if site['id'] == 13:
+                if product["TAG"] == 'TF-TS-BREF-R-EOT':
+                    print(req)
+                    print(response.json())
             # print("********************************************new response")
             # print(response.json())
             listData = response.json()
