@@ -54,8 +54,8 @@ const storage = multer.diskStorage({
       callback(null, 'fichiers');
   },
   filename: (req, file, callback) => {
-      const name = file.originalname.split(' ').join('_');
-      //stockage du fichier d'image en mettant le nom en remplaçant les espaces par _
+      const name = file.originalname.split(' ').join('_').replace(/[^\x00-\x7F]/g, "").replace("'","_");
+      //stockage du fichier d'image en mettant le nom en remplaçant les espaces par _ et en supprimant les caractères non ASCII
       callback(null, Date.now()+name);
   }
 });
@@ -2512,18 +2512,12 @@ app.put("/mesureRondierOneRequest", async (request, response) => {
                                 VALUES (${e.elementId}, '', '/', ${e.rondeId})`);
           } catch (err) {
             nbErreur++;
-            console.log("nbErreur++ : " + nbErreur);
             listElemErreur += e.elementId + ";";
-            console.log(`ECHEC INSERTION / sur : ${e.elementId} sur la ronde : ${e.rondeId}`);
           }
       }
   }
 
-  console.log("**********************FIN BOUCLE***********************");
-  console.log("nbErreur : " + nbErreur);
-
   if (nbErreur > 0) {
-      console.log("KO1");
       response.json(`KO1-${nbErreur}-${listElemErreur}`);
       currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
     } 
@@ -2534,13 +2528,10 @@ app.put("/mesureRondierOneRequest", async (request, response) => {
         currentLineError=currentLine(); throw err;
       }
       data = data['recordset'];
-      console.log(data)
       if(data.length > 0) {
-        console.log("OK");
         response.json("OK");
       }
       else {
-        console.log("KO2");
         response.json("KO2-la derniere valeur n'est pas inséré correctement");
       }
     });
@@ -2692,7 +2683,7 @@ app.post("/modeOP", multer({storage: storage}).single('fichier'), (request, resp
   //création de l'url de stockage du fichier
   //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
   //on utilise l'url publique
-  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename}`;
 
   var query = "INSERT INTO modeoperatoire (nom, fichier, zoneId) VALUES ('"+reqQ.nom+"', '"+url+"', "+reqQ.zoneId+")";
   pool.query(query,(err,result,fields) => {
@@ -2766,7 +2757,7 @@ app.put("/consigne", multer({storage: storage}).single('fichier'),(request, resp
   const commentaire = reqQ.commentaire.replace(/'/g, "''");
 
   if(request.file != undefined){
-    url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+    url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename}`;
     requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine, url) OUTPUT INSERTED.Id VALUES ('"+titre+"','"+commentaire+"', '"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.type+", "+reqQ.idUsine+",'"+url+"')"
   }
   else requete = "INSERT INTO consigne (titre,commentaire, date_heure_debut, date_heure_fin, type, idUsine) OUTPUT INSERTED.Id VALUES ('"+titre+"','"+commentaire+"', '"+reqQ.dateDebut+"', '"+reqQ.dateFin+"', "+reqQ.type+", "+reqQ.idUsine+")"
@@ -2862,7 +2853,7 @@ app.put("/consigne/:id",middleware, (request, response) => {
 app.put("/anomalie", multer({storage: storage}).single('fichier'),(request, response) => {
   const reqQ=request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename}`;
 
   var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES ("+reqQ.rondeId+", "+reqQ.zoneId+", '"+reqQ.commentaire+"', '"+url+"')";
   pool.query(query,(err,result,fields) => {
@@ -4116,7 +4107,7 @@ app.put("/evenement",multer({storage: storage}).single('fichier'),(request, resp
   const description = reqQ.description.replace(/'/g, "''");
   var url = ""
   if(request.file != undefined){
-    url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+    url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename}`;
   }
   
   pool.query("INSERT INTO quart_evenement(idUsine,titre,importance,date_heure_debut,date_heure_Fin,groupementGMAO, equipementGMAO, description, cause, consigne, demande_travaux,url) OUTPUT INSERTED.Id "
@@ -4516,7 +4507,7 @@ app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (r
   //création de l'url de stockage du fichier
   //const url = `${request.protocol}://${request.get('host')}/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
   //on utilise l'url publique
-  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename}`;
   //Update de la table ronde pour stocker le PDF
   pool.query("UPDATE ronde SET urlPDF = '"+url+"' WHERE quart = "+quartInt+" AND dateHeure LIKE '"+dateFormat+"' AND idUsine = "+reqQ.idUsine, (err,data) => {
     if(err){
