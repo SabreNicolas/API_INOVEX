@@ -54,7 +54,7 @@ const storage = multer.diskStorage({
       callback(null, 'fichiers');
   },
   filename: (req, file, callback) => {
-      const name = file.originalname.split(' ').join('_').replace(/[^\x00-\x7F]/g, "").replace("'","_");
+      const name = file.originalname.split(' ').join('_').replace(/[^\x00-\x7F]/g, "").replaceAll("'","_");
       //stockage du fichier d'image en mettant le nom en remplaçant les espaces par _ et en supprimant les caractères non ASCII
       callback(null, Date.now()+name);
   }
@@ -311,7 +311,7 @@ app.get("/moralEntitie/:id",middleware, (request, response) => {
     });
 });
 
-//get One MoralEntitie
+//get One User
 app.get("/getOneUser/:id",middleware, (request, response) => {
   const reqP=request.params
   pool.query("SELECT * FROM users WHERE Id = "+reqP.id, (err,data) => {
@@ -1704,10 +1704,10 @@ app.get("/getAnomaliesOfOneDay/:idUsine/:date", middleware,(request, response) =
   const reqQ=request.query
   const reqP=request.params
   if(reqQ.quart==0){
-    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine  
+    var query ="select anomalie.*, z.nom from anomalie join ronde on ronde.id = anomalie.rondeId join zonecontrole z on z.Id = anomalie.zoneId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine  
   }
   else{
-    var query ="select anomalie.* from anomalie join ronde on ronde.id = anomalie.rondeId  where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine +" and ronde.quart = "+reqQ.quart 
+    var query ="select anomalie.*, z.nom from anomalie join ronde on ronde.id = anomalie.rondeId join zonecontrole z on z.Id = anomalie.zoneId where ronde.dateHeure = '"+reqP.date+"' and ronde.idUsine = "+reqP.idUsine +" and ronde.quart = "+reqQ.quart 
   }
   pool.query(query, async (err,data) => {
     if(err){
@@ -1811,7 +1811,7 @@ function getElementsHorsLigne(zone) {
       }
       else{
         modesOp = data['recordset'];
-        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
+        pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, e.CodeEquipement, e.infoSup, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER JOIN groupement g ON g.id = e.idGroupement WHERE e.zoneId = "+zone.zoneId + "ORDER BY g.groupement, e.ordre ASC", (err,data) => {
           if(err){
             currentLineError=currentLine(); throw err;
           }
@@ -1935,7 +1935,7 @@ function getElementsHorsLigneUser(zone) {
         }
         else{
           modesOp = data['recordset'];
-          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
+          pool.query("SELECT e.Id, e.zoneId, e.nom, e.valeurMin, e.valeurMax, e.typeChamp, e.unit, e.defaultValue, e.isRegulateur, e.listValues, e.CodeEquipement, e.isCompteur, m.value as previousValue, g.groupement FROM elementcontrole e LEFT JOIN mesuresrondier m ON e.Id = m.elementId AND m.rondeId = (SELECT top 1 rondeId from mesuresrondier where elementId = e.Id AND value not like '/' order by rondeId desc) FULL OUTER join groupement g on e.idGroupement = g.id WHERE e.zoneId = "+zone[0]['zoneId'] + "ORDER BY g.groupement, e.ordre ASC"
           , (err,data) => {
             if(err){
               currentLineError=currentLine(); throw err;
@@ -2519,8 +2519,7 @@ app.put("/mesureRondierOneRequest", async (request, response) => {
 
   if (nbErreur > 0) {
       response.json(`KO1-${nbErreur}-${listElemErreur}`);
-      currentLineError=currentLine(); throw (new Error("erreur envoi rondier"));
-    } 
+  }
   //Si on a pas d'echec, on verifie que le dernier element est bien envoyé
   else{
     pool.query("SELECT * FROM mesuresrondier WHERE elementId = "+e.elementId+" AND rondeId = "+e.rondeId, (err,data) => {

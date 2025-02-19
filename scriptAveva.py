@@ -83,6 +83,10 @@ for site in listeSites['data'] :
             response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
             # print("old response")
             # print(response)
+            if site['id'] == 1:
+                if product["TAG"] == 'VALO/GTA/ana_JAT_4_PV':
+                    print(req)
+                    print(response.json())
             listData = response.json()
             # print(listData['value'])
             # #Si on l'api nous retourne une valeur, on créé une mesure
