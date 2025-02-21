@@ -5032,10 +5032,10 @@ app.put("/terminerCalendrierAction/:idUsine/:quart", (request, response) => {
 
 //Partie remontée des données dans le récap de quart PDF
 //Récupérer la liste des zones à remonter dans el récap de quart PDF
-//?idUsine=1
+//?idUsine=1&date=2025-23-02 13:00:00.000
 app.get("/recupZonesPDF",(request, response) => {
   const reqQ=request.query;
-  pool.query("SELECT DISTINCT * FROM zonecontrole WHERE nom LIKE '%PDF%' AND idUsine = "+reqQ.idUsine+" ORDER BY nom" 
+  pool.query("SELECT DISTINCT z.* from quart_calendrier q INNER JOIN zonecontrole z ON q.idZone = z.Id WHERE z.nom LIKE '%PDF%' AND q.idUsine = "+reqQ.idUsine+" AND q.date_heure_debut = '"+reqQ.date+"' ORDER BY nom" 
   ,(err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
