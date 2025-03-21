@@ -25,9 +25,17 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/serverV3-decrypted.key','utf8');
-var certificate = fs.readFileSync('E:/INOVEX/serverV3.crt','utf8');
-var credentials = {key: privateKey, cert: certificate};
+var privateKey, certificate, credentials, httpsServer;
+try {
+  privateKey = fs.readFileSync('E:/INOVEX/serverV3-decrypted.key','utf8');
+  certificate = fs.readFileSync('E:/INOVEX/serverV3.crt','utf8');
+  credentials = {key: privateKey, cert: certificate};
+  httpsServer = https.createServer(credentials, app);
+} catch (error) {
+  console.log("ATTENTION: Certificats SSL non trouvés, démarrage en mode HTTP uniquement");
+  credentials = null;
+  // Pas de serveur HTTPS
+}
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
 app.use(bodyParser.json({limit: '100mb'}));
@@ -92,25 +100,31 @@ var sqlConfig = {
   }
 }
 
-var httpsServer = https.createServer(credentials,app);
-
 var pool =  new sql.ConnectionPool(sqlConfig);
 
 //Stockage de la ligne d'erreur pour envoi de mail
 let currentLineError = '';
 //Stockage de la requête SQL en cas d'erreur
 let reqSQL = '';
-
+var pool = new sql.ConnectionPool(sqlConfig);
 pool.connect();
 
-var server = httpsServer.listen(port, function() {
-//var server = app.listen(port, function() {
-  var host = server.address().address;
-  var port = server.address().port;
-
-  console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s",host,port);
-  console.log("***RESTART API***");
-});
+var server;
+if (httpsServer) {
+  server = httpsServer.listen(port, function() {
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log("API CAP EXPLOITATION SQL SERVER en route sur https://%s:%s", host, port);
+    console.log("***RESTART API***");
+  });
+} else {
+  server = app.listen(port, function() {
+    var host = server.address().address;
+    var port = server.address().port;
+    console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s", host, port);
+    console.log("***RESTART API***");
+  });
+}
 
 //Permet de récupérer les throw err pour ne pas faire crasher l'API et créer un ticket chez Kerlan
 process.on('uncaughtException', (err, origin) => {
@@ -4200,14 +4214,22 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 
 //Récupérer toutes les zones présentes dans la table calndrier pour une usine
 //?idUsine=
-app.get("/getAllZonesCalendrier", middleware,(request, response) => {
-  const reqQ=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut, quart", (err,data) => {
-    if(err){
-      currentLineError=currentLine(); throw err;
+app.get("/getAllZonesCalendrier", middleware, (request, response) => {
+  const reqQ = request.query;
+  const req = "SELECT qc.id, qc.idUsine, qc.idZone, z.nom, qc.idAction, " +
+              "qc.finReccurrence, qc.dateFinReccurrence, " +
+              "qc.date_heure_debut, qc.date_heure_fin, qc.quart, qc.termine " +
+              "FROM quart_calendrier qc " +
+              "LEFT JOIN zones z ON qc.idZone = z.Id " +
+              "WHERE qc.idUsine = " + reqQ.idUsine + " " +
+              "ORDER BY qc.date_heure_debut";
+
+  pool.query(req, (err, result) => {
+    if (err) {
+      response.status(500).json("Erreur: " + err);
+    } else {
+      response.json({ data: result.recordset });
     }
-    data = data['recordset'];
-    response.json({data});
   });
 });
 
@@ -4237,21 +4259,35 @@ app.get("/getAllActionsCalendrier", middleware,(request, response) => {
 
 //Créer une instance pour les ZONES
 //?idUsine=1&idRonde=1&datedeb=''&dateFin=''&quart=1
-app.put("/newCalendrierZone", middleware,(request, response) => {
-  const reqQ=request.query;
+app.put("/newCalendrierZone", middleware, (request, response) => {
+  const reqQ = request.query;
+
+  console.log("Paramètres reçus dans newCalendrierZone:", {
+    idRonde: reqQ.idRonde,
+    dateDeb: reqQ.dateDeb,
+    quart: reqQ.quart,
+    dateFin: reqQ.dateFin,
+    dateFinReccurrence: reqQ.dateFinReccurrence
+  });
+
   let req = "";
-  if(reqQ.dateFinReccurrence === 'null') {
-    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"')"
-  }
-  else {
-    req = "INSERT INTO quart_calendrier(idUsine,idZone,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idRonde+",'"+reqQ.dateDeb+"',"+reqQ.quart+",0,'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')"
-  }
-  pool.query(req
-  ,(err,result) => {
-      if(err) throw err
-      else response.json("Création de l'instance OK !");
+  let finReccurence = reqQ.dateFinReccurrence && reqQ.dateFinReccurrence !== 'null' 
+                        ? reqQ.dateFinReccurrence.replace(/'/g, "''") 
+                        : reqQ.dateFin; // Si NULL, prendre dateFin
+
+  req = `INSERT INTO quart_calendrier(idUsine, idZone, date_heure_debut, quart, termine, date_heure_fin, finReccurence) 
+         VALUES(${reqQ.idUsine}, ${reqQ.idRonde}, '${reqQ.dateDeb}', ${reqQ.quart}, 0, '${reqQ.dateFin}', '${finReccurence}')`;
+
+  console.log("Requête SQL exécutée:", req);
+
+  pool.query(req, (err, result) => {
+    if (err) {
+      console.error("Erreur SQL:", err);
+      response.status(500).json("Erreur lors de la création: " + err.message);
+    } else {
+      console.log("Insertion réussie avec périodicité");
+      response.json("Création de l'instance OK !");
+    }
   });
 });
 
@@ -4261,12 +4297,12 @@ app.put("/newCalendrierAction", middleware,(request, response) => {
   const reqQ=request.query;
   let req = "";
   if(reqQ.dateFinReccurrence === 'null') {
-    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
+req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin) "
+        +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"')"
   }
   else {
-    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin, finReccurrence) "
-            +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')";
+    req = "INSERT INTO quart_calendrier(idUsine,idAction,date_heure_debut,quart,termine,date_heure_fin,finReccurrence) "
+    +"VALUES("+reqQ.idUsine+","+reqQ.idAction+",'"+reqQ.dateDeb+"',"+reqQ.quart+","+reqQ.termine+",'"+reqQ.dateFin+"','"+reqQ.dateFinReccurrence+"')";
   }
   pool.query(req
   ,(err,result) => {
@@ -4532,7 +4568,40 @@ app.post("/stockageRecapQuart", multer({storage: storage}).single('fichier'), (r
       html: "<h3>Voici le lien pour visualiser le PDF de récap de quart : <a href='"+url+"'>"+url+"</a></h3>"//Cors du mail en HTML
     };
 
+    app.put("/UserRecapQuart/:login/:droit", middleware,(request, response) => {
+      let login = request.params.login;
+      let droit = request.params.droit;
+      
+      pool.query("UPDATE users SET isRecapQuart = "+droit+" WHERE login = '"+login+"'", (err,data) => {
+        if(err){
+          currentLineError=currentLine(); 
+          throw err;
+        }
+        response.json("Mise à jour du droit OK");
+      });
+    });
+
+    //Récupération des utilisateurs ayant le droit au recap pour envoyer le PDF par mail
+    pool.query("SELECT * FROM users WHERE isRecapQuart = 1 AND idUsine = "+reqQ.idUsine, (err,data) => {
+
     transporter.sendMail(message, function(err, info) {
+      if(err){
+        currentLineError=currentLine(); throw err;
+      }
+      data = data['recordset'];
+      data.forEach(user => {
+        if(user.email.length > 0) maillist += user.email+';';
+      });
+  
+      /** ENVOI MAIL */
+      const message = {
+        from: process.env.USER_SMTP,
+        to: maillist,
+        subject: "Récapitulatif quart : "+reqQ.quart+" - "+reqQ.date,
+        html: "<h3>Voici le lien pour visualiser le PDF de récap de quart : <a href='"+url+"'>"+url+"</a></h3>"
+      };
+    });
+
       if (err) {
         console.log(err);
         response.json("Envoi mail KO");
