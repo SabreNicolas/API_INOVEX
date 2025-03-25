@@ -155,10 +155,11 @@ var transporter = nodemailer.createTransport(smtpTransport({
   },
 }));
 
+//TODO : a ne pas envoyer plusieurs fois si sur la même ligne d'erreur 
 const messagePlantage = {
   from: process.env.USER_SMTP, // Sender address
   to: 'developpement@kerlan-info.fr',
-  subject: 'API CAP EXPLOITATION', // Subject line
+  subject: 'PROD - API CAP EXPLOITATION', // Subject line
   html: '' //à compléter avant envoi
 };
 
@@ -2580,7 +2581,7 @@ app.get("/reportingRonde/:idRonde", middleware,(request, response) => {
 //?id=111&date=dhdhdh
 app.get("/valueElementDay", async (request, response) =>  {
   const reqQ=request.query
-  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND r.dateHeure = '"+reqQ.date+"' AND m.elementId = "+reqQ.id, async (err,data) => {
+  pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 3 AND value NOT LIKE '/' AND r.dateHeure = '"+reqQ.date+"' AND m.elementId = "+reqQ.id, async (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
@@ -2598,7 +2599,7 @@ app.get("/valueElementDay", async (request, response) =>  {
 //fonction pour récupérer la valeur de la ronde de l'après-midi
 async function valueElementDayAprem(date, id){
   return new Promise((resolve) => {
-    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 2 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 2 AND value NOT LIKE '/' AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
       if(err){
         currentLineError=currentLine(); throw err;
       }
@@ -2615,7 +2616,7 @@ async function valueElementDayAprem(date, id){
 //fonction pour récupérer la valeur de la ronde du matin
 async function valueElementDayMatin(date, id){
   return new Promise((resolve) => {
-    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 1 AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
+    pool.query("SELECT m.value FROM mesuresrondier m INNER JOIN ronde r ON m.rondeId = r.Id WHERE r.quart = 1 AND value NOT LIKE '/' AND r.dateHeure = '"+date+"' AND m.elementId = "+id, async (err,data) => {
       if(err){
         currentLineError=currentLine(); throw err;
       }
@@ -4202,7 +4203,7 @@ app.put("/deleteEvenement/:id",middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware,(request, response) => {
   const reqQ=request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut, quart", (err,data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = "+reqQ.idUsine+" order by date_heure_debut, quart, z.nom", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
