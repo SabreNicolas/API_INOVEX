@@ -794,11 +794,11 @@ app.put("/productUnit/:id",middleware, (request, response) => {
   });
 });
 
-//Update le type de récup emonitoring
-//?id=1&typeRecup=tifMax
+//Update le type de récup emonitoring et le type de la données
+//?id=1&typeRecup=tifMax&colonneBDD=typeRecupEMonitoring
 app.put("/updateRecupEMonitoring",middleware, (request, response) => {
   const reqQ=request.query
-  var update = "UPDATE products_new SET typeRecupEMonitoring = '" + reqQ.typeRecup + "' WHERE Id = "+reqQ.id;
+  var update = "UPDATE products_new SET "+reqQ.colonneBDD+" = '" + reqQ.typeRecup + "' WHERE Id = "+reqQ.id;
   if(reqQ.typeRecup == "null") update = "UPDATE products_new SET typeRecupEMonitoring = NULL WHERE Id = "+reqQ.id;
   pool.query(update, (err,data) => {
     if(err){
