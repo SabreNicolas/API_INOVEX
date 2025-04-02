@@ -23,8 +23,6 @@ aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 hierRondier = f'{hier:%d/%m/%Y}'
 
-print("Début du script ImaginData Le " + str(aujourdhui)  + "\n")
-
 #récupération de la liste des sites CAP Exploitation
 req = "https://fr-couvinove301:3100/sites"
 response = requests.get(req, headers = headers, verify=False)
@@ -64,15 +62,21 @@ for site in listeSites['data'] :
 print("Fin du script Rondier !")
 
 
-
+print("Début du script ImaginData Le " + str(aujourdhui)  + "\n")
 # #Connexion à la base de données ImagineData
-connexion = mysql.connector.connect(
-    host="imagindata.com",
-    user="siege",
-    password="ml!25dmSg:85fGas",
-    database="siege",
-    port="33060"
-)
+try:
+    connexion = mysql.connector.connect(
+        host="imagindata.com",
+        user="siege",
+        password="ml!25dmSg:85fGas",
+        database="siege",
+        port="33060",
+        ssl_disabled=False
+    )
+    if connexion.is_connected():
+        print("Connexion ImaginData OK")
+except mysql.connector.Error as e:
+    print(e)
 
 # Création du curseur
 curseur = connexion.cursor()
@@ -140,6 +144,7 @@ for site in listeSites['data'] :
                             # f.write(product['Name']  + "\n")
                             # f.write("*******************************"  + "\n")
                     #On insère ensuite la valeur en base de donnée
+                    print(recup)
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = headers, verify=False)
 
@@ -147,5 +152,6 @@ for site in listeSites['data'] :
 curseur.close()
 
 connexion.close()
+print("Déconnexion de la base de données ImaginData")
 
 print("Fin du script Imagindata !"  + "\n")
