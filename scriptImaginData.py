@@ -71,7 +71,7 @@ try:
         password="ml!25dmSg:85fGas",
         database="siege",
         port="33060",
-        ssl_disabled=False
+        ssl_disabled=True
     )
     if connexion.is_connected():
         print("Connexion ImaginData OK")

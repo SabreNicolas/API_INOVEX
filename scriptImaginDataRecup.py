@@ -55,15 +55,21 @@ for site in listeSites['data'] :
 print("Fin du script Rondier !")
 
 
-
+print("Début du script ImaginData Le " + str(aujourdhui)  + "\n")
 #Connexion à la base de données ImagineData
-connexion = mysql.connector.connect(
-    host="imagindata.com",
-    user="siege",
-    password="ml!25dmSg:85fGas",
-    database="siege",
-    port="33060"
-)
+try:
+    connexion = mysql.connector.connect(
+        host="imagindata.com",
+        user="siege",
+        password="ml!25dmSg:85fGas",
+        database="siege",
+        port="33060",
+        ssl_disabled=True
+    )
+    if connexion.is_connected():
+        print("Connexion ImaginData OK")
+except mysql.connector.Error as e:
+    print(e)
 
 # Création du curseur
 curseur = connexion.cursor()
@@ -76,7 +82,7 @@ for site in listeSites['data'] :
     listData = curseur.fetchall()
 
     #Récupération de la liste des produits avec un TAG dans chaque usine dans CAP Exploitation
-    req = "https://fr-couvinove301:3100/getProductsWithTag?idUsine=" + str(site['id'])
+    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
     response = requests.get(req, headers = headers, verify=False)
     listProducts = response.json()
     listProducts = listProducts["data"]
@@ -125,11 +131,11 @@ for site in listeSites['data'] :
                                 else :
                                     if operateur == "/" :
                                         recup = recup / valeur
-                        if count == 0 :
-                            print("Unite ImaginData : " +unit)
-                            print("Unite CAP : " + product['Unit'])
-                            print(product['Name'])
-                            print("*******************************")
+                        #if count == 0 :
+                            #print("Unite ImaginData : " +unit)
+                            #print("Unite CAP : " + product['Unit'])
+                            #print(product['Name'])
+                            #print("*******************************")
                     #On insère ensuite la valeur en base de donnée
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     response = requests.put(req, headers = headers, verify=False)
@@ -138,5 +144,6 @@ for site in listeSites['data'] :
 curseur.close()
 
 connexion.close()
+print("Déconnexion de la base de données ImaginData")
 
-print("Fin du script Imagindata !")
+print("Fin du script Imagindata !"  + "\n")

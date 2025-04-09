@@ -23,7 +23,7 @@ warnings.filterwarnings("ignore")
 #UTC+2 => 00h00 et 23h59 correspond UTC => 22h00 la veille et 22h
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
-hierAvevaDebut = f'{hier}' + "T00:10:00Z"
+hierAvevaDebut = f'{hier}' + "T00:01:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:59Z"
 #derniere valeur de la journée
 #Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
@@ -61,7 +61,7 @@ for site in listeSites['data'] :
             resolution = "&resolution=600000"
             date = "+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin
         else:
-            resolution = "&RetrievalMode=Cyclic&resolution=600000"
+            resolution = "&RetrievalMode=Cyclic&resolution=60000"
             date ="+and+DateTime+ge+"+ hierAvevaDebut+"+and+DateTime+le+"+hierAvevaFin
 
         if product['typeRecupEMonitoring'] == "cumul":
@@ -78,10 +78,10 @@ for site in listeSites['data'] :
                         if res["Value"] != 'NaN':
                             recup=recup + res["Value"]
                 #Si on est sur les booleans on a des 1 ou 0 toutes les 10 minutes
-                #On a 144 points 10 Min sur 24H
-                #On va donc multiplier la somme par 10 pour avoir un nombre de minutes puis on divise par 60 pour avoir en heure
+                #On a 1440 points 1 Min sur 24H
+                #On va donc diviser par 60 pour avoir en heure
                 if product['typeDonneeEMonitoring'] != "AnalogSummary":
-                    recup = (recup*10)/60
+                    recup = recup/60
 
 
 

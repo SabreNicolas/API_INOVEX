@@ -3083,7 +3083,7 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware,(request, response) 
 //?idRondier=1
 app.get("/getEquipeUser", (request, response) => {
   const reqQ=request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +" ORDER BY e.date DESC", (err,data) => {
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" +reqQ.idRondier +" ORDER BY e.date DESC, e.quart DESC", (err,data) => {
     if(err){
       currentLineError=currentLine(); throw err;
     }
