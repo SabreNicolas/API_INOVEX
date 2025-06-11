@@ -1681,7 +1681,6 @@ app.get("/zones/:idUsine", middleware, (request, response) => {
 app.get("/recupZoneCalce", (request, response) => {
   const reqQ = request.query
   pool.query("select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '" + reqQ.dateDeb + "' and c.idUsine = " + reqQ.idUsine, async (err, data) => {
-    console.log("-----select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '" + reqQ.dateDeb + "' and c.idUsine = " + reqQ.idUsine);
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -2538,7 +2537,6 @@ app.put("/mesureRondier", (request, response) => {
 /*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
 app.put("/mesureRondierOneRequest", async (request, response) => {
   const tableauDonnees = request.body;
-  console.log(tableauDonnees)
   let nbErreur = 0;
   let listElemErreur = "";
   let e = ""
@@ -2576,7 +2574,6 @@ app.put("/mesureRondierOneRequest", async (request, response) => {
         currentLineError = currentLine(); throw err;
       }
       data = data['recordset'];
-      console.log(data)
       if (data.length > 0) {
         console.log("OK");
         response.json("OK");
@@ -4266,7 +4263,7 @@ app.put("/deleteEvenement/:id", middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware, (request, response) => {
   const reqQ = request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, c.recurrencePhrase, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = " + reqQ.idUsine + " order by date_heure_debut, quart", (err, data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, c.recurrencePhrase, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = " + reqQ.idUsine + " order by date_heure_debut, quart, z.nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -4351,7 +4348,6 @@ app.put("/newAction", middleware, (request, response) => {
   pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
     + "VALUES(" + reqQ.idUsine + ",'" + nom + "','" + reqQ.dateDeb + "','" + reqQ.dateFin + "')"
     , (err, data) => {
-      console.log(data['recordset']);
       if (err) {
         currentLineError = currentLine(); throw err;
       }
@@ -4480,7 +4476,6 @@ app.get("/getActionsRonde", middleware, (request, response) => {
       currentLineError = currentLine(); throw err;
     }
     data = data['recordset'];
-    console.log(data);
     response.json({ data });
   });
 });
@@ -5187,12 +5182,10 @@ app.get("/recupElementsPDF", (request, response) => {
 app.put("/changeTermineCalendrier", (request, response) => {
   const reqQ = request.query;
   let termine = 1;
-  console.log(reqQ.termine)
   if (reqQ.termine === "false") {
     termine = 0;
   }
   pool.query("update quart_calendrier set termine = " + termine + " where id = " + reqQ.id, (err, data) => {
-    console.log("update quart_calendrier set termine = " + termine + " where id = " + reqQ.id)
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -5311,12 +5304,10 @@ app.put("/updateActionEnregistrement/:idAction", (request, response) => {
   const reqP = request.params
   const reqQ = request.query
   const nom = reqQ.nom.replace(/'/g, "''");
-  console.log(nom)
   pool.query("update actions_enregistrement set nom ='" + nom + "' where id = " + reqP.idAction, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
-    console.log(data)
     response.json("Update action enregistrement ok");
   });
 });
@@ -5351,7 +5342,6 @@ app.get("/choixDepassements", (request, response) => {
   if (conditions.length) {
     query += " WHERE " + conditions.join(" AND ")
   }
-  console.log(req)
   pool.query(req, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
@@ -5627,3 +5617,42 @@ app.delete("/depassementsNew/:id", (request, response) => {
     response.json("L'id est vide");
   }
 });
+
+///////////Validation Données//////////////
+//Création Validation de données
+//?idUser=1&date=???&idUsine=1&moisValidation=05&anneeValidation=2025
+app.put("/validationDonnees", middleware, (request, response) => {
+  const reqQ = request.query;
+  pool.query("INSERT INTO validationDonnees(idUser,date,idUsine,moisValidation,anneeValidation) VALUES(" + reqQ.idUser + ",'" + reqQ.date + "'," + reqQ.idUsine + ",'"+reqQ.moisValidation+ "','"+reqQ.anneeValidation+"')"
+    , (err, result) => {
+      if (err) {
+        currentLineError = currentLine(); throw err;
+      }
+      else response.json("Ajout OK !");
+    });
+});
+
+//Récupérer si il y a eu une validation des données sur le mois dernier
+app.get("/validationDonnees/:idUsine/:mois/:annee", middleware, (request, response) => {
+  const reqP = request.params;
+  pool.query("SELECT * FROM validationDonnees WHERE moisValidation = "+reqP.mois+" AND anneeValidation = "+reqP.annee+" AND idUsine = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
+  });
+});
+
+//Récupérer si l'usine doit afficher la popUp
+app.get("/AffichageValidationDonnees/:idUsine", middleware, (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT validationDonnees FROM site WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json(data[0].validationDonnees);
+  });
+});
+///////////FIN Validation Données//////////////
