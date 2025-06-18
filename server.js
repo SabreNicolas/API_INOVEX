@@ -4601,8 +4601,8 @@ app.post("/stockageRecapQuart", multer({ storage: storage }).single('fichier'), 
       currentLineError = currentLine(); throw err;
     }
   });
-  //Récupération des utilisateurs admin pour envoyer le PDF par mail
-  pool.query("SELECT * FROM users WHERE isAdmin = 1 AND idUsine = " + reqQ.idUsine, (err, data) => {
+  //Récupération des utilisateurs ayant le droit mail pour envoyer le PDF par mail
+  pool.query("SELECT * FROM users WHERE isMail = 1 AND idUsine = " + reqQ.idUsine, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
