@@ -2635,9 +2635,9 @@ app.get("/valueElementDay", async (request, response) => {
     }
     valueElementDay = data['recordset'];
     data = data['recordset'];
-    if (valueElementDay.length == 0) {
+    if (valueElementDay.length == 0 || valueElementDay[0].value == '/') {
       await valueElementDayAprem(reqQ.date, reqQ.id);
-      data = valueElementDay
+      data = valueElementDay;
       response.json({ data });
     }
     else response.json({ data });
@@ -2652,7 +2652,7 @@ async function valueElementDayAprem(date, id) {
         currentLineError = currentLine(); throw err;
       }
       valueElementDay = data['recordset'];
-      if (valueElementDay.length == 0) {
+      if (valueElementDay.length == 0 || valueElementDay[0].value == '/') {
         await valueElementDayMatin(date, id);
       }
       resolve()
