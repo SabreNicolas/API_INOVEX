@@ -4471,7 +4471,7 @@ app.get("/getEvenementsRonde", middleware, (request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActionsRonde", middleware, (request, response) => {
   const reqQ = request.query;
-  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -5273,7 +5273,7 @@ app.get("/rondeAnterieur/:idUsine", (request, response) => {
 //Action enregistrement
 //Récupérer la liste des rondes à des dates anterieurs
 app.get("/getActionsEnregistrement/:idUsine", (request, response) => {
-  const reqP = request.params
+  const reqP = request.params;
   pool.query("SELECT * FROM actions_enregistrement WHERE idUsine = " + reqP.idUsine + " ORDER BY nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
