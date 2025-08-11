@@ -1307,7 +1307,7 @@ app.get("/UsersEmail", middleware, (request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => {
   const reqQ = request.query
-  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = " + reqQ.idUsine + " ORDER BY Nom ASC", (err, data) => {
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = " + reqQ.idUsine + " AND isActif = 1 ORDER BY Nom ASC", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -3042,7 +3042,7 @@ app.put("/updateInfosAffectationEquipe", middleware, (request, response) => {
 app.get("/usersRondierSansEquipe", middleware, (request, response) => {
   const reqQ = request.query
   //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
-  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " ORDER BY Nom", (err, data) => {
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " AND isActif = 1 ORDER BY Nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
