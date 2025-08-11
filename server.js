@@ -108,8 +108,8 @@ var server = httpsServer.listen(port, function () {
   var host = server.address().address;
   var port = server.address().port;
 
-  console.log("API CAP EXPLOITATION SQL SERVER en route sur http://%s:%s", host, port);
-  console.log("***RESTART API***");
+  console.log("***RESTART API via service***");
+  console.log("API CAP EXPLOITATION SQL SERVER via le service API_CAP en route sur http://%s:%s", host, port);
 });
 
 //Permet de récupérer les throw err pour ne pas faire crasher l'API et créer un ticket chez Kerlan
@@ -119,7 +119,7 @@ process.on('uncaughtException', (err, origin) => {
   messagePlantage.html += '<h3>' + err.message + '</h3>';
   messagePlantage.html += '<p>' + err.stack + '</p><br>';
   messagePlantage.html += '<p>' + reqSQL + '</p>';
-  console.log(err);
+  console.log(messagePlantage.html);
   //en preprod on envoi pas de mail pour éviter le spam
   /*transporter.sendMail(messagePlantage, function(errMail, info) {
     if (errMail) {
@@ -1281,7 +1281,7 @@ app.put("/User", middleware, (request, response) => {
 //?login=aaaa&idUsine=1
 app.get("/Users", middleware, (request, response) => {
   const reqQ = request.query
-  pool.query("SELECT * FROM users WHERE login LIKE '%" + reqQ.login + "%' AND idUsine = " + reqQ.idUsine + " ORDER BY Nom ASC", (err, data) => {
+  pool.query("SELECT * FROM users WHERE login LIKE '%" + reqQ.login + "%' AND idUsine = " + reqQ.idUsine + " ORDER BY isActif DESC, Nom ASC", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1334,7 +1334,7 @@ app.get("/User/:login/:pwd", (request, response) => {
   const reqP = request.params
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = reqP.login.replace("'", "''");
-  pool.query("SELECT * FROM users WHERE login = '" + login + "' AND pwd = '" + reqP.pwd + "'", (err, data) => {
+  pool.query("SELECT * FROM users WHERE login = '" + login + "' AND pwd = '" + reqP.pwd + "' AND isActif = 1", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1444,6 +1444,17 @@ app.put("/UserMail/:login/:droit", middleware, (request, response) => {
 app.put("/UserAdmin/:login/:droit", middleware, (request, response) => {
   const reqP = request.params
   pool.query("UPDATE users SET isAdmin = '" + reqP.droit + "' WHERE login = '" + reqP.login + "'", (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update actif pour user
+app.put("/UserActif/:login/:droit", middleware, (request, response) => {
+  const reqP = request.params;
+  pool.query("UPDATE users SET isActif = '" + reqP.droit + "' WHERE login = '" + reqP.login + "'", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -4606,6 +4617,8 @@ app.post("/stockageRecapQuart", multer({ storage: storage }).single('fichier'), 
     if (err) {
       currentLineError = currentLine(); throw err;
     }
+    console.log("Print du quart : ", reqQ.quart);
+    console.log("Print de la date : ", reqQ.date)
     data = data['recordset'];
     data.forEach(user => {
       if (user.email.length > 0) maillist += user.email + ';';

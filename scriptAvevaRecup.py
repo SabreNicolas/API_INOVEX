@@ -29,6 +29,8 @@ listConversions = listConversions["data"]
 
 # #Boucle sur les sites pour insérer les valeur site par site
 for site in listeSites['data'] :
+    print("**********")
+    print(site['localisation'])
 
     ############TAG CLASSIQUE
     #Récupération de la liste des produits avec un TAG dans chaque usine (sauf ceux pour lesquelles ont veut seulement la dernière valeur du jour)
@@ -38,26 +40,37 @@ for site in listeSites['data'] :
     listProducts = listProducts["data"]
 
     for product in listProducts :
+        if product['typeDonneeEMonitoring'] == "AnalogSummary":
+            resolution = "&resolution=600000"
+            date = "+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin
+        else:
+            resolution = "&RetrievalMode=Cyclic&resolution=60000"
+            date ="+and+DateTime+ge+"+ hierAvevaDebut+"+and+DateTime+le+"+hierAvevaFin
+
         if product['typeRecupEMonitoring'] == "cumul":
-            req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=600000"
+            req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
             response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-            # print("********************************************new response")
-            # print(response.json())
             listData = response.json()
-            # print("***************************")
-            # print(liste)
             recup = 0
             if len(listData['value']) != 0:
                 for res in listData['value']:
-                    # print(res)
-                    # print("---------------------")
-                    if res["Average"] != 'NaN':
-                        recup=recup + res["Average"]
-                print(recup)
+                    if product['typeDonneeEMonitoring'] == "AnalogSummary":
+                        if res["Average"] != 'NaN':
+                            recup=recup + res["Average"]
+                    else :
+                        if res["Value"] != 'NaN':
+                            recup=recup + res["Value"]
+                #Si on est sur les booleans on a des 1 ou 0 toutes les 10 minutes
+                #On a 1440 points 1 Min sur 24H
+                #On va donc diviser par 60 pour avoir en heure
+                if product['typeDonneeEMonitoring'] != "AnalogSummary":
+                    recup = recup/60
+
+
 
         else :
-            #Récupération des données du jour 
-            req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=86400000"
+            #Récupération des données du jour
+            req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
             # print(req)
             response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
             # print("old response")
@@ -68,17 +81,19 @@ for site in listeSites['data'] :
             if len(listData['value']) != 0:
                 #if(product["TAG"] == 'P_Active/MESURE.U'): 
                     #print(listData['value'][0])
-                if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
-                    recup = listData['value'][0]['Minimum']
-                else :
-                    if product['typeRecupEMonitoring'] == "tafMax" and listData['value'][0]['Maximum'] != 'NaN' :
-                        recup =listData['value'][0]['Maximum']
+                if product['typeDonneeEMonitoring'] == "AnalogSummary":
+                    if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
+                        recup = listData['value'][0]['Minimum']
                     else :
-                        if product['typeRecupEMonitoring'] == "cumul" and listData['value'][0]['Maximum'] != 'NaN' and listData['value'][0]['Minimum'] != 'NaN' :
-                            #recup = data[5] - data[4]
-                            recup = listData['value'][0]['Maximum'] - listData['value'][0]['Minimum']
+                        if product['typeRecupEMonitoring'] == "tafMax" and listData['value'][0]['Maximum'] != 'NaN' :
+                            recup =listData['value'][0]['Maximum']
                         else :
                             recup = listData['value'][0]['Average']
+                else:
+                    if listData['value'][0]['Value'] != 'NaN':
+                        recup = listData['value'][0]['Value']
+
+
         if len(listData['value']) != 0:
             #Si l'unité Aveva est différente de l'unité CAP Exploitation
             if "Unit" in listData['value'][0] :
