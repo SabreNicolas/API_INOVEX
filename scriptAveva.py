@@ -170,10 +170,12 @@ for site in listeSites['data'] :
             # print("boucle2")
             # print(response)
             listData = response.json()
-            #print(listData)
             #Si on l'api nous retourne une valeur, on créé une mesure
             if len(listData['value']) != 0:
-                recup = listData['value'][0]['Maximum']
+                if listData['value'][0]['Maximum'] != 'NaN' :
+                    recup = listData['value'][0]['Maximum']
+                else :
+                    recup = listData['value'][0]['Average']
                 if(recup != 'NaN'):
                     req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
                     #print(req)
