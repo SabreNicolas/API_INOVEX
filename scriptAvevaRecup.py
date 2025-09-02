@@ -13,6 +13,11 @@ hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
 hier = datetime.strptime(hier, "%d/%m/%Y").date()
 hierAvevaDebut = f'{hier}' + "T00:00:00Z"
 hierAvevaFin = f'{hier}' + "T23:59:00Z"
+#derniere valeur de la journée
+#Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
+#Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
+dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
+dernierAvevaFin = f'{hier}' + "T22:59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui))
 
@@ -48,50 +53,54 @@ for site in listeSites['data'] :
             date ="+and+DateTime+ge+"+ hierAvevaDebut+"+and+DateTime+le+"+hierAvevaFin
 
         if product['typeRecupEMonitoring'] == "cumul":
-            req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
-            response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-            listData = response.json()
-            recup = 0
-            if len(listData['value']) != 0:
-                for res in listData['value']:
-                    if product['typeDonneeEMonitoring'] == "AnalogSummary":
-                        if res["Average"] != 'NaN':
-                            recup=recup + res["Average"]
-                    else :
-                        if res["Value"] != 'NaN':
-                            recup=recup + res["Value"]
-                #Si on est sur les booleans on a des 1 ou 0 toutes les 10 minutes
-                #On a 1440 points 1 Min sur 24H
-                #On va donc diviser par 60 pour avoir en heure
-                if product['typeDonneeEMonitoring'] != "AnalogSummary":
-                    recup = recup/60
-
-
+            try :
+                req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
+                response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+                listData = response.json()
+                recup = 0
+                if len(listData['value']) != 0:
+                    for res in listData['value']:
+                        if product['typeDonneeEMonitoring'] == "AnalogSummary":
+                            if res["Average"] != 'NaN':
+                                recup=recup + res["Average"]
+                        else :
+                            if res["Value"] != 'NaN':
+                                recup=recup + res["Value"]
+                    #Si on est sur les booleans on a des 1 ou 0 toutes les 1 minutes
+                    #On a 1440 points 1 Min sur 24H
+                    #On va donc diviser par 60 pour avoir en heure
+                    if product['typeDonneeEMonitoring'] != "AnalogSummary":
+                        recup = recup/60
+            except :
+                print("soucis de requête AVEVA")
 
         else :
             #Récupération des données du jour
-            req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
-            # print(req)
-            response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-            # print("old response")
-            # print(response)
-            listData = response.json()
-            # print(listData['value'])
-            # #Si on l'api nous retourne une valeur, on créé une mesure
-            if len(listData['value']) != 0:
-                #if(product["TAG"] == 'P_Active/MESURE.U'): 
-                    #print(listData['value'][0])
-                if product['typeDonneeEMonitoring'] == "AnalogSummary":
-                    if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
-                        recup = listData['value'][0]['Minimum']
-                    else :
-                        if product['typeRecupEMonitoring'] == "tafMax" and listData['value'][0]['Maximum'] != 'NaN' :
-                            recup =listData['value'][0]['Maximum']
+            try :
+                req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
+                # print(req)
+                response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+                # print("old response")
+                # print(response)
+                listData = response.json()
+                # print(listData['value'])
+                # #Si on l'api nous retourne une valeur, on créé une mesure
+                if len(listData['value']) != 0:
+                    #if(product["TAG"] == 'P_Active/MESURE.U'): 
+                        #print(listData['value'][0])
+                    if product['typeDonneeEMonitoring'] == "AnalogSummary":
+                        if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
+                            recup = listData['value'][0]['Minimum']
                         else :
-                            recup = listData['value'][0]['Average']
-                else:
-                    if listData['value'][0]['Value'] != 'NaN':
-                        recup = listData['value'][0]['Value']
+                            if product['typeRecupEMonitoring'] == "tafMax" and listData['value'][0]['Maximum'] != 'NaN' :
+                                recup =listData['value'][0]['Maximum']
+                            else :
+                                recup = listData['value'][0]['Average']
+                    else:
+                        if listData['value'][0]['Value'] != 'NaN':
+                            recup = listData['value'][0]['Value']
+            except :
+                print("soucis de requête AVEVA")
 
 
         if len(listData['value']) != 0:
@@ -122,7 +131,7 @@ for site in listeSites['data'] :
                         # f.write(product['Name']  + "\n")
                         # f.write("*******************************"  + "\n")
 
-             #ATTENTION => A automatiser
+            #ATTENTION => A automatiser
             #Permet de faire *24 sur un compteur qui est un débit mètre ou autre et qui renvoi la moyenne
             if(product["TAG"] == 'P_Active/MESURE.U' or product["TAG"] == '0MKA60CE100ET/MESURE.U' or product["TAG"] == '0MKA60CE108/MESURE.U' or product["TAG"] == '1LBA10CF901FT/MESURE.U' or product["TAG"] == '2LBA10CF901FT/MESURE.U' or product["TAG"] == '3LBA10CF001FT/MESURE.U'): 
                 recup = recup * 24
@@ -142,19 +151,22 @@ for site in listeSites['data'] :
     for product in listProducts :
 
         #Récupération de la dernière données du jour
-        req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&RetrievalMode=Cyclic"
-        # print(req)
-        response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-        # print("boucle2")
-        # print(response)
-        listData = response.json()
-        #print(listData)
-        #Si on l'api nous retourne une valeur, on créé une mesure
-        if len(listData['value']) != 0:
-            recup = listData['value'][0]['Average']
-            if(recup != 'NaN'):
-                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-                #print(req)
-                response = requests.put(req, headers = headers, verify=False)
+        try :
+            req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+dernierAvevaDebut+"+and+EndDateTime+le+"+dernierAvevaFin+"&RetrievalMode=Cyclic"
+            # print(req)
+            response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
+            # print("boucle2")
+            # print(response)
+            listData = response.json()
+            #print(listData)
+            #Si on l'api nous retourne une valeur, on créé une mesure
+            if len(listData['value']) != 0:
+                recup = listData['value'][0]['Maximum']
+                if(recup != 'NaN'):
+                    req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
+                    #print(req)
+                    response = requests.put(req, headers = headers, verify=False)
+        except :
+            print("soucis de requête AVEVA")
 
 print("Fin du script !"  + "\n")
