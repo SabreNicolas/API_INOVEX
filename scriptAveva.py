@@ -23,13 +23,14 @@ warnings.filterwarnings("ignore")
 #UTC+2 => 00h00 et 23h59 correspond UTC => 22h00 la veille et 22h
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
-hierAvevaDebut = f'{hier}' + "T00:00:00Z"
-hierAvevaFin = f'{hier}' + "T23:59:00Z"
+avantHier = aujourdhui - timedelta (days=2)
+hierAvevaDebut = f'{avantHier}' + "T22:01:00Z"
+hierAvevaFin = f'{hier}' + "T22:00:00Z"
 #derniere valeur de la journée
 #Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
 #Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
-dernierAvevaFin = f'{hier}' + "T22:59:59Z"
+dernierAvevaDebut = f'{hier}' + "T21:59:50Z"
+dernierAvevaFin = f'{hier}' + "T21:59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
@@ -84,7 +85,7 @@ for site in listeSites['data'] :
                     if product['typeDonneeEMonitoring'] != "AnalogSummary":
                         recup = recup/60
             except:
-                print("soucis de requête AVEVA")
+                print("soucis de requête AVEVA pour "+product["TAG"])
 
         else :
             #Récupération des données du jour
@@ -113,7 +114,7 @@ for site in listeSites['data'] :
                             recup = listData['value'][0]['Value']
 
             except :
-                print("soucis de requête AVEVA")
+                print("soucis de requête AVEVA pour "+product["TAG"])
 
         if len(listData['value']) != 0:
             #Si l'unité Aveva est différente de l'unité CAP Exploitation
@@ -182,6 +183,6 @@ for site in listeSites['data'] :
                     response = requests.put(req, headers = headers, verify=False)
 
         except :
-            print("soucis de requête AVEVA")
+            print("soucis de requête AVEVA pour "+product["TAG"])
 
 print("Fin du script !"  + "\n")

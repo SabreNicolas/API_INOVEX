@@ -11,13 +11,14 @@ warnings.filterwarnings("ignore")
 aujourdhui = datetime.now().date()
 hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
 hier = datetime.strptime(hier, "%d/%m/%Y").date()
-hierAvevaDebut = f'{hier}' + "T00:00:00Z"
-hierAvevaFin = f'{hier}' + "T23:59:00Z"
+avantHier = aujourdhui - timedelta (days=2)
+hierAvevaDebut = f'{avantHier}' + "T22:01:00Z"
+hierAvevaFin = f'{hier}' + "T22:00:00Z"
 #derniere valeur de la journée
 #Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
 #Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
-dernierAvevaFin = f'{hier}' + "T22:59:59Z"
+dernierAvevaDebut = f'{hier}' + "T21:59:50Z"
+dernierAvevaFin = f'{hier}' + "T21:59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui))
 
@@ -72,7 +73,7 @@ for site in listeSites['data'] :
                     if product['typeDonneeEMonitoring'] != "AnalogSummary":
                         recup = recup/60
             except :
-                print("soucis de requête AVEVA")
+                print("soucis de requête AVEVA pour "+product["TAG"])
 
         else :
             #Récupération des données du jour
@@ -100,7 +101,7 @@ for site in listeSites['data'] :
                         if listData['value'][0]['Value'] != 'NaN':
                             recup = listData['value'][0]['Value']
             except :
-                print("soucis de requête AVEVA")
+                print("soucis de requête AVEVA pour "+product["TAG"])
 
 
         if len(listData['value']) != 0:
@@ -170,6 +171,6 @@ for site in listeSites['data'] :
                     #print(req)
                     response = requests.put(req, headers = headers, verify=False)
         except :
-            print("soucis de requête AVEVA")
+            print("soucis de requête AVEVA pour "+product["TAG"])
 
 print("Fin du script !"  + "\n")
