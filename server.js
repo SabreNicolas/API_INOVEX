@@ -119,7 +119,7 @@ process.on('uncaughtException', (err, origin) => {
   messagePlantage.html += '<h3>' + err.message + '</h3>';
   messagePlantage.html += '<p>' + err.stack + '</p><br>';
   messagePlantage.html += '<p>' + reqSQL + '</p>';
-  console.log(err);
+  console.log(messagePlantage.html);
   //en preprod on envoi pas de mail pour éviter le spam
   /*transporter.sendMail(messagePlantage, function(errMail, info) {
     if (errMail) {
@@ -1364,7 +1364,7 @@ app.put("/User", middleware, (request, response) => {
 //?login=aaaa&idUsine=1
 app.get("/Users", middleware, (request, response) => {
   const reqQ = request.query
-  pool.query("SELECT * FROM users WHERE login LIKE '%" + reqQ.login + "%' AND idUsine = " + reqQ.idUsine + " ORDER BY Nom ASC", (err, data) => {
+  pool.query("SELECT * FROM users WHERE login LIKE '%" + reqQ.login + "%' AND idUsine = " + reqQ.idUsine + " ORDER BY isActif DESC, Nom ASC", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1390,7 +1390,7 @@ app.get("/UsersEmail", middleware, (request, response) => {
 //?idUsine=1
 app.get("/UsersRondier", (request, response) => {
   const reqQ = request.query
-  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = " + reqQ.idUsine + " ORDER BY Nom ASC", (err, data) => {
+  pool.query("SELECT Nom, Prenom, Id, posteUser FROM users WHERE isRondier = 1 AND idUsine = " + reqQ.idUsine + " AND isActif = 1 ORDER BY Nom ASC", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1417,7 +1417,7 @@ app.get("/User/:login/:pwd", (request, response) => {
   const reqP = request.params
   //pour protéger la connexion tablette des users avec un apostrophe
   let login = reqP.login.replace("'", "''");
-  pool.query("SELECT * FROM users WHERE login = '" + login + "' AND pwd = '" + reqP.pwd + "'", (err, data) => {
+  pool.query("SELECT * FROM users WHERE login = '" + login + "' AND pwd = '" + reqP.pwd + "' AND isActif = 1", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1527,6 +1527,17 @@ app.put("/UserMail/:login/:droit", middleware, (request, response) => {
 app.put("/UserAdmin/:login/:droit", middleware, (request, response) => {
   const reqP = request.params
   pool.query("UPDATE users SET isAdmin = '" + reqP.droit + "' WHERE login = '" + reqP.login + "'", (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    response.json("Mise à jour du droit OK")
+  });
+});
+
+//Update actif pour user
+app.put("/UserActif/:login/:droit", middleware, (request, response) => {
+  const reqP = request.params;
+  pool.query("UPDATE users SET isActif = '" + reqP.droit + "' WHERE login = '" + reqP.login + "'", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -1764,7 +1775,6 @@ app.get("/zones/:idUsine", middleware, (request, response) => {
 app.get("/recupZoneCalce", (request, response) => {
   const reqQ = request.query
   pool.query("select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '" + reqQ.dateDeb + "' and c.idUsine = " + reqQ.idUsine, async (err, data) => {
-    console.log("-----select c.idZone as Id, z.nom as 'nom' from quart_calendrier c INNER JOIN zonecontrole z on z.id = c.idZone where c.termine = 0 AND c.date_heure_debut = '" + reqQ.dateDeb + "' and c.idUsine = " + reqQ.idUsine);
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -2621,7 +2631,6 @@ app.put("/mesureRondier", (request, response) => {
 /*Mesures Rondier avec envoi des données en une fois via JsonArray dans le body*/
 app.put("/mesureRondierOneRequest", async (request, response) => {
   const tableauDonnees = request.body;
-  console.log(tableauDonnees)
   let nbErreur = 0;
   let listElemErreur = "";
   let e = ""
@@ -2659,7 +2668,6 @@ app.put("/mesureRondierOneRequest", async (request, response) => {
         currentLineError = currentLine(); throw err;
       }
       data = data['recordset'];
-      console.log(data)
       if (data.length > 0) {
         console.log("OK");
         response.json("OK");
@@ -2721,9 +2729,9 @@ app.get("/valueElementDay", async (request, response) => {
     }
     valueElementDay = data['recordset'];
     data = data['recordset'];
-    if (valueElementDay.length == 0) {
+    if (valueElementDay.length == 0 || valueElementDay[0].value == '/') {
       await valueElementDayAprem(reqQ.date, reqQ.id);
-      data = valueElementDay
+      data = valueElementDay;
       response.json({ data });
     }
     else response.json({ data });
@@ -2738,7 +2746,7 @@ async function valueElementDayAprem(date, id) {
         currentLineError = currentLine(); throw err;
       }
       valueElementDay = data['recordset'];
-      if (valueElementDay.length == 0) {
+      if (valueElementDay.length == 0 || valueElementDay[0].value == '/') {
         await valueElementDayMatin(date, id);
       }
       resolve()
@@ -3117,7 +3125,7 @@ app.put("/updateInfosAffectationEquipe", middleware, (request, response) => {
 app.get("/usersRondierSansEquipe", middleware, (request, response) => {
   const reqQ = request.query
   //pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + "and Id NOT IN (SELECT idRondier from affectation_equipe) ORDER BY Nom", (err,data) => {
-  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " ORDER BY Nom", (err, data) => {
+  pool.query("SELECT * from users where isRondier = 1 and idUsine = " + reqQ.idUsine + " AND isActif = 1 ORDER BY Nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -4349,7 +4357,7 @@ app.put("/deleteEvenement/:id", middleware, (request, response) => {
 //?idUsine=
 app.get("/getAllZonesCalendrier", middleware, (request, response) => {
   const reqQ = request.query;
-  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, c.recurrencePhrase, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = " + reqQ.idUsine + " order by date_heure_debut, quart", (err, data) => {
+  pool.query("select c.id, c.idUsine, c.idZone, z.nom, c.idAction, c.finReccurrence, c.recurrencePhrase, date_heure_debut,date_heure_fin,c.quart, c.termine from quart_calendrier c full outer join zonecontrole z on z.id = c.idZone where c.idZone is not null and c.idUsine = " + reqQ.idUsine + " order by date_heure_debut, quart, z.nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -4434,7 +4442,6 @@ app.put("/newAction", middleware, (request, response) => {
   pool.query("INSERT INTO quart_action(idUsine,nom,date_heure_debut,date_heure_fin) OUTPUT INSERTED.id, INSERTED.date_heure_debut,INSERTED.date_heure_fin "
     + "VALUES(" + reqQ.idUsine + ",'" + nom + "','" + reqQ.dateDeb + "','" + reqQ.dateFin + "')"
     , (err, data) => {
-      console.log(data['recordset']);
       if (err) {
         currentLineError = currentLine(); throw err;
       }
@@ -4558,12 +4565,11 @@ app.get("/getEvenementsRonde", middleware, (request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActionsRonde", middleware, (request, response) => {
   const reqQ = request.query;
-  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where a.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
     data = data['recordset'];
-    console.log(data);
     response.json({ data });
   });
 });
@@ -4689,11 +4695,13 @@ app.post("/stockageRecapQuart", multer({ storage: storage }).single('fichier'), 
       currentLineError = currentLine(); throw err;
     }
   });
-  //Récupération des utilisateurs admin pour envoyer le PDF par mail
-  pool.query("SELECT * FROM users WHERE isAdmin = 1 AND idUsine = " + reqQ.idUsine, (err, data) => {
+  //Récupération des utilisateurs ayant le droit mail pour envoyer le PDF par mail
+  pool.query("SELECT * FROM users WHERE isMail = 1 AND idUsine = " + reqQ.idUsine, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
-    }
+    }    
+    console.log("Print du quart : ", reqQ.quart);
+    console.log("Print de la date : ", reqQ.date)
     data = data['recordset'];
     data.forEach(user => {
       if (user.email.length > 0) maillist += user.email + ';';
@@ -5270,12 +5278,10 @@ app.get("/recupElementsPDF", (request, response) => {
 app.put("/changeTermineCalendrier", (request, response) => {
   const reqQ = request.query;
   let termine = 1;
-  console.log(reqQ.termine)
   if (reqQ.termine === "false") {
     termine = 0;
   }
   pool.query("update quart_calendrier set termine = " + termine + " where id = " + reqQ.id, (err, data) => {
-    console.log("update quart_calendrier set termine = " + termine + " where id = " + reqQ.id)
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -5363,7 +5369,7 @@ app.get("/rondeAnterieur/:idUsine", (request, response) => {
 //Action enregistrement
 //Récupérer la liste des rondes à des dates anterieurs
 app.get("/getActionsEnregistrement/:idUsine", (request, response) => {
-  const reqP = request.params
+  const reqP = request.params;
   pool.query("SELECT * FROM actions_enregistrement WHERE idUsine = " + reqP.idUsine + " ORDER BY nom", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
@@ -5394,12 +5400,10 @@ app.put("/updateActionEnregistrement/:idAction", (request, response) => {
   const reqP = request.params
   const reqQ = request.query
   const nom = reqQ.nom.replace(/'/g, "''");
-  console.log(nom)
   pool.query("update actions_enregistrement set nom ='" + nom + "' where id = " + reqP.idAction, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
-    console.log(data)
     response.json("Update action enregistrement ok");
   });
 });
@@ -5434,7 +5438,6 @@ app.get("/choixDepassements", (request, response) => {
   if (conditions.length) {
     query += " WHERE " + conditions.join(" AND ")
   }
-  console.log(req)
   pool.query(req, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
@@ -5710,3 +5713,42 @@ app.delete("/depassementsNew/:id", (request, response) => {
     response.json("L'id est vide");
   }
 });
+
+///////////Validation Données//////////////
+//Création Validation de données
+//?idUser=1&date=???&idUsine=1&moisValidation=05&anneeValidation=2025
+app.put("/validationDonnees", middleware, (request, response) => {
+  const reqQ = request.query;
+  pool.query("INSERT INTO validationDonnees(idUser,date,idUsine,moisValidation,anneeValidation) VALUES(" + reqQ.idUser + ",'" + reqQ.date + "'," + reqQ.idUsine + ",'"+reqQ.moisValidation+ "','"+reqQ.anneeValidation+"')"
+    , (err, result) => {
+      if (err) {
+        currentLineError = currentLine(); throw err;
+      }
+      else response.json("Ajout OK !");
+    });
+});
+
+//Récupérer si il y a eu une validation des données sur le mois dernier
+app.get("/validationDonnees/:idUsine/:mois/:annee", middleware, (request, response) => {
+  const reqP = request.params;
+  pool.query("SELECT * FROM validationDonnees WHERE moisValidation = "+reqP.mois+" AND anneeValidation = "+reqP.annee+" AND idUsine = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
+  });
+});
+
+//Récupérer si l'usine doit afficher la popUp
+app.get("/AffichageValidationDonnees/:idUsine", middleware, (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT validationDonnees FROM site WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json(data[0].validationDonnees);
+  });
+});
+///////////FIN Validation Données//////////////
