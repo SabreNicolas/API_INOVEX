@@ -811,6 +811,89 @@ app.put("/updateRecupEMonitoring", middleware, (request, response) => {
   });
 });
 
+//Update le type d'alerte
+//?id=1&typeAlerte="min" | "max" | "ecart" | "aucune";
+app.put("/updateTypeAlerte",middleware, (request, response) => {
+  const reqQ=request.query
+  var update = "UPDATE products_new SET typeAlerte = '" + reqQ.typeAlerte + "' WHERE Id = "+reqQ.id;
+  pool.query(update, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Changement du type d'alerte OK")
+  });
+});
+
+//Update valeur alerte
+//?id=1&valeurAlerte=123.45
+app.put("/updateValeurAlerte",middleware, (request, response) => {
+  const reqQ=request.query
+  pool.query("UPDATE products_new SET valeurAlerte = " + reqQ.valeurAlerte + " WHERE Id = "+reqQ.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Changement de la valeur d'alerte OK")
+  }
+  );
+});
+
+//Update alerte active ou non
+//?id=1&alerteActive=0 ou 1
+app.put("/toggleAlerteActive",middleware, (request, response) => {
+  const reqQ=request.query
+  pool.query("UPDATE products_new SET alerteActive = " + reqQ.alerteActive + " WHERE Id = "+reqQ.id, (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    response.json("Changement de l'alerte active OK")
+  });
+});
+
+// récupérer les produits avec alerte active pour une usine
+//?idUsine=1
+app.get("/getProductsWithAlerteActive",middleware, (request, response) => {
+  const reqQ=request.query
+  pool.query("SELECT * FROM products_new WHERE idUsine = "+reqQ.idUsine+" AND alerteActive = 1", (err,data) => {
+    if(err){
+      currentLineError=currentLine(); throw err;
+    }
+    data = data['recordset'];
+      response.json({data});
+  });
+});
+
+//?valeurHier=123.45&valeurAvantHier=67.89&idUsine=1&ecart=12.34&typeAlerte=ecart&nomProduit=xxxx&idProduct=1
+app.put("/envoierMailAlerte", middleware,(request, response) => {
+  const reqQ=request.query
+  /** ENVOI MAIL */
+    //Préparation du mail
+    const message = {
+      from: process.env.USER_SMTP, // Sender address
+      to: maillist,
+      subject: "Alerte produit : " + reqQ.nomProduit, // Subject line
+      html: "<h3>Bonjour,</h3><br><h3>Le produit : <b>" + reqQ.nomProduit +"(" + reqQ.idProduct + ")</b> a déclenché une alerte de type <b>" + reqQ.typeAlerte + "</b>.</h3><br>"+
+            "<h3>Voici les détails :</h3><br>"+
+            "<ul>"+
+            "<li>Valeur hier : " + reqQ.valeurHier + "</li>"+
+            "<li>Valeur avant-hier : " + reqQ.valeurAvantHier + "</li>"+
+            "<li>Écart : " + reqQ.ecart + "</li>"+
+            "</ul>"
+    };
+
+    transporter.sendMail(message, function(err, info) {
+      if (err) {
+        console.log(err);
+        response.json("Envoi mail KO");
+        //currentLineError=currentLine(); throw err;
+      } else {
+        console.log('*** Récap PDF ***'+new Date()+' - Email sent to '+maillist+' : ' + info.response);
+        response.json("Envoi mail OK");
+      }
+    });
+    /** FIN ENVOI MAIL */
+  response.json("Envoi du mail OK");
+});
+
 //get ALL Compteurs
 //?Code=ddhdhhd&idUsine=1&name=fff
 app.get("/Compteurs", middleware, (request, response) => {
@@ -4616,7 +4699,7 @@ app.post("/stockageRecapQuart", multer({ storage: storage }).single('fichier'), 
   pool.query("SELECT * FROM users WHERE isMail = 1 AND idUsine = " + reqQ.idUsine, (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
-    }
+    }    
     console.log("Print du quart : ", reqQ.quart);
     console.log("Print de la date : ", reqQ.date)
     data = data['recordset'];
