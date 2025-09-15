@@ -863,21 +863,46 @@ app.get("/getProductsWithAlerteActive",middleware, (request, response) => {
 });
 
 //?valeurHier=123.45&valeurAvantHier=67.89&idUsine=1&ecart=12.34&typeAlerte=ecart&nomProduit=xxxx&idProduct=1
-app.put("/envoierMailAlerte", middleware,(request, response) => {
+app.get("/envoyerMailAlerte", middleware,(request, response) => {
   const reqQ=request.query
+  let mailListIdUsine = 'MAIL_LIST_' + reqQ.idUsine;
+  var maillist = process.env[mailListIdUsine];
+
   /** ENVOI MAIL */
-    //Préparation du mail
+    //Préparation du mail groupé
+    let htmlDetails = '';
+    let alertes = [];
+    if (reqQ.alertes) {
+      try {
+        alertes = JSON.parse(decodeURIComponent(reqQ.alertes));
+      } catch (e) {
+        console.log('Erreur parsing alertes:', e);
+        alertes = [];
+      }
+    } else if (reqQ.typeAlerte) {
+      // fallback compatibilité ancienne version
+      alertes = [reqQ];
+    }
+    if (alertes.length > 0) {
+      htmlDetails = '<ul>' + alertes.map(a => {
+        if(a.typeAlerte === 'min') {
+          return `<li><b>${a.nomProduit} (${a.idProduct})</b> : Valeur hier = ${a.valeurHier}, Seuil min = ${a.valeurMin}</li>`;
+        } else if(a.typeAlerte === 'max') {
+          return `<li><b>${a.nomProduit} (${a.idProduct})</b> : Valeur hier = ${a.valeurHier}, Seuil max = ${a.valeurMax}</li>`;
+        } else if(a.typeAlerte === 'ecart') {
+          return `<li><b>${a.nomProduit} (${a.idProduct})</b> : Valeur hier = ${a.valeurHier}, Valeur avant-hier = ${a.valeurAvantHier}, Écart = ${a.ecart}</li>`;
+        } else {
+          return `<li><b>${a.nomProduit} (${a.idProduct})</b> : Valeur hier = ${a.valeurHier}</li>`;
+        }
+      }).join('') + '</ul>';
+    } else {
+      htmlDetails = '<p>Aucune alerte détectée.</p>';
+    }
     const message = {
       from: process.env.USER_SMTP, // Sender address
       to: maillist,
-      subject: "Alerte produit : " + reqQ.nomProduit, // Subject line
-      html: "<h3>Bonjour,</h3><br><h3>Le produit : <b>" + reqQ.nomProduit +"(" + reqQ.idProduct + ")</b> a déclenché une alerte de type <b>" + reqQ.typeAlerte + "</b>.</h3><br>"+
-            "<h3>Voici les détails :</h3><br>"+
-            "<ul>"+
-            "<li>Valeur hier : " + reqQ.valeurHier + "</li>"+
-            "<li>Valeur avant-hier : " + reqQ.valeurAvantHier + "</li>"+
-            "<li>Écart : " + reqQ.ecart + "</li>"+
-            "</ul>"
+      subject: "Alerte(s) produit(s) sur le site " + reqQ.idUsine, // Subject line
+      html: `<h3>Bonjour,</h3><br><h3>Des alertes ont été détectées sur le site <b>${reqQ.idUsine}</b> :</h3><br>${htmlDetails}`
     };
 
     transporter.sendMail(message, function(err, info) {
@@ -891,7 +916,6 @@ app.put("/envoierMailAlerte", middleware,(request, response) => {
       }
     });
     /** FIN ENVOI MAIL */
-  response.json("Envoi du mail OK");
 });
 
 //get ALL Compteurs
