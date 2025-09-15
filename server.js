@@ -1116,6 +1116,44 @@ app.put("/Measure", middleware, (request, response) => {
   });
 });
 
+app.put("/MeasureLot", middleware, (request, response) => {
+  let mesures = request.body;
+  mesures = mesures.Lot;
+
+  mesures.forEach(m => {
+    pool.query("SELECT * FROM products_new WHERE Id = " + m.ProductId, (err, data) => {
+      if (err) {
+        currentLineError = currentLine(); throw err;
+      }
+      data = data['recordset'];
+      if (data && data.length > 0) {
+        let value = String(m.Value).replace(',', '.');
+        // Si la valeur est nulle
+        if (value === '' || value === ' ') {
+          value = 0.0;
+        }
+        queryOnDuplicate = "IF NOT EXISTS (SELECT * FROM measures_new WHERE EntryDate = '" + m.EntryDate + "' AND ProducerId = " + m.ProducerId + " AND ProductId = " + m.ProductId + ")" +
+          " BEGIN " +
+          "INSERT INTO measures_new (CreateDate, LastModifiedDate, EntryDate, Value, ProductId, ProducerId)" +
+          " VALUES (convert(varchar, getdate(), 120), convert(varchar, getdate(), 120),'" + m.EntryDate + "', " + value + ", " + m.ProductId + ", " + m.ProducerId + ") " +
+          "END" +
+          " ELSE" +
+          " BEGIN " +
+          "UPDATE measures_new SET Value = " + value + ", LastModifiedDate = convert(varchar, getdate(), 120) WHERE EntryDate = '" + m.EntryDate + "' AND ProducerId = " + m.ProducerId + " AND ProductId =" + m.ProductId +
+          " END;"
+        pool.query(queryOnDuplicate, (err, result, fields) => {
+          if (err) {
+            reqSQL = queryOnDuplicate;
+            reqSQL += "************" + value + "*************";
+            currentLineError = currentLine(); throw err;
+          }
+        });
+      }
+    });
+  });
+  response.json("Création des Measures OK");
+});
+
 //get Entry
 app.get("/Entrant/:ProductId/:ProducerId/:Date", middleware, (request, response) => {
   const reqP = request.params
