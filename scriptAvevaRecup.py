@@ -11,7 +11,7 @@ warnings.filterwarnings("ignore")
 aujourdhui = datetime.now().date()
 hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
 hier = datetime.strptime(hier, "%d/%m/%Y").date()
-avantHier = aujourdhui - timedelta (days=2)
+avantHier = hier - timedelta (days=1)
 hierAvevaDebut = f'{avantHier}' + "T22:01:00Z"
 hierAvevaFin = f'{hier}' + "T22:00:00Z"
 #derniere valeur de la journée

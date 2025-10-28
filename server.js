@@ -1913,8 +1913,8 @@ app.get("/getElementsAndValuesOfDay/:idUsine/:date", middleware, (request, respo
 
 function getZonesAndAnomaliesOfRonde(ronde) {
   return new Promise((resolve) => {
-    //Récupération des zones
-    pool.query("select DISTINCT z.*, a.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id =e.zoneId full outer join anomalie a on (a.rondeId=" + ronde["Id"] + " and a.zoneId=z.id)where m.rondeId=" + ronde["Id"] + "order by z.nom", async (err, data) => {
+    //Récupération des zones ayant des mesures de ronde
+    pool.query("select DISTINCT z.* from mesuresrondier m join elementcontrole e on e.id = m.elementId join zonecontrole z on z.id = e.zoneId where m.rondeId=" + ronde["Id"] + "order by z.nom", async (err, data) => {
       if (err) {
         currentLineError = currentLine(); throw err;
       }
@@ -1923,8 +1923,21 @@ function getZonesAndAnomaliesOfRonde(ronde) {
         IdRonde: ronde["Id"],
         listZones: zones
       };
-      listZones.push(oneZone)
-      resolve();
+      listZones.push(oneZone);
+      //On récupère les zones sur les anomalies (zones sans valeur de ronde)
+      pool.query("select DISTINCT z.* from anomalie a JOIN zonecontrole z on z.id =a.zoneId  where a.rondeId =" + ronde["Id"] + " order by z.nom", async (err, data) => {
+        if (err) {
+          currentLineError = currentLine(); throw err;
+        }
+        zones = data['recordset'];
+        let oneZone = {
+          IdRonde: ronde["Id"],
+          listZones: zones
+        };
+        listZones.push(oneZone);
+        resolve();
+      });
+
     });
 
   });
@@ -4627,7 +4640,7 @@ app.get("/getEvenementsRonde", middleware, (request, response) => {
 //?idUsine=1&datedeb=''&dateFin=''
 app.get("/getActionsRonde", middleware, (request, response) => {
   const reqQ = request.query;
-  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine, (err,data) => {
+  pool.query("select a.nom, c.*, u.nom as 'nomRondier', u.prenom as 'prenomRondier' from quart_calendrier c full outer join users u on u.id = c.idUser full outer join quart_action a on a.id = c.idAction where c.date_heure_debut = '"+reqQ.dateDeb+"' and c.date_heure_fin = '"+reqQ.dateFin+"' and  c.id is not null and c.idAction is not null and c.idUsine = "+reqQ.idUsine+" ORDER BY a.nom", (err,data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -5325,7 +5338,7 @@ app.get("/recupZonesPDF", (request, response) => {
 //?idZone=656&date=30/01/02025&quart=1
 app.get("/recupElementsPDF", (request, response) => {
   const reqQ = request.query;
-  pool.query("SELECT z.nom as nomZone , e.nom, m.value FROM elementcontrole e INNER JOIN mesuresrondier m ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.zoneId = " + reqQ.idZone + " and r.quart = " + reqQ.quart + " AND r.dateHeure = '" + reqQ.date + "'"
+  pool.query("SELECT z.nom as nomZone , e.nom, m.value FROM elementcontrole e INNER JOIN mesuresrondier m ON m.elementId = e.Id INNER JOIN ronde r ON r.Id = m.rondeId INNER JOIN zonecontrole z ON z.Id = e.zoneId where e.zoneId = " + reqQ.idZone + " and r.quart = " + reqQ.quart + " AND r.dateHeure = '" + reqQ.date + "' order by e.zoneId, e.ordre"
     , (err, data) => {
       if (err) {
         currentLineError = currentLine(); throw err;
@@ -5367,7 +5380,7 @@ app.put("/createRepriseDeRonde", (request, response) => {
   });
 });
 
-//Controler s'il y a des zones sur la ronde du quart
+//Récupérer les reprises de ronde du site (reprise non terminées)
 app.get("/getReprisesRonde/:idUsine", (request, response) => {
   const reqP = request.params
   pool.query("SELECT CONVERT(varchar, date, 103) as 'date', termine, id, quart FROM repriseRonde WHERE termine = 0 and idUsine = " + reqP.idUsine
@@ -5413,6 +5426,18 @@ app.put("/updateTermineRondeAnterieur/:date/:quart/:idUsine", (request, response
       currentLineError = currentLine(); throw err;
     }
     response.json("Update ronde anterieure ok");
+  });
+});
+
+//Récupérer les infos de la dernière ronde
+app.get("/getLastRonde/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("select TOP(1) [date], [quart] from equipe e join users u on u.id = e.idChefQuart where u.idUsine =  " + reqP.idUsine + " order by TRY_Convert(date, e.date ,103) desc , quart desc", (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
   });
 });
 
