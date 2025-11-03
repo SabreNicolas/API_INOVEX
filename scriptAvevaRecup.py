@@ -12,13 +12,13 @@ aujourdhui = datetime.now().date()
 hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
 hier = datetime.strptime(hier, "%d/%m/%Y").date()
 avantHier = hier - timedelta (days=1)
-hierAvevaDebut = f'{avantHier}' + "T22:01:00Z"
-hierAvevaFin = f'{hier}' + "T22:00:00Z"
+hierAvevaDebut = f'{avantHier}' + "T23:01:00Z"
+hierAvevaFin = f'{hier}' + "T23:00:00Z"
 #derniere valeur de la journée
 #Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
 #Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T21:59:50Z"
-dernierAvevaFin = f'{hier}' + "T21:59:59Z"
+dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
+dernierAvevaFin = f'{hier}' + "T22:59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui))
 
