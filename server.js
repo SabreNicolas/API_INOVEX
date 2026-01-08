@@ -25,8 +25,8 @@ const path = require('path');
 const fs = require('fs');
 //DEBUT partie pour utiliser l'API en https
 var https = require('https');
-var privateKey = fs.readFileSync('E:/INOVEX/serverV3-decrypted.key', 'utf8');
-var certificate = fs.readFileSync('E:/INOVEX/serverV3.crt', 'utf8');
+var privateKey = fs.readFileSync('E:/INOVEX/server2026.key', 'utf8');
+var certificate = fs.readFileSync('E:/INOVEX/server2026.crt', 'utf8');
 var credentials = { key: privateKey, cert: certificate };
 //FIN partie pour utiliser l'API en https
 // parse requests of content-type: application/json
@@ -3300,7 +3300,7 @@ app.delete("/deleteAffectationEquipe/:idEquipe", middleware, (request, response)
 //?idRondier=1
 app.get("/getEquipeUser", (request, response) => {
   const reqQ = request.query
-  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" + reqQ.idRondier + " ORDER BY e.date DESC", (err, data) => {
+  pool.query("SELECT u.idRondier, e.quart, e.idChefQuart, e.date, e.id FROM affectation_equipe u JOIN equipe e on u.idEquipe = e.id WHERE u.idRondier =" + reqQ.idRondier + " ORDER BY e.date DESC, e.quart DESC", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }

@@ -58,6 +58,7 @@ for site in listeSites['data'] :
     listProducts = listProducts["data"]
 
     for product in listProducts :
+        recup = 0
         if product['typeDonneeEMonitoring'] == "AnalogSummary":
             resolution = "&resolution=600000"
             date = "+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin
@@ -70,15 +71,16 @@ for site in listeSites['data'] :
                 req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
                 response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
                 listData = response.json()
-                recup = 0
                 if len(listData['value']) != 0:
                     for res in listData['value']:
-                        if product['typeDonneeEMonitoring'] == "AnalogSummary":
-                            if res["Average"] != 'NaN':
-                                recup=recup + res["Average"]
-                        else :
-                            if res["Value"] != 'NaN':
-                                recup=recup + res["Value"]
+                        #On ajoute le point uniquement si il y a au moins un point valable sur le point 10 min
+                        if res["PercentGood"] > 0:
+                            if product['typeDonneeEMonitoring'] == "AnalogSummary":
+                                if res["Average"] != 'NaN':
+                                    recup=recup + res["Average"]
+                            else :
+                                if res["Value"] != 'NaN':
+                                    recup=recup + res["Value"]
                     #Si on est sur les booleans on a des 1 ou 0 toutes les 1 minutes
                     #On a 1440 points 1 Min sur 24H
                     #On va donc diviser par 60 pour avoir en heure
@@ -89,7 +91,7 @@ for site in listeSites['data'] :
 
         else :
             #Récupération des données du jour
-            try :
+            try:
                 req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
                 # print(req)
                 response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
@@ -164,7 +166,7 @@ for site in listeSites['data'] :
     for product in listProducts :
 
         #Récupération de la dernière données du jour
-        try :
+        try:
             req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+dernierAvevaDebut+"+and+EndDateTime+le+"+dernierAvevaFin+"&RetrievalMode=Cyclic"
             # print(req)
             response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
