@@ -3605,6 +3605,39 @@ app.get("/typeRondier/:id", (request, response) => {
   });
 });
 
+//Récupérer les heures de quart d'un site
+app.get("/heuresQuart/:id", middleware, (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT debutQuartMatin, finQuartMatin, debutQuartAM, finQuartAM, debutQuartNuit, finQuartNuit FROM site WHERE id = " + reqP.id, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
+  });
+});
+
+//Mettre à jour les heures de quart d'un site
+app.put("/heuresQuart/:id", middleware, (request, response) => {
+  const reqP = request.params;
+  const reqQ = request.query;
+  pool.query(
+    "UPDATE site SET debutQuartMatin = '" + reqQ.debutQuartMatin + 
+    "', finQuartMatin = '" + reqQ.finQuartMatin + 
+    "', debutQuartAM = '" + reqQ.debutQuartAM + 
+    "', finQuartAM = '" + reqQ.finQuartAM + 
+    "', debutQuartNuit = '" + reqQ.debutQuartNuit + 
+    "', finQuartNuit = '" + reqQ.finQuartNuit + 
+    "' WHERE id = " + reqP.id,
+    (err, data) => {
+      if (err) {
+        currentLineError = currentLine(); throw err;
+      }
+      response.json("Heures de quart mises à jour avec succès");
+    }
+  );
+});
+
 
 /*
 ******* FIN SITES
