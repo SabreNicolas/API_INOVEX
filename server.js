@@ -3613,6 +3613,25 @@ app.get("/heuresQuart/:id", middleware, (request, response) => {
       currentLineError = currentLine(); throw err;
     }
     data = data['recordset'];
+    // Formater les valeurs time en HH:mm pour les inputs HTML
+    if (data.length > 0) {
+      const formatTime = (timeValue) => {
+        if (!timeValue) return null;
+        const date = new Date(timeValue);
+        const hours = String(date.getUTCHours()).padStart(2, '0');
+        const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+      };
+      
+      data = data.map(row => ({
+        debutQuartMatin: formatTime(row.debutQuartMatin),
+        finQuartMatin: formatTime(row.finQuartMatin),
+        debutQuartAM: formatTime(row.debutQuartAM),
+        finQuartAM: formatTime(row.finQuartAM),
+        debutQuartNuit: formatTime(row.debutQuartNuit),
+        finQuartNuit: formatTime(row.finQuartNuit)
+      }));
+    }
     response.json({ data });
   });
 });
