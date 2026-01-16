@@ -3070,7 +3070,8 @@ app.put("/consigne/:id", middleware, (request, response) => {
 app.put("/anomalie", multer({ storage: storage }).single('fichier'), (request, response) => {
   const reqQ = request.query;
   //création de l'url de stockage du fichier
-  const url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
+  let url = '';
+  if (request.file != undefined) url = `${request.protocol}://capexploitation.paprec.com/capexploitation/fichiers/${request.file.filename.replace("[^a-zA-Z0-9]", "")}`;
 
   var query = "INSERT INTO anomalie (rondeId, zoneId, commentaire, photo) VALUES (" + reqQ.rondeId + ", " + reqQ.zoneId + ", '" + reqQ.commentaire + "', '" + url + "')";
   pool.query(query, (err, result, fields) => {
