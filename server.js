@@ -5891,3 +5891,27 @@ app.get("/AffichageValidationDonnees/:idUsine", middleware, (request, response) 
   });
 });
 ///////////FIN Validation Données//////////////
+
+app.get("/getHeuresQuart/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT debutQuartMatin, finQuartMatin, debutQuartAM, finQuartAM, debutQuartNuit, finQuartNuit FROM site WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
+  }
+  );
+});
+
+app.put("/updateHeuresQuart/:idUsine", (request, response) => {
+  const reqP = request.params
+  const reqQ = request.query
+  pool.query("UPDATE site SET debutQuartMatin = '" + reqQ.debutQuartMatin + "', finQuartMatin = '" + reqQ.finQuartMatin + "', debutQuartAM = '" + reqQ.debutQuartAM + "', finQuartAM = '" + reqQ.finQuartAM + "', debutQuartNuit = '" + reqQ.debutQuartNuit + "', finQuartNuit = '" + reqQ.finQuartNuit + "' WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    response.json("Mise à jour des heures de quart OK");
+  }
+  );
+});
