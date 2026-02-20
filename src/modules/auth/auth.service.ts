@@ -31,15 +31,18 @@ export class AuthService {
       const user = await this.userRepository.findOne({
         where: { login },
         select: [
-          "id",
+          "Id",
           "login",
-          "nom",
-          "prenom",
+          "Nom",
+          "Prenom",
           "pwd",
           "isAdmin",
-          "isVeto",
-          "isEditeur",
-          "isLecteur",
+          "isRondier",
+          "isSaisie",
+          "isQSE",
+          "isRapport",
+          "isChefQuart",
+          "isSuperAdmin",
         ],
       });
 
@@ -55,14 +58,17 @@ export class AuthService {
 
       // Créer le payload JWT
       const payload = {
-        id: user.id,
+        id: user.Id,
         login: user.login,
-        nom: user.nom,
-        prenom: user.prenom,
+        nom: user.Nom,
+        prenom: user.Prenom,
         isAdmin: Boolean(user.isAdmin),
-        isVeto: Boolean(user.isVeto),
-        isEditeur: Boolean(user.isEditeur),
-        isLecteur: Boolean(user.isLecteur),
+        isRondier: Boolean(user.isRondier),
+        isSaisie: Boolean(user.isSaisie),
+        isQSE: Boolean(user.isQSE),
+        isRapport: Boolean(user.isRapport),
+        isChefQuart: Boolean(user.isChefQuart),
+        isSuperAdmin: Boolean(user.isSuperAdmin),
       };
 
       const accessToken = this.jwtService.sign(payload, {
@@ -70,7 +76,7 @@ export class AuthService {
       });
 
       const refreshToken = this.jwtService.sign(
-        { id: user.id, type: "refresh" },
+        { id: user.Id, type: "refresh" },
         {
           secret: this.configService.get<string>("SECRET_KEY"),
           expiresIn: AUTH_CONSTANTS.REFRESH_TOKEN_EXPIRY,
@@ -112,16 +118,19 @@ export class AuthService {
 
       // Vérifier que l'utilisateur existe toujours
       const user = await this.userRepository.findOne({
-        where: { id: decoded.id },
+        where: { Id: decoded.id },
         select: [
-          "id",
+          "Id",
           "login",
-          "nom",
-          "prenom",
+          "Nom",
+          "Prenom",
           "isAdmin",
-          "isVeto",
-          "isEditeur",
-          "isLecteur",
+          "isRondier",
+          "isSaisie",
+          "isQSE",
+          "isRapport",
+          "isChefQuart",
+          "isSuperAdmin",
         ],
       });
 
@@ -131,14 +140,17 @@ export class AuthService {
 
       // Générer de nouveaux tokens
       const payload = {
-        id: user.id,
+        id: user.Id,
         login: user.login,
-        nom: user.nom,
-        prenom: user.prenom,
+        nom: user.Nom,
+        prenom: user.Prenom,
         isAdmin: Boolean(user.isAdmin),
-        isVeto: Boolean(user.isVeto),
-        isEditeur: Boolean(user.isEditeur),
-        isLecteur: Boolean(user.isLecteur),
+        isRondier: Boolean(user.isRondier),
+        isSaisie: Boolean(user.isSaisie),
+        isQSE: Boolean(user.isQSE),
+        isRapport: Boolean(user.isRapport),
+        isChefQuart: Boolean(user.isChefQuart),
+        isSuperAdmin: Boolean(user.isSuperAdmin),
       };
 
       const newAccessToken = this.jwtService.sign(payload, {
@@ -146,7 +158,7 @@ export class AuthService {
       });
 
       const newRefreshToken = this.jwtService.sign(
-        { id: user.id, type: "refresh" },
+        { id: user.Id, type: "refresh" },
         {
           secret: this.configService.get<string>("SECRET_KEY"),
           expiresIn: AUTH_CONSTANTS.REFRESH_TOKEN_EXPIRY,

@@ -13,15 +13,24 @@ describe("UsersService", () => {
   let service: UsersService;
 
   const mockUser = {
-    id: 1,
+    Id: 1,
     login: "testuser",
     pwd: "hashedPassword",
-    nom: "Doe",
-    prenom: "John",
+    Nom: "Doe",
+    Prenom: "John",
+    email: "test@test.com",
+    loginGMAO: "",
+    posteUser: "",
     isAdmin: false,
-    isVeto: false,
-    isEditeur: true,
-    isLecteur: true,
+    isRondier: true,
+    isSaisie: false,
+    isQSE: false,
+    isRapport: false,
+    isChefQuart: false,
+    isSuperAdmin: false,
+    isMail: false,
+    isActif: true,
+    idUsine: 1,
   };
 
   const mockUserRepository = {
@@ -31,7 +40,6 @@ describe("UsersService", () => {
     create: jest.fn(),
     save: jest.fn(),
     update: jest.fn(),
-    softDelete: jest.fn(),
   };
 
   const mockLogger = {
@@ -68,7 +76,7 @@ describe("UsersService", () => {
     it("should return an array of users without pagination", async () => {
       mockUserRepository.find.mockResolvedValue([
         mockUser,
-        { ...mockUser, id: 2, login: "user2" },
+        { ...mockUser, Id: 2, login: "user2" },
       ]);
 
       const result = await service.findAll();
@@ -80,7 +88,7 @@ describe("UsersService", () => {
 
     it("should return paginated result when pagination is provided", async () => {
       mockUserRepository.findAndCount.mockResolvedValue([
-        [mockUser, { ...mockUser, id: 2 }],
+        [mockUser, { ...mockUser, Id: 2 }],
         5,
       ]);
 
@@ -108,7 +116,7 @@ describe("UsersService", () => {
 
       const result = await service.findOne(1);
 
-      expect(result.id).toBe(1);
+      expect(result.Id).toBe(1);
       expect(result.login).toBe("testuser");
     });
 
@@ -122,8 +130,8 @@ describe("UsersService", () => {
   describe("create", () => {
     it("should create a new user", async () => {
       mockUserRepository.findOne.mockResolvedValue(null); // No existing login
-      mockUserRepository.create.mockReturnValue({ ...mockUser, id: 5 });
-      mockUserRepository.save.mockResolvedValue({ ...mockUser, id: 5 });
+      mockUserRepository.create.mockReturnValue({ ...mockUser, Id: 5 });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, Id: 5 });
 
       (argon2.hash as jest.Mock).mockResolvedValue("hashedPassword");
 
@@ -132,7 +140,7 @@ describe("UsersService", () => {
         password: "password123",
         nom: "New",
         prenom: "User",
-        isEditeur: true,
+        isRondier: true,
       };
 
       const result = await service.create(createDto);
@@ -142,7 +150,7 @@ describe("UsersService", () => {
     });
 
     it("should throw BadRequestException when login already exists", async () => {
-      mockUserRepository.findOne.mockResolvedValue({ id: 1 }); // Existing user
+      mockUserRepository.findOne.mockResolvedValue({ Id: 1 }); // Existing user
 
       const createDto = {
         login: "existinguser",
@@ -193,7 +201,7 @@ describe("UsersService", () => {
       // Reset and reconfigure the mock explicitly for this test
       mockUserRepository.findOne.mockReset();
       mockUserRepository.findOne.mockResolvedValueOnce({
-        id: 1,
+        Id: 1,
         login: "testuser",
       });
 
@@ -202,12 +210,15 @@ describe("UsersService", () => {
   });
 
   describe("delete", () => {
-    it("should soft delete an existing user", async () => {
+    it("should deactivate an existing user", async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
 
       await expect(service.delete(1, 2)).resolves.not.toThrow(); // currentUserId = 2
 
-      expect(mockUserRepository.softDelete).toHaveBeenCalledWith(1);
+      expect(mockUserRepository.update).toHaveBeenCalledWith(
+        { Id: 1 },
+        { isActif: false }
+      );
     });
 
     it("should throw NotFoundException when user not found", async () => {

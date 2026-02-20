@@ -12,14 +12,23 @@ describe("UsersController", () => {
   let usersService: UsersService;
 
   const mockUser = {
-    id: 1,
+    Id: 1,
     login: "testuser",
-    nom: "Doe",
-    prenom: "John",
+    Nom: "Doe",
+    Prenom: "John",
+    email: "test@test.com",
+    loginGMAO: "",
+    posteUser: "",
     isAdmin: false,
-    isVeto: false,
-    isEditeur: true,
-    isLecteur: true,
+    isRondier: true,
+    isSaisie: false,
+    isQSE: false,
+    isRapport: false,
+    isChefQuart: false,
+    isSuperAdmin: false,
+    isMail: false,
+    isActif: true,
+    idUsine: 1,
   };
 
   const mockUsersService = {
@@ -89,8 +98,15 @@ describe("UsersController", () => {
         login: "testuser",
         nom: "Doe",
         prenom: "John",
+        isRondier: true,
+        isSaisie: false,
+        isQSE: false,
+        isRapport: false,
+        isAdmin: false,
+        isChefQuart: false,
+        isSuperAdmin: false,
         role: 1,
-        roleName: "Lecteur",
+        roleName: "Rondier",
       };
       mockUsersService.findOne.mockResolvedValue(mockUser);
 
@@ -103,7 +119,7 @@ describe("UsersController", () => {
 
   describe("findAll", () => {
     it("should return all users without pagination", async () => {
-      const users = [mockUser, { ...mockUser, id: 2, login: "user2" }];
+      const users = [mockUser, { ...mockUser, Id: 2, login: "user2" }];
       mockUsersService.findAll.mockResolvedValue(users);
 
       const result = await controller.findAll({});
@@ -181,14 +197,21 @@ describe("UsersController", () => {
         login: "admin",
         nom: "Admin",
         prenom: "User",
-        role: 4,
+        isRondier: false,
+        isSaisie: false,
+        isQSE: false,
+        isRapport: false,
+        isAdmin: true,
+        isChefQuart: false,
+        isSuperAdmin: false,
+        role: 5,
         roleName: "Admin",
       };
       mockUsersService.delete.mockResolvedValue(undefined);
 
       const result = await controller.delete(1, currentUser);
 
-      expect(result).toEqual({ message: "Utilisateur supprimé avec succès" });
+      expect(result).toEqual({ message: "Utilisateur désactivé avec succès" });
       expect(mockUsersService.delete).toHaveBeenCalledWith(1, 2);
     });
   });
@@ -199,7 +222,7 @@ describe("UsersController", () => {
 
       const result = await controller.restore(1);
 
-      expect(result).toEqual({ message: "Utilisateur restauré avec succès" });
+      expect(result).toEqual({ message: "Utilisateur réactivé avec succès" });
       expect(mockUsersService.restore).toHaveBeenCalledWith(1);
     });
   });

@@ -33,16 +33,25 @@ export class UsersService {
       if (!pagination) {
         const users = await this.userRepository.find({
           select: [
-            "id",
+            "Id",
             "login",
-            "nom",
-            "prenom",
+            "Nom",
+            "Prenom",
+            "email",
+            "loginGMAO",
+            "posteUser",
             "isAdmin",
-            "isVeto",
-            "isEditeur",
-            "isLecteur",
+            "isRondier",
+            "isSaisie",
+            "isQSE",
+            "isRapport",
+            "isChefQuart",
+            "isSuperAdmin",
+            "isMail",
+            "isActif",
+            "idUsine",
           ],
-          order: { id: "ASC" },
+          order: { Id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
         });
         return users;
@@ -53,16 +62,25 @@ export class UsersService {
 
       const [users, total] = await this.userRepository.findAndCount({
         select: [
-          "id",
+          "Id",
           "login",
-          "nom",
-          "prenom",
+          "Nom",
+          "Prenom",
+          "email",
+          "loginGMAO",
+          "posteUser",
           "isAdmin",
-          "isVeto",
-          "isEditeur",
-          "isLecteur",
+          "isRondier",
+          "isSaisie",
+          "isQSE",
+          "isRapport",
+          "isChefQuart",
+          "isSuperAdmin",
+          "isMail",
+          "isActif",
+          "idUsine",
         ],
-        order: { id: "ASC" },
+        order: { Id: "ASC" },
         skip: offset,
         take: limit,
       });
@@ -81,16 +99,25 @@ export class UsersService {
   async findOne(id: number): Promise<Omit<User, "pwd">> {
     try {
       const user = await this.userRepository.findOne({
-        where: { id },
+        where: { Id: id },
         select: [
-          "id",
+          "Id",
           "login",
-          "nom",
-          "prenom",
+          "Nom",
+          "Prenom",
+          "email",
+          "loginGMAO",
+          "posteUser",
           "isAdmin",
-          "isVeto",
-          "isEditeur",
-          "isLecteur",
+          "isRondier",
+          "isSaisie",
+          "isQSE",
+          "isRapport",
+          "isChefQuart",
+          "isSuperAdmin",
+          "isMail",
+          "isActif",
+          "idUsine",
         ],
       });
 
@@ -118,17 +145,26 @@ export class UsersService {
       password,
       nom,
       prenom,
+      email,
+      loginGMAO,
+      posteUser,
       isAdmin,
-      isVeto,
-      isEditeur,
-      isLecteur,
+      isRondier,
+      isSaisie,
+      isQSE,
+      isRapport,
+      isChefQuart,
+      isSuperAdmin,
+      isMail,
+      isActif,
+      idUsine,
     } = createUserDto;
 
     try {
       // Vérifier si le login existe déjà
       const existing = await this.userRepository.findOne({
         where: { login },
-        select: ["id"],
+        select: ["Id"],
       });
 
       if (existing) {
@@ -141,19 +177,28 @@ export class UsersService {
       const user = this.userRepository.create({
         login,
         pwd: hashedPassword,
-        nom,
-        prenom,
+        Nom: nom,
+        Prenom: prenom,
+        email: email || "",
+        loginGMAO: loginGMAO || "",
+        posteUser: posteUser || "",
         isAdmin: isAdmin || false,
-        isVeto: isVeto || false,
-        isEditeur: isEditeur || false,
-        isLecteur: isLecteur || false,
+        isRondier: isRondier || false,
+        isSaisie: isSaisie || false,
+        isQSE: isQSE || false,
+        isRapport: isRapport || false,
+        isChefQuart: isChefQuart || false,
+        isSuperAdmin: isSuperAdmin || false,
+        isMail: isMail || false,
+        isActif: isActif !== undefined ? isActif : true,
+        idUsine: idUsine || 1,
       });
 
       const savedUser = await this.userRepository.save(user);
 
       this.logger.log(`Utilisateur créé: ${login}`, "UsersService");
 
-      return { id: savedUser.id };
+      return { id: savedUser.Id };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;
@@ -171,8 +216,8 @@ export class UsersService {
     try {
       // Vérifier que l'utilisateur existe
       const existing = await this.userRepository.findOne({
-        where: { id },
-        select: ["id", "login"],
+        where: { Id: id },
+        select: ["Id", "login"],
       });
 
       if (!existing) {
@@ -182,8 +227,8 @@ export class UsersService {
       // Si le login change, vérifier qu'il n'est pas déjà utilisé
       if (updateUserDto.login && updateUserDto.login !== existing.login) {
         const loginCheck = await this.userRepository.findOne({
-          where: { login: updateUserDto.login, id: Not(id) },
-          select: ["id"],
+          where: { login: updateUserDto.login, Id: Not(id) },
+          select: ["Id"],
         });
 
         if (loginCheck) {
@@ -195,25 +240,40 @@ export class UsersService {
       const updateData: Partial<User> = {};
 
       if (updateUserDto.login) updateData.login = updateUserDto.login;
-      if (updateUserDto.nom) updateData.nom = updateUserDto.nom;
-      if (updateUserDto.prenom) updateData.prenom = updateUserDto.prenom;
+      if (updateUserDto.nom) updateData.Nom = updateUserDto.nom;
+      if (updateUserDto.prenom) updateData.Prenom = updateUserDto.prenom;
+      if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
+      if (updateUserDto.loginGMAO !== undefined) updateData.loginGMAO = updateUserDto.loginGMAO;
+      if (updateUserDto.posteUser !== undefined) updateData.posteUser = updateUserDto.posteUser;
       if (updateUserDto.password) {
         updateData.pwd = await argon2.hash(updateUserDto.password);
       }
       if (updateUserDto.isAdmin !== undefined)
         updateData.isAdmin = updateUserDto.isAdmin;
-      if (updateUserDto.isVeto !== undefined)
-        updateData.isVeto = updateUserDto.isVeto;
-      if (updateUserDto.isEditeur !== undefined)
-        updateData.isEditeur = updateUserDto.isEditeur;
-      if (updateUserDto.isLecteur !== undefined)
-        updateData.isLecteur = updateUserDto.isLecteur;
+      if (updateUserDto.isRondier !== undefined)
+        updateData.isRondier = updateUserDto.isRondier;
+      if (updateUserDto.isSaisie !== undefined)
+        updateData.isSaisie = updateUserDto.isSaisie;
+      if (updateUserDto.isQSE !== undefined)
+        updateData.isQSE = updateUserDto.isQSE;
+      if (updateUserDto.isRapport !== undefined)
+        updateData.isRapport = updateUserDto.isRapport;
+      if (updateUserDto.isChefQuart !== undefined)
+        updateData.isChefQuart = updateUserDto.isChefQuart;
+      if (updateUserDto.isSuperAdmin !== undefined)
+        updateData.isSuperAdmin = updateUserDto.isSuperAdmin;
+      if (updateUserDto.isMail !== undefined)
+        updateData.isMail = updateUserDto.isMail;
+      if (updateUserDto.isActif !== undefined)
+        updateData.isActif = updateUserDto.isActif;
+      if (updateUserDto.idUsine !== undefined)
+        updateData.idUsine = updateUserDto.idUsine;
 
       if (Object.keys(updateData).length === 0) {
         throw new BadRequestException("Aucune donnée à mettre à jour");
       }
 
-      await this.userRepository.update(id, updateData);
+      await this.userRepository.update({ Id: id }, updateData);
 
       this.logger.log(`Utilisateur ${id} mis à jour`, "UsersService");
     } catch (error) {
@@ -242,18 +302,19 @@ export class UsersService {
       }
 
       const existing = await this.userRepository.findOne({
-        where: { id },
-        select: ["id"],
+        where: { Id: id },
+        select: ["Id"],
       });
 
       if (!existing) {
         throw new NotFoundException(`Utilisateur avec l'ID ${id} non trouvé`);
       }
 
-      await this.userRepository.softDelete(id);
+      // Désactivation au lieu de suppression (pas de deletedAt dans le schéma)
+      await this.userRepository.update({ Id: id }, { isActif: false });
 
       this.logger.log(
-        `Utilisateur ${id} supprimé (soft delete)`,
+        `Utilisateur ${id} désactivé`,
         "UsersService"
       );
     } catch (error) {
@@ -275,22 +336,21 @@ export class UsersService {
   async restore(id: number): Promise<void> {
     try {
       const existing = await this.userRepository.findOne({
-        where: { id },
-        withDeleted: true,
-        select: ["id", "deletedAt"],
+        where: { Id: id },
+        select: ["Id", "isActif"],
       });
 
       if (!existing) {
         throw new NotFoundException(`Utilisateur avec l'ID ${id} non trouvé`);
       }
 
-      if (!existing.deletedAt) {
-        throw new BadRequestException(`L'utilisateur ${id} n'est pas supprimé`);
+      if (existing.isActif) {
+        throw new BadRequestException(`L'utilisateur ${id} est déjà actif`);
       }
 
-      await this.userRepository.restore(id);
+      await this.userRepository.update({ Id: id }, { isActif: true });
 
-      this.logger.log(`Utilisateur ${id} restauré`, "UsersService");
+      this.logger.log(`Utilisateur ${id} réactivé`, "UsersService");
     } catch (error) {
       if (
         error instanceof NotFoundException ||

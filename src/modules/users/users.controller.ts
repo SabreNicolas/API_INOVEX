@@ -20,7 +20,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireLecteur } from "../../common/decorators";
+import { RequireAdmin, RequireRondier } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -35,7 +35,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get("me")
-  @RequireLecteur()
+  @RequireRondier()
   @ApiOperation({
     summary: "Récupérer les informations de l'utilisateur connecté",
   })
@@ -116,9 +116,9 @@ export class UsersController {
 
   @Delete(":id")
   @RequireAdmin()
-  @ApiOperation({ summary: "Supprimer un utilisateur (soft delete)" })
+  @ApiOperation({ summary: "Désactiver un utilisateur (isActif = false)" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
-  @ApiResponse({ status: 200, description: "Utilisateur supprimé avec succès" })
+  @ApiResponse({ status: 200, description: "Utilisateur désactivé avec succès" })
   @ApiResponse({
     status: 400,
     description: "Impossible de supprimer votre propre compte",
@@ -129,17 +129,17 @@ export class UsersController {
     @CurrentUser() currentUser: RequestUser
   ) {
     await this.usersService.delete(id, currentUser.id);
-    return { message: "Utilisateur supprimé avec succès" };
+    return { message: "Utilisateur désactivé avec succès" };
   }
 
   @Patch(":id/restore")
   @RequireAdmin()
-  @ApiOperation({ summary: "Restaurer un utilisateur supprimé" })
+  @ApiOperation({ summary: "Réactiver un utilisateur désactivé" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
-  @ApiResponse({ status: 200, description: "Utilisateur restauré avec succès" })
-  @ApiResponse({ status: 404, description: "Utilisateur supprimé non trouvé" })
+  @ApiResponse({ status: 200, description: "Utilisateur réactivé avec succès" })
+  @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
   async restore(@Param("id", ParseIntPipe) id: number) {
     await this.usersService.restore(id);
-    return { message: "Utilisateur restauré avec succès" };
+    return { message: "Utilisateur réactivé avec succès" };
   }
 }

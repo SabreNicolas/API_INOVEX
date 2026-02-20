@@ -1,0 +1,46 @@
+import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+
+/** quart: 1->matin, 2->aprem, 3->nuit | termine: 0->création, 1->fait */
+@Entity("quart_calendrier")
+@Unique("unique_quart_calendrier", [
+  "date_heure_debut",
+  "date_heure_fin",
+  "quart",
+  "idUsine",
+  "idZone",
+  "idAction",
+])
+export class QuartCalendrier {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column({ type: "int" })
+  idUsine: number;
+
+  @Column({ type: "int", nullable: true })
+  idZone: number | null;
+
+  @Column({ type: "int", nullable: true })
+  idAction: number | null;
+
+  @Column({ type: "datetime" })
+  date_heure_debut: Date;
+
+  @Column({ type: "int" })
+  quart: number;
+
+  @Column({ type: "tinyint", default: 0 })
+  termine: number;
+
+  @Column({ type: "datetime", nullable: true })
+  date_heure_fin: Date | null;
+
+  @Column({ type: "int", nullable: true })
+  idUser: number | null;
+
+  @Column({ type: "nvarchar", length: 255, nullable: true })
+  finReccurrence: string | null;
+
+  @Column({ type: "nvarchar", length: 100, nullable: true })
+  recurrencePhrase: string | null;
+}

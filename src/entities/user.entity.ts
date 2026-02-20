@@ -1,49 +1,60 @@
 import { Exclude } from "class-transformer";
-import {
-  Column,
-  CreateDateColumn,
-  DeleteDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from "typeorm";
+import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
-@Entity("user")
+@Entity("users")
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  Id: number;
 
-  @Column({ length: 100 })
-  nom: string;
+  @Column({ length: 255 })
+  Nom: string;
 
-  @Column({ length: 100 })
-  prenom: string;
+  @Column({ length: 255 })
+  Prenom: string;
 
-  @Column({ length: 100, unique: true })
+  @Column({ length: 255, unique: true })
   login: string;
+
+  @Column({ length: 100, default: "" })
+  email: string;
+
+  @Column({ length: 100, default: "" })
+  loginGMAO: string;
+
+  @Column({ length: 100, default: "" })
+  posteUser: string;
 
   @Exclude()
   @Column({ length: 255 })
   pwd: string;
 
-  @Column({ type: "bit", default: 0 })
-  isEditeur: boolean;
+  @Column({ type: "bit" })
+  isRondier: boolean;
 
-  @Column({ type: "bit", default: 0 })
-  isLecteur: boolean;
+  @Column({ type: "bit" })
+  isSaisie: boolean;
 
-  @Column({ type: "bit", default: 0 })
+  @Column({ type: "bit" })
+  isQSE: boolean;
+
+  @Column({ type: "bit" })
+  isRapport: boolean;
+
+  @Column({ type: "bit" })
   isAdmin: boolean;
 
-  @Column({ type: "bit", default: 0 })
-  isVeto: boolean;
+  @Column({ type: "bit", default: false })
+  isChefQuart: boolean;
 
-  @CreateDateColumn({ name: "created_at" })
-  createdAt: Date;
+  @Column({ type: "bit", default: false })
+  isSuperAdmin: boolean;
 
-  @UpdateDateColumn({ name: "updated_at" })
-  updatedAt: Date;
+  @Column({ type: "bit", default: false })
+  isMail: boolean;
 
-  @DeleteDateColumn({ name: "deleted_at" })
-  deletedAt: Date | null;
+  @Column({ type: "bit", default: true })
+  isActif: boolean;
+
+  @Column({ type: "int", default: 1 })
+  idUsine: number;
 }

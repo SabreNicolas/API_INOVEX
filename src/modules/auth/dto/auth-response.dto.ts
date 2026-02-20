@@ -25,17 +25,29 @@ export class AuthUserResponseDto {
   @Expose()
   isAdmin: boolean;
 
-  @ApiProperty({ example: false, description: "Est vétérinaire" })
+  @ApiProperty({ example: false, description: "Est rondier" })
   @Expose()
-  isVeto: boolean;
+  isRondier: boolean;
 
-  @ApiProperty({ example: false, description: "Est éditeur" })
+  @ApiProperty({ example: false, description: "Est saisie" })
   @Expose()
-  isEditeur: boolean;
+  isSaisie: boolean;
 
-  @ApiProperty({ example: true, description: "Est lecteur" })
+  @ApiProperty({ example: false, description: "Est QSE" })
   @Expose()
-  isLecteur: boolean;
+  isQSE: boolean;
+
+  @ApiProperty({ example: false, description: "Est rapport" })
+  @Expose()
+  isRapport: boolean;
+
+  @ApiProperty({ example: false, description: "Est chef de quart" })
+  @Expose()
+  isChefQuart: boolean;
+
+  @ApiProperty({ example: false, description: "Est super admin" })
+  @Expose()
+  isSuperAdmin: boolean;
 
   // Le mot de passe ne sera jamais inclus dans les réponses
   @Exclude()

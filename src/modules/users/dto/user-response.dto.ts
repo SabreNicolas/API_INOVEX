@@ -8,7 +8,7 @@ import { Exclude, Expose } from "class-transformer";
 export class UserResponseDto {
   @ApiProperty({ example: 1, description: "ID de l'utilisateur" })
   @Expose()
-  id: number;
+  Id: number;
 
   @ApiProperty({ example: "johndoe", description: "Login de l'utilisateur" })
   @Expose()
@@ -16,31 +16,67 @@ export class UserResponseDto {
 
   @ApiProperty({ example: "Doe", description: "Nom de famille" })
   @Expose()
-  nom: string;
+  Nom: string;
 
   @ApiProperty({ example: "John", description: "Prénom" })
   @Expose()
-  prenom: string;
+  Prenom: string;
 
-  @ApiProperty({ example: false, description: "Est super admin" })
+  @ApiProperty({ example: "john@example.com", description: "Email" })
   @Expose()
-  isSuperAdmin: boolean;
+  email: string;
+
+  @ApiProperty({ example: "", description: "Login GMAO" })
+  @Expose()
+  loginGMAO: string;
+
+  @ApiProperty({ example: "", description: "Poste utilisateur" })
+  @Expose()
+  posteUser: string;
 
   @ApiProperty({ example: false, description: "Est admin" })
   @Expose()
   isAdmin: boolean;
 
-  @ApiProperty({ example: false, description: "Est vétérinaire" })
+  @ApiProperty({ example: false, description: "Est rondier" })
   @Expose()
-  isVeto: boolean;
+  isRondier: boolean;
 
-  @ApiProperty({ example: true, description: "Est éditeur" })
+  @ApiProperty({ example: false, description: "Est saisie" })
   @Expose()
-  isEditeur: boolean;
+  isSaisie: boolean;
+
+  @ApiProperty({ example: false, description: "Est QSE" })
+  @Expose()
+  isQSE: boolean;
+
+  @ApiProperty({ example: false, description: "Est rapport" })
+  @Expose()
+  isRapport: boolean;
+
+  @ApiProperty({ example: false, description: "Est chef de quart" })
+  @Expose()
+  isChefQuart: boolean;
+
+  @ApiProperty({ example: false, description: "Est super admin" })
+  @Expose()
+  isSuperAdmin: boolean;
+
+  @ApiProperty({ example: false, description: "Reçoit les mails" })
+  @Expose()
+  isMail: boolean;
+
+  @ApiProperty({ example: true, description: "Est actif" })
+  @Expose()
+  isActif: boolean;
+
+  @ApiProperty({ example: 1, description: "ID de l'usine" })
+  @Expose()
+  idUsine: number;
 
   // Le mot de passe ne sera jamais inclus dans les réponses
   @Exclude()
-  password?: string;
+  pwd?: string;
 
   constructor(partial: Partial<UserResponseDto>) {
     Object.assign(this, partial);

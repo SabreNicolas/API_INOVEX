@@ -49,6 +49,21 @@ describe("AuthGuard", () => {
       getClass: () => jest.fn(),
     }) as unknown as ExecutionContext;
 
+  const createPayload = (overrides: Partial<JwtPayload> = {}): JwtPayload => ({
+    id: 1,
+    login: "testuser",
+    nom: "Doe",
+    prenom: "John",
+    isAdmin: false,
+    isRondier: false,
+    isSaisie: false,
+    isQSE: false,
+    isRapport: false,
+    isChefQuart: false,
+    isSuperAdmin: false,
+    ...overrides,
+  });
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -93,7 +108,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException when token is missing", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.LECTEUR);
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
       const context = createMockExecutionContext();
 
       await expect(guard.canActivate(context)).rejects.toThrow(
@@ -102,17 +117,8 @@ describe("AuthGuard", () => {
     });
 
     it("should allow access for valid token with sufficient role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.LECTEUR);
-      const mockPayload: JwtPayload = {
-        id: 1,
-        login: "testuser",
-        nom: "Doe",
-        prenom: "John",
-        isAdmin: false,
-        isVeto: false,
-        isEditeur: false,
-        isLecteur: true,
-      };
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      const mockPayload = createPayload({ isRondier: true });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
       const context = createMockExecutionContext({
@@ -128,17 +134,8 @@ describe("AuthGuard", () => {
     });
 
     it("should throw ForbiddenException when role is insufficient", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.ADMIN);
-      const mockPayload: JwtPayload = {
-        id: 1,
-        login: "testuser",
-        nom: "Doe",
-        prenom: "John",
-        isAdmin: false,
-        isVeto: false,
-        isEditeur: false,
-        isLecteur: true,
-      };
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_ADMIN);
+      const mockPayload = createPayload({ isRondier: true });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
       const context = createMockExecutionContext({
@@ -151,7 +148,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException for expired token", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.LECTEUR);
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
       const tokenExpiredError = new Error("Token expired");
       tokenExpiredError.name = "TokenExpiredError";
       mockJwtService.verify.mockImplementation(() => {
@@ -168,7 +165,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException for invalid token", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.LECTEUR);
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
       const tokenInvalidError = new Error("Invalid token");
       tokenInvalidError.name = "JsonWebTokenError";
       mockJwtService.verify.mockImplementation(() => {
@@ -185,7 +182,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException when token has no id", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.LECTEUR);
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
       const mockPayload = {
         login: "testuser",
         nom: "Doe",
@@ -203,17 +200,13 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify admin role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.ADMIN);
-      const mockPayload: JwtPayload = {
-        id: 1,
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_ADMIN);
+      const mockPayload = createPayload({
         login: "admin",
         nom: "Admin",
         prenom: "User",
         isAdmin: true,
-        isVeto: false,
-        isEditeur: false,
-        isLecteur: true,
-      };
+      });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
       const context = createMockExecutionContext({
@@ -225,43 +218,54 @@ describe("AuthGuard", () => {
       expect(result).toBe(true);
     });
 
-    it("should correctly identify veto role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.VETO);
-      const mockPayload: JwtPayload = {
-        id: 1,
-        login: "veto",
-        nom: "Vet",
+    it("should correctly identify QSE role", async () => {
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_QSE);
+      const mockPayload = createPayload({
+        login: "qse",
+        nom: "QSE",
         prenom: "User",
-        isAdmin: false,
-        isVeto: true,
-        isEditeur: false,
-        isLecteur: true,
-      };
+        isQSE: true,
+      });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
-      const context = createMockExecutionContext({ accessToken: "veto-token" });
+      const context = createMockExecutionContext({ accessToken: "qse-token" });
 
       const result = await guard.canActivate(context);
 
       expect(result).toBe(true);
     });
 
-    it("should correctly identify editeur role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.EDITEUR);
-      const mockPayload: JwtPayload = {
-        id: 1,
-        login: "editeur",
-        nom: "Editor",
+    it("should correctly identify saisie role", async () => {
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_SAISIE);
+      const mockPayload = createPayload({
+        login: "saisie",
+        nom: "Saisie",
         prenom: "User",
-        isAdmin: false,
-        isVeto: false,
-        isEditeur: true,
-        isLecteur: true,
-      };
+        isSaisie: true,
+      });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
       const context = createMockExecutionContext({
-        accessToken: "editor-token",
+        accessToken: "saisie-token",
+      });
+
+      const result = await guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it("should correctly identify chef de quart role", async () => {
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_CHEF_QUART);
+      const mockPayload = createPayload({
+        login: "chefquart",
+        nom: "Chef",
+        prenom: "Quart",
+        isChefQuart: true,
+      });
+      mockJwtService.verify.mockReturnValue(mockPayload);
+
+      const context = createMockExecutionContext({
+        accessToken: "chefquart-token",
       });
 
       const result = await guard.canActivate(context);
@@ -270,18 +274,13 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify super admin role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.SUPER_ADMIN);
-      const mockPayload: JwtPayload = {
-        id: 1,
+      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_SUPER_ADMIN);
+      const mockPayload = createPayload({
         login: "superadmin",
         nom: "Super",
         prenom: "Admin",
         isSuperAdmin: true,
-        isAdmin: true,
-        isVeto: false,
-        isEditeur: false,
-        isLecteur: true,
-      };
+      });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
       const context = createMockExecutionContext({
