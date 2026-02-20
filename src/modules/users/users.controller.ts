@@ -1,0 +1,145 @@
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from "@nestjs/common";
+import {
+  ApiCookieAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
+
+import { RequireAdmin, RequireLecteur } from "../../common/decorators";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { PaginationDto } from "../../common/dto/pagination.dto";
+import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { CreateUserDto, UpdateUserDto } from "./dto";
+import { UsersService } from "./users.service";
+
+@ApiTags("Utilisateurs")
+@ApiCookieAuth()
+@Controller("users")
+@UseGuards(AuthGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get("me")
+  @RequireLecteur()
+  @ApiOperation({
+    summary: "Récupérer les informations de l'utilisateur connecté",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Informations utilisateur récupérées",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  async getMe(@CurrentUser() currentUser: RequestUser) {
+    return this.usersService.findOne(currentUser.id);
+  }
+
+  @Get()
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer tous les utilisateurs (avec pagination optionnelle)",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Numéro de page (défaut: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Éléments par page (défaut: 20, max: 100)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des utilisateurs récupérée avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findAll(@Query() pagination: PaginationDto) {
+    return this.usersService.findAll(pagination);
+  }
+
+  @Get(":id")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Récupérer un utilisateur par ID" })
+  @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
+  @ApiResponse({ status: 200, description: "Utilisateur trouvé" })
+  @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
+  async findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.usersService.findOne(id);
+  }
+
+  @Post()
+  @RequireAdmin()
+  @ApiOperation({ summary: "Créer un nouvel utilisateur" })
+  @ApiResponse({ status: 201, description: "Utilisateur créé avec succès" })
+  @ApiResponse({
+    status: 400,
+    description: "Données invalides ou login déjà utilisé",
+  })
+  async create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Put(":id")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Mettre à jour un utilisateur" })
+  @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
+  @ApiResponse({
+    status: 200,
+    description: "Utilisateur mis à jour avec succès",
+  })
+  @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
+  async update(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto
+  ) {
+    await this.usersService.update(id, updateUserDto);
+    return { message: "Utilisateur mis à jour avec succès" };
+  }
+
+  @Delete(":id")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Supprimer un utilisateur (soft delete)" })
+  @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
+  @ApiResponse({ status: 200, description: "Utilisateur supprimé avec succès" })
+  @ApiResponse({
+    status: 400,
+    description: "Impossible de supprimer votre propre compte",
+  })
+  @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
+  async delete(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    await this.usersService.delete(id, currentUser.id);
+    return { message: "Utilisateur supprimé avec succès" };
+  }
+
+  @Patch(":id/restore")
+  @RequireAdmin()
+  @ApiOperation({ summary: "Restaurer un utilisateur supprimé" })
+  @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
+  @ApiResponse({ status: 200, description: "Utilisateur restauré avec succès" })
+  @ApiResponse({ status: 404, description: "Utilisateur supprimé non trouvé" })
+  async restore(@Param("id", ParseIntPipe) id: number) {
+    await this.usersService.restore(id);
+    return { message: "Utilisateur restauré avec succès" };
+  }
+}

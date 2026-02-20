@@ -1,0 +1,95 @@
+# ===========================================
+# Docker Compose - Développement Local
+# API INOVEX
+# ===========================================
+# Usage: docker-compose -f docker-compose.dev.yml up -d
+#
+# === Connexion SQL Server (développement) ===
+# Type       : SQL Server
+# Hôte       : 127.0.0.1 ou localhost
+# Port       : 1433
+# Utilisateur: sa
+# Mot de passe: Inovex_Dev_2024!
+# Base       : dolibarr
+# ===========================================
+
+services:
+  # ----- Base de données SQL Server -----
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: inovex_db
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "Inovex_Dev_2024!"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+      - ./docker/init-db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Inovex_Dev_2024!' -C -Q 'SELECT 1' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    networks:
+      - inovex_network
+
+  # ----- Initialisation de la base -----
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: inovex_db_init
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./docker/init-db:/init-db:ro
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "Création de la base dolibarr..."
+        /opt/mssql-tools18/bin/sqlcmd -S db -U sa -P 'Inovex_Dev_2024!' -C -Q "IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = 'dolibarr') CREATE DATABASE dolibarr"
+        echo "Exécution du script d'initialisation..."
+        /opt/mssql-tools18/bin/sqlcmd -S db -U sa -P 'Inovex_Dev_2024!' -C -d dolibarr -i /init-db/01-schema-and-data.sql
+        echo "Initialisation terminée !"
+    networks:
+      - inovex_network
+
+  # ----- API NestJS (optionnel - pour test complet) -----
+  # Décommentez si vous voulez aussi conteneuriser l'API
+  # api:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.dev
+  #   container_name: inovex_api
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: development
+  #     DB_HOST: db
+  #     DB_PORT: 1433
+  #     DB_USERNAME: sa
+  #     DB_PASSWORD: Inovex_Dev_2024!
+  #     DB_DATABASE: dolibarr
+  #     JWT_SECRET: dev_jwt_secret_key_for_local_development
+  #     JWT_EXPIRATION: 86400
+  #   ports:
+  #     - "3010:3010"
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   networks:
+  #     - inovex_network
+
+volumes:
+  mssql_data:
+    name: inovex_mssql_data
+
+networks:
+  inovex_network:
+    name: inovex_network
+    driver: bridge
