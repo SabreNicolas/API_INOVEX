@@ -71,8 +71,11 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findAll(@Query() pagination: PaginationDto) {
-    return this.usersService.findAll(pagination);
+  async findAll(
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.usersService.findAll(pagination, currentUser.idUsine);
   }
 
   @Get(":id")
@@ -81,8 +84,11 @@ export class UsersController {
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
   @ApiResponse({ status: 200, description: "Utilisateur trouvé" })
   @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.usersService.findOne(id);
+  async findOne(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.usersService.findOne(id, currentUser.idUsine);
   }
 
   @Post()
@@ -93,8 +99,11 @@ export class UsersController {
     status: 400,
     description: "Données invalides ou login déjà utilisé",
   })
-  async create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  async create(
+    @Body() createUserDto: CreateUserDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.usersService.create(createUserDto, currentUser.idUsine);
   }
 
   @Put(":id")
@@ -108,9 +117,10 @@ export class UsersController {
   @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto
+    @Body() updateUserDto: UpdateUserDto,
+    @CurrentUser() currentUser: RequestUser
   ) {
-    await this.usersService.update(id, updateUserDto);
+    await this.usersService.update(id, updateUserDto, currentUser.idUsine);
     return { message: "Utilisateur mis à jour avec succès" };
   }
 
@@ -118,7 +128,10 @@ export class UsersController {
   @RequireAdmin()
   @ApiOperation({ summary: "Désactiver un utilisateur (isActif = false)" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
-  @ApiResponse({ status: 200, description: "Utilisateur désactivé avec succès" })
+  @ApiResponse({
+    status: 200,
+    description: "Utilisateur désactivé avec succès",
+  })
   @ApiResponse({
     status: 400,
     description: "Impossible de supprimer votre propre compte",
@@ -128,7 +141,7 @@ export class UsersController {
     @Param("id", ParseIntPipe) id: number,
     @CurrentUser() currentUser: RequestUser
   ) {
-    await this.usersService.delete(id, currentUser.id);
+    await this.usersService.delete(id, currentUser.id, currentUser.idUsine);
     return { message: "Utilisateur désactivé avec succès" };
   }
 
@@ -138,8 +151,11 @@ export class UsersController {
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
   @ApiResponse({ status: 200, description: "Utilisateur réactivé avec succès" })
   @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
-  async restore(@Param("id", ParseIntPipe) id: number) {
-    await this.usersService.restore(id);
+  async restore(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    await this.usersService.restore(id, currentUser.idUsine);
     return { message: "Utilisateur réactivé avec succès" };
   }
 }

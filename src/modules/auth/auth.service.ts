@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import {
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
+} from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
@@ -9,12 +13,15 @@ import { AUTH_CONSTANTS } from "../../common/constants";
 import { LoggerService } from "../../common/services/logger.service";
 import { User } from "../../entities";
 import { LoginDto } from "./dto";
+import { Site } from "../../entities/site.entity";
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Site)
+    private readonly siteRepository: Repository<Site>,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService
@@ -43,6 +50,7 @@ export class AuthService {
           "isRapport",
           "isChefQuart",
           "isSuperAdmin",
+          "idUsine",
         ],
       });
 
@@ -69,6 +77,7 @@ export class AuthService {
         isRapport: Boolean(user.isRapport),
         isChefQuart: Boolean(user.isChefQuart),
         isSuperAdmin: Boolean(user.isSuperAdmin),
+        idUsine: user.idUsine,
       };
 
       const accessToken = this.jwtService.sign(payload, {
@@ -105,8 +114,9 @@ export class AuthService {
   }
 
   async refreshTokens(
-    refreshToken: string
-  ): Promise<{ accessToken: string; refreshToken: string }> {
+    refreshToken: string,
+    newIdUsine?: number
+  ): Promise<{ accessToken: string; refreshToken: string; idUsine: number }> {
     try {
       const decoded = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>("SECRET_KEY"),
@@ -131,11 +141,43 @@ export class AuthService {
           "isRapport",
           "isChefQuart",
           "isSuperAdmin",
+          "idUsine",
         ],
       });
 
       if (!user) {
         throw new UnauthorizedException("Utilisateur non trouvé");
+      }
+
+      // Déterminer l'idUsine à utiliser
+      let idUsineToUse = user.idUsine;
+
+      // Si un changement de site est demandé
+      if (newIdUsine !== undefined && newIdUsine !== user.idUsine) {
+        // Seuls les super admins peuvent changer de site
+        if (!user.isSuperAdmin) {
+          throw new ForbiddenException(
+            "Seuls les super admins peuvent changer de site"
+          );
+        }
+
+        // Vérifier que le site existe
+        const site = await this.siteRepository.findOne({
+          where: { id: newIdUsine },
+          select: ["id"],
+        });
+
+        if (!site) {
+          throw new UnauthorizedException(
+            `Site avec l'ID ${newIdUsine} non trouvé`
+          );
+        }
+
+        idUsineToUse = newIdUsine;
+        this.logger.log(
+          `Super admin ${user.login} change de site: ${user.idUsine} -> ${newIdUsine}`,
+          "AuthService"
+        );
       }
 
       // Générer de nouveaux tokens
@@ -151,6 +193,7 @@ export class AuthService {
         isRapport: Boolean(user.isRapport),
         isChefQuart: Boolean(user.isChefQuart),
         isSuperAdmin: Boolean(user.isSuperAdmin),
+        idUsine: idUsineToUse,
       };
 
       const newAccessToken = this.jwtService.sign(payload, {
@@ -170,9 +213,16 @@ export class AuthService {
         "AuthService"
       );
 
-      return { accessToken: newAccessToken, refreshToken: newRefreshToken };
+      return {
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+        idUsine: idUsineToUse,
+      };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       this.logger.error(

@@ -27,6 +27,7 @@ export interface JwtPayload {
   isAdmin: boolean;
   isChefQuart: boolean;
   isSuperAdmin: boolean;
+  idUsine: number;
   iat?: number;
   exp?: number;
 }

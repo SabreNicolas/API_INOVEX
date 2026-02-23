@@ -23,7 +23,7 @@ import { AUTH_CONSTANTS } from "../../common/constants";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { CsrfGuard } from "../../common/guards/csrf.guard";
 import { AuthService } from "./auth.service";
-import { LoginDto } from "./dto";
+import { LoginDto, RefreshDto } from "./dto";
 
 @ApiTags("Authentification")
 @Controller("auth")
@@ -128,6 +128,7 @@ export class AuthController {
           isRapport: Boolean(user.isRapport),
           isChefQuart: Boolean(user.isChefQuart),
           isSuperAdmin: Boolean(user.isSuperAdmin),
+          idUsine: user.idUsine,
         },
         csrfToken,
       },
@@ -143,16 +144,26 @@ export class AuthController {
     },
   })
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: "Rafraîchir les tokens d'authentification" })
+  @ApiOperation({
+    summary: "Rafraîchir les tokens d'authentification",
+    description:
+      "Rafraîchit les tokens. Les super admins peuvent optionnellement changer de site en passant idUsine dans le body.",
+  })
   @ApiCookieAuth()
+  @ApiBody({ type: RefreshDto, required: false })
   @ApiResponse({
     status: 200,
     description: "Tokens rafraîchis (nouveaux cookies posés)",
   })
   @ApiResponse({ status: 401, description: "Refresh token invalide ou expiré" })
+  @ApiResponse({
+    status: 403,
+    description: "Changement de site non autorisé (réservé aux super admins)",
+  })
   async refresh(
     @Req() req: Request,
-    @Res({ passthrough: true }) res: Response
+    @Res({ passthrough: true }) res: Response,
+    @Body() refreshDto?: RefreshDto
   ) {
     const refreshToken =
       req.cookies?.[AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE_NAME];
@@ -161,8 +172,11 @@ export class AuthController {
       throw new UnauthorizedException("Refresh token manquant");
     }
 
-    const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
-      await this.authService.refreshTokens(refreshToken);
+    const {
+      accessToken: newAccessToken,
+      refreshToken: newRefreshToken,
+      idUsine,
+    } = await this.authService.refreshTokens(refreshToken, refreshDto?.idUsine);
 
     // Poser les nouveaux cookies
     this.setAuthCookies(res, newAccessToken, newRefreshToken);
@@ -179,7 +193,7 @@ export class AuthController {
     return {
       success: true,
       message: "Tokens rafraîchis avec succès",
-      data: { csrfToken },
+      data: { csrfToken, idUsine },
       timestamp: new Date().toISOString(),
     };
   }

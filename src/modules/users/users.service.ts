@@ -26,12 +26,16 @@ export class UsersService {
   ) {}
 
   async findAll(
-    pagination?: PaginationDto
+    pagination?: PaginationDto,
+    idUsine?: number
   ): Promise<PaginatedResult<Omit<User, "pwd">> | Omit<User, "pwd">[]> {
     try {
+      const whereCondition = idUsine ? { idUsine } : {};
+
       // Si pas de pagination, retourner tous les résultats (rétrocompatibilité) avec limite de sécurité
       if (!pagination) {
         const users = await this.userRepository.find({
+          where: whereCondition,
           select: [
             "Id",
             "login",
@@ -61,6 +65,7 @@ export class UsersService {
       const offset = (page - 1) * limit;
 
       const [users, total] = await this.userRepository.findAndCount({
+        where: whereCondition,
         select: [
           "Id",
           "login",
@@ -96,10 +101,15 @@ export class UsersService {
     }
   }
 
-  async findOne(id: number): Promise<Omit<User, "pwd">> {
+  async findOne(id: number, idUsine?: number): Promise<Omit<User, "pwd">> {
     try {
+      const whereCondition: { Id: number; idUsine?: number } = { Id: id };
+      if (idUsine) {
+        whereCondition.idUsine = idUsine;
+      }
+
       const user = await this.userRepository.findOne({
-        where: { Id: id },
+        where: whereCondition,
         select: [
           "Id",
           "login",
@@ -139,7 +149,10 @@ export class UsersService {
     }
   }
 
-  async create(createUserDto: CreateUserDto): Promise<{ id: number }> {
+  async create(
+    createUserDto: CreateUserDto,
+    currentUserIdUsine?: number
+  ): Promise<{ id: number }> {
     const {
       login,
       password,
@@ -174,6 +187,9 @@ export class UsersService {
       // Hasher le mot de passe
       const hashedPassword = await argon2.hash(password);
 
+      // Utiliser l'idUsine du DTO si fourni, sinon celui de l'utilisateur courant, sinon 1
+      const finalIdUsine = idUsine ?? currentUserIdUsine ?? 1;
+
       const user = this.userRepository.create({
         login,
         pwd: hashedPassword,
@@ -191,7 +207,7 @@ export class UsersService {
         isSuperAdmin: isSuperAdmin || false,
         isMail: isMail || false,
         isActif: isActif !== undefined ? isActif : true,
-        idUsine: idUsine || 1,
+        idUsine: finalIdUsine,
       });
 
       const savedUser = await this.userRepository.save(user);
@@ -212,11 +228,20 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<void> {
+  async update(
+    id: number,
+    updateUserDto: UpdateUserDto,
+    idUsine?: number
+  ): Promise<void> {
     try {
-      // Vérifier que l'utilisateur existe
+      // Vérifier que l'utilisateur existe (et appartient au même site si idUsine spécifié)
+      const whereCondition: { Id: number; idUsine?: number } = { Id: id };
+      if (idUsine) {
+        whereCondition.idUsine = idUsine;
+      }
+
       const existing = await this.userRepository.findOne({
-        where: { Id: id },
+        where: whereCondition,
         select: ["Id", "login"],
       });
 
@@ -242,9 +267,12 @@ export class UsersService {
       if (updateUserDto.login) updateData.login = updateUserDto.login;
       if (updateUserDto.nom) updateData.Nom = updateUserDto.nom;
       if (updateUserDto.prenom) updateData.Prenom = updateUserDto.prenom;
-      if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
-      if (updateUserDto.loginGMAO !== undefined) updateData.loginGMAO = updateUserDto.loginGMAO;
-      if (updateUserDto.posteUser !== undefined) updateData.posteUser = updateUserDto.posteUser;
+      if (updateUserDto.email !== undefined)
+        updateData.email = updateUserDto.email;
+      if (updateUserDto.loginGMAO !== undefined)
+        updateData.loginGMAO = updateUserDto.loginGMAO;
+      if (updateUserDto.posteUser !== undefined)
+        updateData.posteUser = updateUserDto.posteUser;
       if (updateUserDto.password) {
         updateData.pwd = await argon2.hash(updateUserDto.password);
       }
@@ -292,7 +320,11 @@ export class UsersService {
     }
   }
 
-  async delete(id: number, currentUserId: number): Promise<void> {
+  async delete(
+    id: number,
+    currentUserId: number,
+    idUsine?: number
+  ): Promise<void> {
     try {
       // Empêcher la suppression de son propre compte
       if (id === currentUserId) {
@@ -301,8 +333,13 @@ export class UsersService {
         );
       }
 
+      const whereCondition: { Id: number; idUsine?: number } = { Id: id };
+      if (idUsine) {
+        whereCondition.idUsine = idUsine;
+      }
+
       const existing = await this.userRepository.findOne({
-        where: { Id: id },
+        where: whereCondition,
         select: ["Id"],
       });
 
@@ -313,10 +350,7 @@ export class UsersService {
       // Désactivation au lieu de suppression (pas de deletedAt dans le schéma)
       await this.userRepository.update({ Id: id }, { isActif: false });
 
-      this.logger.log(
-        `Utilisateur ${id} désactivé`,
-        "UsersService"
-      );
+      this.logger.log(`Utilisateur ${id} désactivé`, "UsersService");
     } catch (error) {
       if (
         error instanceof NotFoundException ||
@@ -333,10 +367,15 @@ export class UsersService {
     }
   }
 
-  async restore(id: number): Promise<void> {
+  async restore(id: number, idUsine?: number): Promise<void> {
     try {
+      const whereCondition: { Id: number; idUsine?: number } = { Id: id };
+      if (idUsine) {
+        whereCondition.idUsine = idUsine;
+      }
+
       const existing = await this.userRepository.findOne({
-        where: { Id: id },
+        where: whereCondition,
         select: ["Id", "isActif"],
       });
 

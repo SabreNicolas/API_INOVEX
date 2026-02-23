@@ -9,6 +9,7 @@ import { LoggerService } from "./common/services/logger.service";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AuthModule } from "./modules/auth/auth.module";
+import { SiteModule } from "./modules/site/site.module";
 import { UsersModule } from "./modules/users/users.module";
 
 @Module({
@@ -47,6 +48,7 @@ import { UsersModule } from "./modules/users/users.module";
     // Feature modules
     AuthModule,
     UsersModule,
+    SiteModule,
   ],
   providers: [
     LoggerService,
