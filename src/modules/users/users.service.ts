@@ -25,10 +25,37 @@ export class UsersService {
     private readonly logger: LoggerService
   ) {}
 
+  /**
+   * Transforme un utilisateur pour renvoyer id, nom, prenom en minuscules
+   */
+  private transformUser(user: Omit<User, "pwd">): Record<string, unknown> {
+    return {
+      id: user.Id,
+      login: user.login,
+      nom: user.Nom,
+      prenom: user.Prenom,
+      email: user.email,
+      loginGMAO: user.loginGMAO,
+      posteUser: user.posteUser,
+      isAdmin: user.isAdmin,
+      isRondier: user.isRondier,
+      isSaisie: user.isSaisie,
+      isQSE: user.isQSE,
+      isRapport: user.isRapport,
+      isChefQuart: user.isChefQuart,
+      isSuperAdmin: user.isSuperAdmin,
+      isMail: user.isMail,
+      isActif: user.isActif,
+      idUsine: user.idUsine,
+    };
+  }
+
   async findAll(
     pagination?: PaginationDto,
     idUsine?: number
-  ): Promise<PaginatedResult<Omit<User, "pwd">> | Omit<User, "pwd">[]> {
+  ): Promise<
+    PaginatedResult<Record<string, unknown>> | Record<string, unknown>[]
+  > {
     try {
       const whereCondition = idUsine ? { idUsine } : {};
 
@@ -58,7 +85,7 @@ export class UsersService {
           order: { Id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
         });
-        return users;
+        return users.map(user => this.transformUser(user));
       }
 
       const { page = 1, limit = 20 } = pagination;
@@ -90,7 +117,8 @@ export class UsersService {
         take: limit,
       });
 
-      return createPaginatedResult(users, total, page, limit);
+      const transformedUsers = users.map(user => this.transformUser(user));
+      return createPaginatedResult(transformedUsers, total, page, limit);
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des utilisateurs",
@@ -101,7 +129,10 @@ export class UsersService {
     }
   }
 
-  async findOne(id: number, idUsine?: number): Promise<Omit<User, "pwd">> {
+  async findOne(
+    id: number,
+    idUsine?: number
+  ): Promise<Record<string, unknown>> {
     try {
       const whereCondition: { Id: number; idUsine?: number } = { Id: id };
       if (idUsine) {
@@ -135,7 +166,7 @@ export class UsersService {
         throw new NotFoundException(`Utilisateur avec l'ID ${id} non trouvé`);
       }
 
-      return user;
+      return this.transformUser(user);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
