@@ -70,11 +70,13 @@ export class LoggerService {
     url: string,
     statusCode: number,
     responseTime: number,
-    userId?: number
+    userId?: number,
+    idUsine?: number
   ): void {
     this.logger.info(`${method} ${url} ${statusCode} - ${responseTime}ms`, {
       context: "HTTP",
       userId,
+      idUsine,
       responseTime,
       statusCode,
     });

@@ -1,4 +1,7 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+
+import { ImportTonnage } from "./import-tonnage.entity";
+import { ProductNew } from "./product-new.entity";
 
 @Entity("moralentities_new")
 export class MoralEntityNew {
@@ -43,4 +46,11 @@ export class MoralEntityNew {
 
   @Column({ type: "int", nullable: true })
   idUsine: number | null;
+
+  // Relations
+  @OneToMany(() => ImportTonnage, importTonnage => importTonnage.producer)
+  importTonnages: ImportTonnage[];
+
+  // Virtual property for join on Code
+  product?: ProductNew;
 }

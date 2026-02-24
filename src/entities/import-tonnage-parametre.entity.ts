@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { Site } from "./site.entity";
 
 @Entity("import_tonnage_parametres")
 export class ImportTonnageParametre {
@@ -28,4 +36,9 @@ export class ImportTonnageParametre {
 
   @Column({ type: "int" })
   idUsine: number;
+
+  // Relations
+  @ManyToOne(() => Site)
+  @JoinColumn({ name: "idUsine", referencedColumnName: "id" })
+  usine: Site;
 }

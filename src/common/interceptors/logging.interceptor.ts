@@ -11,7 +11,7 @@ import { tap } from "rxjs/operators";
 import { LoggerService } from "../services/logger.service";
 
 interface RequestWithUser extends Request {
-  user?: { id?: number };
+  user?: { id?: number; idUsine?: number };
 }
 
 @Injectable()
@@ -34,7 +34,8 @@ export class LoggingInterceptor implements NestInterceptor {
           request.url,
           response.statusCode,
           responseTime,
-          request.user?.id
+          request.user?.id,
+          request.user?.idUsine
         );
       })
     );

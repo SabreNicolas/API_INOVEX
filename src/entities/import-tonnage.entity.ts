@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { MoralEntityNew } from "./moral-entity-new.entity";
+import { ProductNew } from "./product-new.entity";
+import { Site } from "./site.entity";
 
 @Entity("import_tonnage")
 export class ImportTonnage {
@@ -19,4 +29,17 @@ export class ImportTonnage {
 
   @Column({ length: 255 })
   productImport: string;
+
+  // Relations
+  @ManyToOne(() => MoralEntityNew)
+  @JoinColumn({ name: "ProducerId", referencedColumnName: "Id" })
+  producer: MoralEntityNew;
+
+  @ManyToOne(() => ProductNew)
+  @JoinColumn({ name: "ProductId", referencedColumnName: "Id" })
+  product: ProductNew;
+
+  @ManyToOne(() => Site)
+  @JoinColumn({ name: "idUsine", referencedColumnName: "id" })
+  usine: Site;
 }

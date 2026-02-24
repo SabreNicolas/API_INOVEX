@@ -1,4 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { ProductNew } from "./product-new.entity";
+import { Site } from "./site.entity";
 
 @Entity("import_tonnageReactifs")
 export class ImportTonnageReactif {
@@ -13,4 +22,13 @@ export class ImportTonnageReactif {
 
   @Column({ length: 255 })
   productImport: string;
+
+  // Relations
+  @ManyToOne(() => ProductNew)
+  @JoinColumn({ name: "ProductId", referencedColumnName: "Id" })
+  product: ProductNew;
+
+  @ManyToOne(() => Site)
+  @JoinColumn({ name: "idUsine", referencedColumnName: "id" })
+  usine: Site;
 }
