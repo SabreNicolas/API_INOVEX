@@ -25,31 +25,6 @@ export class UsersService {
     private readonly logger: LoggerService
   ) {}
 
-  /**
-   * Transforme un utilisateur pour renvoyer id, nom, prenom en minuscules
-   */
-  private transformUser(user: Omit<User, "pwd">): Record<string, unknown> {
-    return {
-      id: user.Id,
-      login: user.login,
-      nom: user.Nom,
-      prenom: user.Prenom,
-      email: user.email,
-      loginGMAO: user.loginGMAO,
-      posteUser: user.posteUser,
-      isAdmin: user.isAdmin,
-      isRondier: user.isRondier,
-      isSaisie: user.isSaisie,
-      isQSE: user.isQSE,
-      isRapport: user.isRapport,
-      isChefQuart: user.isChefQuart,
-      isSuperAdmin: user.isSuperAdmin,
-      isMail: user.isMail,
-      isActif: user.isActif,
-      idUsine: user.idUsine,
-    };
-  }
-
   async findAll(
     pagination?: PaginationDto,
     idUsine?: number
@@ -85,7 +60,7 @@ export class UsersService {
           order: { Id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
         });
-        return users.map(user => this.transformUser(user));
+        return users.map(user => transformUser(user));
       }
 
       const { page = 1, limit = 20 } = pagination;
@@ -117,7 +92,7 @@ export class UsersService {
         take: limit,
       });
 
-      const transformedUsers = users.map(user => this.transformUser(user));
+      const transformedUsers = users.map(user => transformUser(user));
       return createPaginatedResult(transformedUsers, total, page, limit);
     } catch (error) {
       this.logger.error(
@@ -166,7 +141,7 @@ export class UsersService {
         throw new NotFoundException(`Utilisateur avec l'ID ${id} non trouvé`);
       }
 
-      return this.transformUser(user);
+      return transformUser(user);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -436,4 +411,31 @@ export class UsersService {
       throw error;
     }
   }
+}
+
+/**
+ * Transforme un utilisateur pour renvoyer id, nom, prenom en minuscules
+ */
+export function transformUser(
+  user: Omit<User, "pwd">
+): Record<string, unknown> {
+  return {
+    id: user.Id,
+    login: user.login,
+    nom: user.Nom,
+    prenom: user.Prenom,
+    email: user.email,
+    loginGMAO: user.loginGMAO,
+    posteUser: user.posteUser,
+    isAdmin: user.isAdmin,
+    isRondier: user.isRondier,
+    isSaisie: user.isSaisie,
+    isQSE: user.isQSE,
+    isRapport: user.isRapport,
+    isChefQuart: user.isChefQuart,
+    isSuperAdmin: user.isSuperAdmin,
+    isMail: user.isMail,
+    isActif: user.isActif,
+    idUsine: user.idUsine,
+  };
 }

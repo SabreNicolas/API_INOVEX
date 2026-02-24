@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+import { User } from "./user.entity";
+import { ZoneControle } from "./zone-controle.entity";
 
 @Entity("badge")
 export class Badge {
@@ -19,4 +27,12 @@ export class Badge {
 
   @Column({ type: "int", default: 1 })
   idUsine: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "userId", referencedColumnName: "Id" })
+  user: User;
+
+  @ManyToOne(() => ZoneControle)
+  @JoinColumn({ name: "zoneId", referencedColumnName: "Id" })
+  zone: ZoneControle;
 }
