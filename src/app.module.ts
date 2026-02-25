@@ -10,11 +10,15 @@ import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
+import { ConsignesModule } from "./modules/consignes/consignes.module";
+import { ElementControleModule } from "./modules/element-controle/element-controle.module";
+import { GroupementModule } from "./modules/groupement/groupement.module";
 import { ImportTonnageMainModule } from "./modules/importTonnage/import-tonnage-main.module";
 import { PostesRondierModule } from "./modules/postesRondier/postesRondier.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UsersModule } from "./modules/users/users.module";
+import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
 @Module({
   imports: [
@@ -57,6 +61,10 @@ import { UsersModule } from "./modules/users/users.module";
     ImportTonnageMainModule,
     ProductsModule,
     BadgeModule,
+    ConsignesModule,
+    ZoneControleModule,
+    GroupementModule,
+    ElementControleModule,
   ],
   providers: [
     LoggerService,

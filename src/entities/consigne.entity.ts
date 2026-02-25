@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { ConsigneType } from "./consigne-type.entity";
 
 @Entity("consigne")
 export class Consigne {
@@ -28,4 +36,8 @@ export class Consigne {
 
   @Column({ type: "int", default: 1 })
   isActive: number;
+
+  @ManyToOne(() => ConsigneType)
+  @JoinColumn({ name: "type", referencedColumnName: "id" })
+  typeConsigne: ConsigneType;
 }
