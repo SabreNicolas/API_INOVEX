@@ -14,6 +14,7 @@ import { ConsignesModule } from "./modules/consignes/consignes.module";
 import { ElementControleModule } from "./modules/element-controle/element-controle.module";
 import { GroupementModule } from "./modules/groupement/groupement.module";
 import { ImportTonnageMainModule } from "./modules/importTonnage/import-tonnage-main.module";
+import { ModeOperatoireModule } from "./modules/mode-operatoire/mode-operatoire.module";
 import { PostesRondierModule } from "./modules/postesRondier/postesRondier.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { SiteModule } from "./modules/site/site.module";
@@ -65,6 +66,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     ZoneControleModule,
     GroupementModule,
     ElementControleModule,
+    ModeOperatoireModule,
   ],
   providers: [
     LoggerService,

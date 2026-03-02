@@ -33,12 +33,22 @@ export class FileUploadService {
 
   private ensureUploadDirExists(): void {
     const consignesDir = join(this.uploadPath, "consignes");
+    const modeOperatoireDir = join(this.uploadPath, "mode-operatoire");
     // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!existsSync(consignesDir)) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
       mkdirSync(consignesDir, { recursive: true });
       this.logger.log(
         `Dossier d'upload créé: ${consignesDir}`,
+        "FileUploadService"
+      );
+    }
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
+    if (!existsSync(modeOperatoireDir)) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      mkdirSync(modeOperatoireDir, { recursive: true });
+      this.logger.log(
+        `Dossier d'upload créé: ${modeOperatoireDir}`,
         "FileUploadService"
       );
     }
@@ -114,6 +124,69 @@ export class FileUploadService {
     } catch (error) {
       this.logger.error(
         `Erreur lors de la suppression du fichier: ${filename}`,
+        error instanceof Error ? error.stack : String(error),
+        "FileUploadService"
+      );
+    }
+  }
+
+  async saveModeOperatoireFile(
+    file: Express.Multer.File
+  ): Promise<UploadedFileInfo> {
+    this.validateFile(file);
+
+    const extension = file.originalname.split(".").pop() || "";
+    const filename = `${uuidv4()}.${extension}`;
+    const filePath = join(this.uploadPath, "mode-operatoire", filename);
+
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      writeFileSync(filePath, file.buffer);
+
+      this.logger.log(
+        `Fichier mode opératoire uploadé: ${filename} (original: ${file.originalname})`,
+        "FileUploadService"
+      );
+
+      return {
+        filename,
+        originalname: file.originalname,
+        path: filePath,
+        url: `/uploads/mode-operatoire/${filename}`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'upload du fichier mode opératoire: ${file.originalname}`,
+        error instanceof Error ? error.stack : String(error),
+        "FileUploadService"
+      );
+      throw new BadRequestException(
+        "Erreur lors de l'enregistrement du fichier"
+      );
+    }
+  }
+
+  deleteModeOperatoireFile(url: string): void {
+    if (!url || !url.startsWith("/uploads/mode-operatoire/")) {
+      return;
+    }
+
+    const filename = url.replace("/uploads/mode-operatoire/", "");
+    const filePath = join(this.uploadPath, "mode-operatoire", filename);
+
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      if (existsSync(filePath)) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        unlinkSync(filePath);
+        this.logger.log(
+          `Fichier mode opératoire supprimé: ${filename}`,
+          "FileUploadService"
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la suppression du fichier mode opératoire: ${filename}`,
         error instanceof Error ? error.stack : String(error),
         "FileUploadService"
       );
