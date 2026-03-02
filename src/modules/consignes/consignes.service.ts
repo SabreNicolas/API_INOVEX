@@ -344,7 +344,7 @@ export class ConsignesService {
         throw new NotFoundException(`Consigne avec l'ID ${id} non trouvée`);
       }
 
-      await this.consigneRepository.delete(id);
+      await this.consigneRepository.update(id, { isActive: 0 });
 
       this.logger.log(`Consigne supprimée: ID ${id}`, "ConsignesService");
     } catch (error) {
@@ -353,66 +353,6 @@ export class ConsignesService {
       }
       this.logger.error(
         "Erreur lors de la suppression de la consigne",
-        error instanceof Error ? error.stack : String(error),
-        "ConsignesService"
-      );
-      throw error;
-    }
-  }
-
-  async deactivate(id: number): Promise<void> {
-    try {
-      const existing = await this.consigneRepository.findOne({
-        where: { id },
-      });
-
-      if (!existing) {
-        throw new NotFoundException(`Consigne avec l'ID ${id} non trouvée`);
-      }
-
-      await this.consigneRepository.update(id, { isActive: 0 });
-
-      this.logger.log(`Consigne désactivée: ID ${id}`, "ConsignesService");
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        "Erreur lors de la désactivation de la consigne",
-        error instanceof Error ? error.stack : String(error),
-        "ConsignesService"
-      );
-      throw error;
-    }
-  }
-
-  async removeFile(
-    id: number,
-    fileUploadService: FileUploadService
-  ): Promise<void> {
-    try {
-      const existing = await this.consigneRepository.findOne({
-        where: { id },
-      });
-
-      if (!existing) {
-        throw new NotFoundException(`Consigne avec l'ID ${id} non trouvée`);
-      }
-
-      if (existing.url) {
-        fileUploadService.deleteFile(existing.url);
-        await this.consigneRepository.update(id, { url: null });
-        this.logger.log(
-          `Fichier supprimé pour consigne: ID ${id}`,
-          "ConsignesService"
-        );
-      }
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        "Erreur lors de la suppression du fichier",
         error instanceof Error ? error.stack : String(error),
         "ConsignesService"
       );

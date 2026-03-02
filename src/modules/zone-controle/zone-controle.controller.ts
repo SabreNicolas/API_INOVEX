@@ -56,6 +56,34 @@ export class ZoneControleController {
     return this.zoneControleService.findAll(currentUser.idUsine, pagination);
   }
 
+  @Get("groupements")
+  @RequireRondier()
+  @ApiOperation({
+    summary: "Récupérer toutes les zones avec leurs groupements",
+  })
+  @ApiResponse({ status: 200, description: "Liste des zones avec groupements" })
+  async findAllWithGroupements(@CurrentUser() currentUser: RequestUser) {
+    return this.zoneControleService.findAllWithGroupements(currentUser.idUsine);
+  }
+
+  @Get("groupements/elements-controle")
+  @RequireRondier()
+  @ApiOperation({
+    summary:
+      "Récupérer toutes les zones avec leurs groupements et éléments de contrôle",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des zones avec groupements et éléments de contrôle",
+  })
+  async findAllWithGroupementsAndElements(
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.zoneControleService.findAllWithGroupementsAndElements(
+      currentUser.idUsine
+    );
+  }
+
   @Get(":id")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer une zone de contrôle par ID" })

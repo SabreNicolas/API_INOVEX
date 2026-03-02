@@ -8,7 +8,7 @@ import {
   PaginationDto,
 } from "../../common/dto/pagination.dto";
 import { LoggerService } from "../../common/services/logger.service";
-import { Groupement, ZoneControle } from "../../entities";
+import { ElementControle, Groupement, ZoneControle } from "../../entities";
 import { CreateGroupementDto, UpdateGroupementDto } from "./dto";
 
 @Injectable()
@@ -18,6 +18,8 @@ export class GroupementService {
     private readonly groupementRepository: Repository<Groupement>,
     @InjectRepository(ZoneControle)
     private readonly zoneControleRepository: Repository<ZoneControle>,
+    @InjectRepository(ElementControle)
+    private readonly elementControleRepository: Repository<ElementControle>,
     private readonly logger: LoggerService
   ) {}
 
@@ -201,6 +203,9 @@ export class GroupementService {
       if (!existing) {
         throw new NotFoundException(`Groupement avec l'ID ${id} non trouvé`);
       }
+
+      // Supprimer les éléments de contrôle associés au groupement
+      await this.elementControleRepository.delete({ idGroupement: id });
 
       await this.groupementRepository.delete(id);
 

@@ -8,7 +8,7 @@ import {
   PaginationDto,
 } from "../../common/dto/pagination.dto";
 import { LoggerService } from "../../common/services/logger.service";
-import { ZoneControle } from "../../entities";
+import { ElementControle, Groupement, ZoneControle } from "../../entities";
 import { CreateZoneControleDto, UpdateZoneControleDto } from "./dto";
 
 @Injectable()
@@ -16,6 +16,10 @@ export class ZoneControleService {
   constructor(
     @InjectRepository(ZoneControle)
     private readonly zoneControleRepository: Repository<ZoneControle>,
+    @InjectRepository(Groupement)
+    private readonly groupementRepository: Repository<Groupement>,
+    @InjectRepository(ElementControle)
+    private readonly elementControleRepository: Repository<ElementControle>,
     private readonly logger: LoggerService
   ) {}
 
@@ -171,6 +175,83 @@ export class ZoneControleService {
       }
       this.logger.error(
         "Erreur lors de la suppression de la zone de contrôle",
+        error instanceof Error ? error.stack : String(error),
+        "ZoneControleService"
+      );
+      throw error;
+    }
+  }
+
+  async findAllWithGroupements(
+    idUsine: number
+  ): Promise<(ZoneControle & { groupements: Groupement[] })[]> {
+    try {
+      const zones = await this.zoneControleRepository.find({
+        where: { idUsine },
+        order: { nom: "ASC" },
+      });
+
+      const groupements = await this.groupementRepository.find();
+
+      const zonesWithGroupements = zones.map(zone => ({
+        ...zone,
+        groupements: groupements.filter(g => g.zoneId === zone.Id),
+      }));
+
+      return zonesWithGroupements;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des zones avec groupements",
+        error instanceof Error ? error.stack : String(error),
+        "ZoneControleService"
+      );
+      throw error;
+    }
+  }
+
+  async findAllWithGroupementsAndElements(idUsine: number): Promise<
+    (ZoneControle & {
+      groupements: (Groupement & { elements: ElementControle[] })[];
+      elementsWithoutGroupement: ElementControle[];
+    })[]
+  > {
+    try {
+      const zones = await this.zoneControleRepository.find({
+        where: { idUsine },
+        order: { nom: "ASC" },
+      });
+
+      const groupements = await this.groupementRepository.find();
+
+      const elements = await this.elementControleRepository.find({
+        where: zones.map(z => ({ zoneId: z.Id })),
+        order: { ordre: "ASC" },
+      });
+
+      const zonesWithGroupementsAndElements = zones.map(zone => {
+        const zoneGroupements = groupements.filter(g => g.zoneId === zone.Id);
+        const zoneElements = elements.filter(e => e.zoneId === zone.Id);
+
+        const groupementsWithElements = zoneGroupements.map(groupement => ({
+          ...groupement,
+          elements: zoneElements.filter(e => e.idGroupement === groupement.id),
+        }));
+
+        const elementsWithoutGroupement = zoneElements.filter(
+          e => e.idGroupement === null
+        );
+
+        return {
+          ...zone,
+          groupements: groupementsWithElements,
+          elementsWithoutGroupement,
+        };
+      });
+
+      return zonesWithGroupementsAndElements;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des zones avec groupements et éléments",
         error instanceof Error ? error.stack : String(error),
         "ZoneControleService"
       );

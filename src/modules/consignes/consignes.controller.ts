@@ -266,28 +266,6 @@ export class ConsignesController {
     return { message: "Consigne mise à jour avec succès" };
   }
 
-  @Patch(":id/remove-file")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Supprimer le fichier d'une consigne" })
-  @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
-  @ApiResponse({ status: 200, description: "Fichier supprimé" })
-  @ApiResponse({ status: 404, description: "Consigne non trouvée" })
-  async removeFile(@Param("id", ParseIntPipe) id: number) {
-    await this.consignesService.removeFile(id, this.fileUploadService);
-    return { message: "Fichier supprimé avec succès" };
-  }
-
-  @Patch(":id/deactivate")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Désactiver une consigne" })
-  @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
-  @ApiResponse({ status: 200, description: "Consigne désactivée" })
-  @ApiResponse({ status: 404, description: "Consigne non trouvée" })
-  async deactivate(@Param("id", ParseIntPipe) id: number) {
-    await this.consignesService.deactivate(id);
-    return { message: "Consigne désactivée avec succès" };
-  }
-
   @Delete(":id")
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer une consigne" })
