@@ -44,7 +44,13 @@ export class PdfGeneratorService {
         let yPosition = doc.y;
 
         // Draw table header
-        this.drawTableHeader(doc, tableLeft, yPosition, colWidths, headerHeight);
+        this.drawTableHeader(
+          doc,
+          tableLeft,
+          yPosition,
+          colWidths,
+          headerHeight
+        );
         yPosition += headerHeight;
 
         // Draw fixed rows (Auteur de la ronde, Chef de quart, Fours)
@@ -57,7 +63,14 @@ export class PdfGeneratorService {
 
         for (const rowText of fixedRows) {
           yPosition = this.checkPageBreak(doc, yPosition, rowHeight);
-          this.drawDataRow(doc, tableLeft, yPosition, colWidths, rowHeight, rowText);
+          this.drawDataRow(
+            doc,
+            tableLeft,
+            yPosition,
+            colWidths,
+            rowHeight,
+            rowText
+          );
           yPosition += rowHeight;
         }
 
@@ -289,10 +302,13 @@ export class PdfGeneratorService {
       // eslint-disable-next-line security/detect-object-injection
       const colWidth = colWidths[i];
       doc.rect(currentX, y, colWidth, minHeight).stroke();
-      doc.fontSize(8).font("Helvetica").text(listValues, currentX + 3, y + 15, {
-        width: colWidth - 6,
-        align: "center",
-      });
+      doc
+        .fontSize(8)
+        .font("Helvetica")
+        .text(listValues, currentX + 3, y + 15, {
+          width: colWidth - 6,
+          align: "center",
+        });
       currentX += colWidth;
     }
 
