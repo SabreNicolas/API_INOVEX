@@ -92,7 +92,11 @@ export class ModeOperatoireController {
   @Get(":id")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer un mode opératoire par ID" })
-  @ApiParam({ name: "id", type: "number", description: "ID du mode opératoire" })
+  @ApiParam({
+    name: "id",
+    type: "number",
+    description: "ID du mode opératoire",
+  })
   @ApiResponse({ status: 200, description: "Mode opératoire trouvé" })
   @ApiResponse({ status: 404, description: "Mode opératoire non trouvé" })
   async findOne(@Param("id", ParseIntPipe) id: number) {
@@ -123,7 +127,10 @@ export class ModeOperatoireController {
     status: 201,
     description: "Mode opératoire créé avec succès",
   })
-  @ApiResponse({ status: 400, description: "Données invalides ou fichier manquant" })
+  @ApiResponse({
+    status: 400,
+    description: "Données invalides ou fichier manquant",
+  })
   async create(
     @Body() createDto: CreateModeOperatoireDto,
     @UploadedFile() file: Express.Multer.File
@@ -138,7 +145,11 @@ export class ModeOperatoireController {
   @RequireAdmin()
   @UseInterceptors(FileInterceptor("fichier"))
   @ApiOperation({ summary: "Mettre à jour un mode opératoire" })
-  @ApiParam({ name: "id", type: "number", description: "ID du mode opératoire" })
+  @ApiParam({
+    name: "id",
+    type: "number",
+    description: "ID du mode opératoire",
+  })
   @ApiConsumes("multipart/form-data")
   @ApiBody({
     schema: {
@@ -168,7 +179,11 @@ export class ModeOperatoireController {
   @Delete(":id")
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un mode opératoire" })
-  @ApiParam({ name: "id", type: "number", description: "ID du mode opératoire" })
+  @ApiParam({
+    name: "id",
+    type: "number",
+    description: "ID du mode opératoire",
+  })
   @ApiResponse({ status: 200, description: "Mode opératoire supprimé" })
   @ApiResponse({ status: 404, description: "Mode opératoire non trouvé" })
   async delete(@Param("id", ParseIntPipe) id: number) {

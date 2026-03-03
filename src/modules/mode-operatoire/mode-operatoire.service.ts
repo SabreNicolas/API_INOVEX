@@ -35,7 +35,7 @@ export class ModeOperatoireService {
       const zones = await this.zoneControleRepository.find({
         where: { idUsine },
       });
-      const zoneIds = zones.map((z) => z.Id);
+      const zoneIds = zones.map(z => z.Id);
 
       if (zoneIds.length === 0) {
         return pagination
@@ -55,9 +55,9 @@ export class ModeOperatoireService {
 
       if (!pagination) {
         const modesOperatoires = await queryBuilder.getMany();
-        return modesOperatoires.map((mo) => ({
+        return modesOperatoires.map(mo => ({
           ...mo,
-          zone: zones.find((z) => z.Id === mo.zoneId) || null,
+          zone: zones.find(z => z.Id === mo.zoneId) || null,
         }));
       }
 
@@ -69,9 +69,9 @@ export class ModeOperatoireService {
         .take(limit)
         .getManyAndCount();
 
-      const modesWithZone = modesOperatoires.map((mo) => ({
+      const modesWithZone = modesOperatoires.map(mo => ({
         ...mo,
-        zone: zones.find((z) => z.Id === mo.zoneId) || null,
+        zone: zones.find(z => z.Id === mo.zoneId) || null,
       }));
 
       return createPaginatedResult(modesWithZone, total, page, limit);
@@ -104,7 +104,7 @@ export class ModeOperatoireService {
           where: whereCondition,
           order: { nom: "ASC" },
         });
-        return modesOperatoires.map((mo) => ({ ...mo, zone: zone || null }));
+        return modesOperatoires.map(mo => ({ ...mo, zone: zone || null }));
       }
 
       const { page = 1, limit = 20 } = pagination;
@@ -118,7 +118,7 @@ export class ModeOperatoireService {
           take: limit,
         });
 
-      const modesWithZone = modesOperatoires.map((mo) => ({
+      const modesWithZone = modesOperatoires.map(mo => ({
         ...mo,
         zone: zone || null,
       }));

@@ -9,7 +9,10 @@ import { ModeOperatoireController } from "./mode-operatoire.controller";
 import { ModeOperatoireService } from "./mode-operatoire.service";
 
 @Module({
-  imports: [AuthModule, TypeOrmModule.forFeature([ModeOperatoire, ZoneControle])],
+  imports: [
+    AuthModule,
+    TypeOrmModule.forFeature([ModeOperatoire, ZoneControle]),
+  ],
   controllers: [ModeOperatoireController],
   providers: [ModeOperatoireService, LoggerService, FileUploadService],
   exports: [ModeOperatoireService],
