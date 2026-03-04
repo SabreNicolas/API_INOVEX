@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { ElementControle } from "./element-controle.entity";
 
 @Entity("products_new")
 export class ProductNew {
@@ -40,6 +48,10 @@ export class ProductNew {
 
   @Column({ type: "int", nullable: true })
   idElementRondier: number | null;
+
+  @ManyToOne(() => ElementControle, { nullable: true })
+  @JoinColumn({ name: "idElementRondier" })
+  elementRondier: ElementControle | null;
 
   @Column({ type: "nvarchar", length: 30, nullable: true, default: "1" })
   Coefficient: string | null;

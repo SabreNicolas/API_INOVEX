@@ -80,9 +80,14 @@ export class ElementControleController {
   })
   async findByZone(
     @Param("zoneId", ParseIntPipe) zoneId: number,
-    @Query() pagination: PaginationDto
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
   ) {
-    return this.elementControleService.findByZone(zoneId, pagination);
+    return this.elementControleService.findByZone(
+      zoneId,
+      currentUser.idUsine,
+      pagination
+    );
   }
 
   @Get("groupement/:idGroupement")
@@ -111,10 +116,12 @@ export class ElementControleController {
   })
   async findByGroupement(
     @Param("idGroupement", ParseIntPipe) idGroupement: number,
-    @Query() pagination: PaginationDto
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
   ) {
     return this.elementControleService.findByGroupement(
       idGroupement,
+      currentUser.idUsine,
       pagination
     );
   }
@@ -125,8 +132,11 @@ export class ElementControleController {
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
   @ApiResponse({ status: 200, description: "Élément de contrôle trouvé" })
   @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.elementControleService.findOne(id);
+  async findOne(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.elementControleService.findOne(id, currentUser.idUsine);
   }
 
   @Post()
@@ -149,9 +159,14 @@ export class ElementControleController {
   @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
-    @Body() updateDto: UpdateElementControleDto
+    @Body() updateDto: UpdateElementControleDto,
+    @CurrentUser() currentUser: RequestUser
   ) {
-    await this.elementControleService.update(id, updateDto);
+    await this.elementControleService.update(
+      id,
+      updateDto,
+      currentUser.idUsine
+    );
     return { message: "Élément de contrôle mis à jour avec succès" };
   }
 
@@ -161,8 +176,11 @@ export class ElementControleController {
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
   @ApiResponse({ status: 200, description: "Élément de contrôle supprimé" })
   @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
-  async delete(@Param("id", ParseIntPipe) id: number) {
-    await this.elementControleService.delete(id);
+  async delete(
+    @Param("id", ParseIntPipe) id: number,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    await this.elementControleService.delete(id, currentUser.idUsine);
     return { message: "Élément de contrôle supprimé avec succès" };
   }
 }

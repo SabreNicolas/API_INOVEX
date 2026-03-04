@@ -8,7 +8,7 @@ import {
   PaginationDto,
 } from "../../common/dto/pagination.dto";
 import { LoggerService } from "../../common/services/logger.service";
-import { ElementControle, ZoneControle } from "../../entities";
+import { ElementControle, Groupement, ZoneControle } from "../../entities";
 import { CreateElementControleDto, UpdateElementControleDto } from "./dto";
 
 @Injectable()
@@ -18,6 +18,8 @@ export class ElementControleService {
     private readonly elementControleRepository: Repository<ElementControle>,
     @InjectRepository(ZoneControle)
     private readonly zoneControleRepository: Repository<ZoneControle>,
+    @InjectRepository(Groupement)
+    private readonly groupementRepository: Repository<Groupement>,
     private readonly logger: LoggerService
   ) {}
 
@@ -75,9 +77,21 @@ export class ElementControleService {
 
   async findByZone(
     zoneId: number,
+    idUsine: number,
     pagination?: PaginationDto
   ): Promise<PaginatedResult<ElementControle> | ElementControle[]> {
     try {
+      // Vérifier que la zone appartient à l'usine de l'utilisateur
+      const zone = await this.zoneControleRepository.findOne({
+        where: { Id: zoneId, idUsine },
+      });
+
+      if (!zone) {
+        throw new NotFoundException(
+          `Zone avec l'ID ${zoneId} non trouvée pour cette usine`
+        );
+      }
+
       const whereCondition = { zoneId };
 
       if (!pagination) {
@@ -100,6 +114,9 @@ export class ElementControleService {
 
       return createPaginatedResult(elements, total, page, limit);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(
         "Erreur lors de la récupération des éléments par zone",
         error instanceof Error ? error.stack : String(error),
@@ -111,9 +128,32 @@ export class ElementControleService {
 
   async findByGroupement(
     idGroupement: number,
+    idUsine: number,
     pagination?: PaginationDto
   ): Promise<PaginatedResult<ElementControle> | ElementControle[]> {
     try {
+      // Vérifier que le groupement appartient à une zone de l'usine de l'utilisateur
+      const groupement = await this.groupementRepository.findOne({
+        where: { id: idGroupement },
+      });
+
+      if (!groupement) {
+        throw new NotFoundException(
+          `Groupement avec l'ID ${idGroupement} non trouvé`
+        );
+      }
+
+      // Vérifier que la zone du groupement appartient à l'usine
+      const zone = await this.zoneControleRepository.findOne({
+        where: { Id: groupement.zoneId, idUsine },
+      });
+
+      if (!zone) {
+        throw new NotFoundException(
+          `Groupement avec l'ID ${idGroupement} non accessible pour cette usine`
+        );
+      }
+
       const whereCondition = { idGroupement };
 
       if (!pagination) {
@@ -136,6 +176,9 @@ export class ElementControleService {
 
       return createPaginatedResult(elements, total, page, limit);
     } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
       this.logger.error(
         "Erreur lors de la récupération des éléments par groupement",
         error instanceof Error ? error.stack : String(error),
@@ -145,7 +188,7 @@ export class ElementControleService {
     }
   }
 
-  async findOne(id: number): Promise<ElementControle> {
+  async findOne(id: number, idUsine: number): Promise<ElementControle> {
     try {
       const element = await this.elementControleRepository.findOne({
         where: { Id: id },
@@ -154,6 +197,23 @@ export class ElementControleService {
       if (!element) {
         throw new NotFoundException(
           `Élément de contrôle avec l'ID ${id} non trouvé`
+        );
+      }
+
+      // Vérifier que l'élément appartient à une zone de l'usine de l'utilisateur
+      if (element.zoneId === null) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} n'a pas de zone associée`
+        );
+      }
+
+      const zone = await this.zoneControleRepository.findOne({
+        where: { Id: element.zoneId, idUsine },
+      });
+
+      if (!zone) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} non accessible pour cette usine`
         );
       }
 
@@ -208,7 +268,11 @@ export class ElementControleService {
     }
   }
 
-  async update(id: number, updateDto: UpdateElementControleDto): Promise<void> {
+  async update(
+    id: number,
+    updateDto: UpdateElementControleDto,
+    idUsine: number
+  ): Promise<void> {
     try {
       const existing = await this.elementControleRepository.findOne({
         where: { Id: id },
@@ -217,6 +281,23 @@ export class ElementControleService {
       if (!existing) {
         throw new NotFoundException(
           `Élément de contrôle avec l'ID ${id} non trouvé`
+        );
+      }
+
+      // Vérifier que l'élément appartient à une zone de l'usine de l'utilisateur
+      if (existing.zoneId === null) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} n'a pas de zone associée`
+        );
+      }
+
+      const zone = await this.zoneControleRepository.findOne({
+        where: { Id: existing.zoneId, idUsine },
+      });
+
+      if (!zone) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} non accessible pour cette usine`
         );
       }
 
@@ -268,7 +349,7 @@ export class ElementControleService {
     }
   }
 
-  async delete(id: number): Promise<void> {
+  async delete(id: number, idUsine: number): Promise<void> {
     try {
       const existing = await this.elementControleRepository.findOne({
         where: { Id: id },
@@ -277,6 +358,23 @@ export class ElementControleService {
       if (!existing) {
         throw new NotFoundException(
           `Élément de contrôle avec l'ID ${id} non trouvé`
+        );
+      }
+
+      // Vérifier que l'élément appartient à une zone de l'usine de l'utilisateur
+      if (existing.zoneId === null) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} n'a pas de zone associée`
+        );
+      }
+
+      const zone = await this.zoneControleRepository.findOne({
+        where: { Id: existing.zoneId, idUsine },
+      });
+
+      if (!zone) {
+        throw new NotFoundException(
+          `Élément de contrôle avec l'ID ${id} non accessible pour cette usine`
         );
       }
 

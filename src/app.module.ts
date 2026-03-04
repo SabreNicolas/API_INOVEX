@@ -35,12 +35,12 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
       {
         name: "short",
         ttl: 1000,
-        limit: 20,
+        limit: 100,
       },
       {
         name: "medium",
         ttl: 10000,
-        limit: 20,
+        limit: 100,
       },
       {
         name: "long",
