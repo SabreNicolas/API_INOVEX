@@ -10,8 +10,18 @@ import {
 } from "@/common/dto";
 
 import { LoggerService } from "../../common/services/logger.service";
-import { ProductNew, TypeNew } from "../../entities";
-import { CreateProductDto, UpdateProductDto } from "./dto";
+import {
+  MeasureNew,
+  MoralEntityNew,
+  ProductNew,
+  TypeNew,
+} from "../../entities";
+import {
+  CreateMeasureDto,
+  CreateProductDto,
+  UpdateMeasureDto,
+  UpdateProductDto,
+} from "./dto";
 
 @Injectable()
 export class ProductsService {
@@ -20,6 +30,10 @@ export class ProductsService {
     private readonly productsRepository: Repository<ProductNew>,
     @InjectRepository(TypeNew)
     private readonly typeNewRepository: Repository<TypeNew>,
+    @InjectRepository(MeasureNew)
+    private readonly measureNewRepository: Repository<MeasureNew>,
+    @InjectRepository(MoralEntityNew)
+    private readonly moralEntityNewRepository: Repository<MoralEntityNew>,
     private readonly logger: LoggerService
   ) {}
 
@@ -275,6 +289,7 @@ export class ProductsService {
     idUsine?: number
   ): Promise<PaginatedResult<ProductNew> | ProductNew[]> {
     try {
+      console.log("ID Usine pour findAllSortants:", idUsine); // Log de debug pour vérifier l'ID usine
       if (!pagination) {
         const imports = await this.productsRepository.find({
           where: idUsine
@@ -347,6 +362,364 @@ export class ProductsService {
         "Erreur lors de la récupération des imports tonnage réactifs",
         error instanceof Error ? error.stack : String(error),
         "ImportTonnageReactifService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Créer une nouvelle mesure
+   */
+  async createMeasure(createDto: CreateMeasureDto): Promise<MeasureNew> {
+    try {
+      const now = new Date();
+      const measure = this.measureNewRepository.create({
+        ...createDto,
+        CreateDate: now,
+        LastModifiedDate: now,
+      });
+
+      const savedMeasure = await this.measureNewRepository.save(measure);
+
+      this.logger.log(
+        `Mesure créée avec succès: ${savedMeasure.Id}`,
+        "ProductsService"
+      );
+
+      return savedMeasure;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création de la mesure",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Mettre à jour une mesure
+   */
+  async updateMeasure(
+    id: number,
+    updateDto: UpdateMeasureDto
+  ): Promise<MeasureNew> {
+    try {
+      const measure = await this.measureNewRepository.findOne({
+        where: { Id: id },
+      });
+
+      if (!measure) {
+        throw new NotFoundException(`Mesure avec l'ID ${id} non trouvée`);
+      }
+
+      const updatedMeasure = this.measureNewRepository.merge(measure, {
+        ...updateDto,
+        LastModifiedDate: new Date(),
+      });
+
+      const savedMeasure = await this.measureNewRepository.save(updatedMeasure);
+
+      this.logger.log(
+        `Mesure mise à jour avec succès: ${savedMeasure.Id}`,
+        "ProductsService"
+      );
+
+      return savedMeasure;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Erreur lors de la mise à jour de la mesure ${id}`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer toutes les moral entities avec leurs mesures et produits associés entre deux dates
+   */
+  async findMoralEntitiesWithMeasures(
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<
+    (MoralEntityNew & { measures: MeasureNew[]; produits: ProductNew[] })[]
+  > {
+    try {
+      // 1. Fetch moral entities with measures in date range
+      const qb = this.moralEntityNewRepository
+        .createQueryBuilder("me")
+        .leftJoinAndMapMany(
+          "me.measures",
+          MeasureNew,
+          "m",
+          "m.ProducerId = me.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .orderBy("me.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.where("me.idUsine = :idUsine and me.Enabled = 1", { idUsine });
+      }
+
+      const moralEntities = await qb.getMany();
+
+      // 2. Batch fetch all products (with idUsine filter if applicable)
+      const productsWhere = idUsine ? { idUsine } : {};
+      const allProducts = await this.productsRepository.find({
+        where: productsWhere,
+        relations: ["elementRondier"],
+      });
+
+      // 3. Map products to each moral entity by code prefix match
+      //    (moral entity code starts with product code)
+      return moralEntities.map(me => {
+        const measures =
+          (me as MoralEntityNew & { measures?: MeasureNew[] }).measures || [];
+        const produits = me.Code
+          ? allProducts.filter(p => p.Code && me.Code!.startsWith(p.Code))
+          : [];
+        return {
+          ...me,
+          measures,
+          produits,
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des moral entities avec mesures",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les produits d'un type donné avec leurs mesures entre deux dates
+   */
+  async findByTypeWithMeasures(
+    typeId: number,
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<(ProductNew & { measures: MeasureNew[] })[]> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .leftJoinAndSelect("p.elementRondier", "er")
+        .leftJoinAndMapMany(
+          "p.measures",
+          MeasureNew,
+          "m",
+          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .where("p.Enabled = 1")
+        .andWhere("p.typeId = :typeId", { typeId })
+        .orderBy("p.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const products = await qb.getMany();
+
+      return products.map(p => ({
+        ...p,
+        measures:
+          (p as ProductNew & { measures?: MeasureNew[] }).measures || [],
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la récupération des produits type ${typeId} avec mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les produits avec un nom donné avec leurs mesures entre deux dates
+   */
+  async findByNameWithMeasures(
+    name: string,
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<(ProductNew & { measures: MeasureNew[] })[]> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .leftJoinAndSelect("p.elementRondier", "er")
+        .leftJoinAndMapMany(
+          "p.measures",
+          MeasureNew,
+          "m",
+          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .where("p.Enabled = 1")
+        .andWhere("p.Name LIKE :name", { name: `%${name}%` })
+        .orderBy("p.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const products = await qb.getMany();
+
+      return products.map(p => ({
+        ...p,
+        measures:
+          (p as ProductNew & { measures?: MeasureNew[] }).measures || [],
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la récupération des produits avec le nom ${name} et leurs mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  async findCompteursWithMeasures(
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<(ProductNew & { measures: MeasureNew[] })[]> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .leftJoinAndSelect("p.elementRondier", "er")
+        .leftJoinAndMapMany(
+          "p.measures",
+          MeasureNew,
+          "m",
+          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .where("p.Enabled = 1")
+        .andWhere("p.typeId = :typeId", { typeId: 4 }) // Supposons que le typeId 4 correspond aux compteurs
+        .andWhere("p.Name NOT LIKE :name", { name: `%Arret%` }) // Exclure les produits contenant "Arret"
+        .andWhere("p.Name NOT LIKE :name2", { name2: `%HEURES D'ARRET%` }) // Exclure les produits contenant "HEURES D'ARRET"
+        .andWhere("p.Name NOT LIKE :name3", { name3: `%BAISSE DE CHARGE%` }) // Exclure les produits contenant "BAISSE DE CHARGE"
+        .andWhere("p.Code NOT LIKE :code", { code: `701%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
+        .orderBy("p.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const products = await qb.getMany();
+
+      return products.map(p => ({
+        ...p,
+        measures:
+          (p as ProductNew & { measures?: MeasureNew[] }).measures || [],
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la récupération des produits compteurs avec mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  async findConsommablesWithMeasures(
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<(ProductNew & { measures: MeasureNew[] })[]> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .leftJoinAndSelect("p.elementRondier", "er")
+        .leftJoinAndMapMany(
+          "p.measures",
+          MeasureNew,
+          "m",
+          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .where("p.Enabled = 1")
+        .andWhere("p.typeId = :typeId", { typeId: 2 })
+        .andWhere("p.Code NOT LIKE :code", { code: `801%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
+        .orderBy("p.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const products = await qb.getMany();
+
+      return products.map(p => ({
+        ...p,
+        measures:
+          (p as ProductNew & { measures?: MeasureNew[] }).measures || [],
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la récupération des produits compteurs avec mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  async findAnalysesWithMeasures(
+    startDate: Date,
+    endDate: Date,
+    idUsine?: number
+  ): Promise<(ProductNew & { measures: MeasureNew[] })[]> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .leftJoinAndSelect("p.elementRondier", "er")
+        .leftJoinAndMapMany(
+          "p.measures",
+          MeasureNew,
+          "m",
+          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          { startDate, endDate }
+        )
+        .where("p.Enabled = 1")
+        .andWhere("p.typeId = :typeId", { typeId: 6 })
+        .andWhere("p.Name NOT LIKE :name", { name: `%1/2%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
+        .andWhere("p.Name NOT LIKE :name2", { name2: `%DEPASSEMENT%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
+        .orderBy("p.Name", "ASC")
+        .addOrderBy("m.EntryDate", "ASC");
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const products = await qb.getMany();
+
+      return products.map(p => ({
+        ...p,
+        measures:
+          (p as ProductNew & { measures?: MeasureNew[] }).measures || [],
+      }));
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de la récupération des produits compteurs avec mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
       );
       throw error;
     }

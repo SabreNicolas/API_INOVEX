@@ -22,7 +22,12 @@ import { CurrentUser, RequireAdmin } from "@/common/decorators";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
-import { CreateProductDto, UpdateProductDto } from "./dto";
+import {
+  CreateMeasureDto,
+  CreateProductDto,
+  UpdateMeasureDto,
+  UpdateProductDto,
+} from "./dto";
 import { ProductsService } from "./products.service";
 
 @ApiTags("Produits")
@@ -75,6 +80,346 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllTypes() {
     return this.productsService.findAllTypes();
+  }
+
+  @Get("sortants")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer tous les produits sortants",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Numéro de page (défaut: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Éléments par page (défaut: 20, max: 100)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des produits récupérée avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findAllSortants(
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findAllSortants(
+      pagination,
+      currentUser.idUsine
+    );
+  }
+
+  @Get("reactifs")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer tous les produits réactifs",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Numéro de page (défaut: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Éléments par page (défaut: 20, max: 100)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des produits récupérée avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findAllReactifs(
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findAllReactifs(
+      pagination,
+      currentUser.idUsine
+    );
+  }
+
+  @Get("entrants/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les moral entities avec leurs mesures et produits entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Moral entities avec mesures et produits",
+  })
+  async findEntrantsWithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findMoralEntitiesWithMeasures(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Get("sortants/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les produits sortants (typeId=5) avec mesures entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({ status: 200, description: "Produits sortants avec mesures" })
+  async findSortantsWithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findByTypeWithMeasures(
+      5,
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Get("reactifs-livraison/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les produits réactifs et livraison (typeId=7) avec mesures entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Produits réactifs/livraison avec mesures",
+  })
+  async findReactifsLivraisonWithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findByNameWithMeasures(
+      "LIVRAISON",
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Get("compteurs/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les produits compteur (typeId=4) avec mesures entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({ status: 200, description: "Produits compteurs avec mesures" })
+  async findCompteursWithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findCompteursWithMeasures(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Get("analyses/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les produits analyses (typeId=6) avec mesures entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({ status: 200, description: "Produits analyses avec mesures" })
+  async findAnalysesWithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findAnalysesWithMeasures(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Get("consommables/measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer les produits typeId=2 avec mesures entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    required: true,
+    type: String,
+    description: "Date de début (ISO 8601)",
+  })
+  @ApiQuery({
+    name: "endDate",
+    required: true,
+    type: String,
+    description: "Date de fin (ISO 8601)",
+  })
+  @ApiResponse({ status: 200, description: "Produits type 2 avec mesures" })
+  async findType2WithMeasures(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findConsommablesWithMeasures(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine
+    );
+  }
+
+  @Post("measures")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Créer une nouvelle mesure",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Mesure créée avec succès",
+  })
+  @ApiResponse({ status: 400, description: "Données invalides" })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async createMeasure(@Body() createDto: CreateMeasureDto) {
+    return this.productsService.createMeasure(createDto);
+  }
+
+  @Patch("measures/:id")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Mettre à jour une mesure",
+  })
+  @ApiParam({
+    name: "id",
+    type: "number",
+    description: "ID de la mesure",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Mesure mise à jour avec succès",
+  })
+  @ApiResponse({ status: 400, description: "Données invalides" })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  @ApiResponse({ status: 404, description: "Mesure non trouvée" })
+  async updateMeasure(
+    @Param("id", ParseIntPipe) id: number,
+    @Body() updateDto: UpdateMeasureDto
+  ) {
+    return this.productsService.updateMeasure(id, updateDto);
+  }
+
+  @Get("type/:typeId")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer les produits par type",
+  })
+  @ApiParam({
+    name: "typeId",
+    type: "number",
+    description: "ID du type de produit",
+  })
+  @ApiQuery({
+    name: "page",
+    required: false,
+    type: Number,
+    description: "Numéro de page (défaut: 1)",
+  })
+  @ApiQuery({
+    name: "limit",
+    required: false,
+    type: Number,
+    description: "Éléments par page (défaut: 20, max: 100)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des produits récupérée avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findByType(
+    @Param("typeId", ParseIntPipe) typeId: number,
+    @Query() pagination: PaginationDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.findByType(
+      typeId,
+      pagination,
+      currentUser.idUsine
+    );
   }
 
   @Get(":id")
@@ -165,111 +510,5 @@ export class ProductsController {
     @CurrentUser() currentUser: RequestUser
   ) {
     return this.productsService.toggleVisibility(id, currentUser.idUsine);
-  }
-
-  @Get("type/:typeId")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer les produits par type",
-  })
-  @ApiParam({
-    name: "typeId",
-    type: "number",
-    description: "ID du type de produit",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page (défaut: 1)",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page (défaut: 20, max: 100)",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
-  @ApiResponse({ status: 401, description: "Non autorisé" })
-  @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findByType(
-    @Param("typeId", ParseIntPipe) typeId: number,
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.productsService.findByType(
-      typeId,
-      pagination,
-      currentUser.idUsine
-    );
-  }
-
-  @Get("/sortants")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer tous les produits sortants",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page (défaut: 1)",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page (défaut: 20, max: 100)",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
-  @ApiResponse({ status: 401, description: "Non autorisé" })
-  @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findAllSortants(
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.productsService.findAllSortants(
-      pagination,
-      currentUser.idUsine
-    );
-  }
-
-  @Get("/reactifs")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer tous les produits réactifs",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page (défaut: 1)",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page (défaut: 20, max: 100)",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
-  @ApiResponse({ status: 401, description: "Non autorisé" })
-  @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findAllReactifs(
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.productsService.findAllReactifs(
-      pagination,
-      currentUser.idUsine
-    );
   }
 }
