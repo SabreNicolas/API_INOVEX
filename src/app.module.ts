@@ -12,6 +12,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
 import { ConsignesModule } from "./modules/consignes/consignes.module";
 import { ElementControleModule } from "./modules/element-controle/element-controle.module";
+import { FormulaireModule } from "./modules/formulaire/formulaire.module";
 import { GroupementModule } from "./modules/groupement/groupement.module";
 import { ImportTonnageMainModule } from "./modules/importTonnage/import-tonnage-main.module";
 import { ModeOperatoireModule } from "./modules/mode-operatoire/mode-operatoire.module";
@@ -69,6 +70,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     ElementControleModule,
     ModeOperatoireModule,
     RondierModule,
+    FormulaireModule,
   ],
   providers: [
     LoggerService,
