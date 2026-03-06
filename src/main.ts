@@ -168,6 +168,8 @@ async function bootstrap() {
       "- [Éléments de contrôle](#/%C3%89l%C3%A9ments%20de%20contr%C3%B4le)",
       "- [Rondier](#/Rondier)",
       "- [Postes Rondier](#/Postes%20Rondier)",
+      "- [Arrêts](#/Arr%C3%AAts)",
+      "- [Dépassements](#/D%C3%A9passements)",
       "- [Health](#/Health)",
     ].join("\n");
 
@@ -190,6 +192,8 @@ async function bootstrap() {
       .addTag("Éléments de contrôle", "Gestion des éléments de contrôle")
       .addTag("Rondier", "Gestion du rondier")
       .addTag("Postes Rondier", "Gestion des postes rondier")
+      .addTag("Arrêts", "Gestion des arrêts")
+      .addTag("Dépassements", "Gestion des dépassements")
       .addTag("Health", "Vérification de l'état de l'API")
       .build();
 

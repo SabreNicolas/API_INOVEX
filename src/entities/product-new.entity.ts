@@ -1,3 +1,4 @@
+import { ApiHideProperty } from "@nestjs/swagger";
 import {
   Column,
   Entity,
@@ -49,6 +50,7 @@ export class ProductNew {
   @Column({ type: "int", nullable: true })
   idElementRondier: number | null;
 
+  @ApiHideProperty()
   @ManyToOne(() => ElementControle, { nullable: true })
   @JoinColumn({ name: "idElementRondier" })
   elementRondier: ElementControle | null;

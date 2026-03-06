@@ -40,6 +40,30 @@ export class ProductsService {
   /**
    * Récupérer tous les produits par usine
    */
+  async findArrets(idUsine: number): Promise<ProductNew[]> {
+    try {
+      return this.productsRepository
+        .createQueryBuilder("product")
+        .where("product.idUsine = :idUsine", { idUsine })
+        .andWhere("product.typeId = :typeId", { typeId: 4 })
+        .andWhere("product.Enabled = :enabled", { enabled: 1 })
+        .andWhere("product.Name NOT LIKE :pattern", { pattern: "Temps%" })
+        .andWhere("product.Code Like :codePattern", { codePattern: "30302%" })
+        .orderBy("product.Name", "ASC")
+        .getMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des produits arrêts",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer tous les produits par usine
+   */
   async findAll(
     pagination?: PaginationDto,
     idUsine?: number

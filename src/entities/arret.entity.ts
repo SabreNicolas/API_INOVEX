@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from "typeorm";
+
+import { ApiHideProperty } from "@nestjs/swagger";
+import { ProductNew } from "./product-new.entity";
 
 @Entity("arrets")
 @Unique("unique_arret_periode", [
@@ -31,4 +41,9 @@ export class Arret {
 
   @Column({ type: "int", nullable: true })
   productId: number | null;
+
+  @ApiHideProperty()
+  @ManyToOne(() => ProductNew, { nullable: true })
+  @JoinColumn({ name: "productId", referencedColumnName: "Id" })
+  product: ProductNew | null;
 }

@@ -37,6 +37,20 @@ import { ProductsService } from "./products.service";
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
+  @Get("arrets")
+  @RequireAdmin()
+  @ApiOperation({
+    summary:
+      "Récupérer les produits arrêts (typeId=4, enabled=1, exclut 'temps')",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des produits arrêts",
+  })
+  async findArrets(@CurrentUser() currentUser: RequestUser) {
+    return this.productsService.findArrets(currentUser.idUsine);
+  }
+
   @Get()
   @RequireAdmin()
   @ApiOperation({

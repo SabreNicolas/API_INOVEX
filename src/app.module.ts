@@ -8,8 +8,10 @@ import { HttpsRedirectMiddleware } from "./common/middlewares/https-redirect.mid
 import { LoggerService } from "./common/services/logger.service";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { ArretsModule } from "./modules/arrets/arrets.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
+import { DepassementsModule } from "./modules/depassements/depassements.module";
 import { ConsignesModule } from "./modules/consignes/consignes.module";
 import { ElementControleModule } from "./modules/element-controle/element-controle.module";
 import { FormulaireModule } from "./modules/formulaire/formulaire.module";
@@ -71,6 +73,8 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     ModeOperatoireModule,
     RondierModule,
     FormulaireModule,
+    ArretsModule,
+    DepassementsModule,
   ],
   providers: [
     LoggerService,
