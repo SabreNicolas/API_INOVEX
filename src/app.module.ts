@@ -11,13 +11,14 @@ import { HealthModule } from "./health/health.module";
 import { ArretsModule } from "./modules/arrets/arrets.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
-import { DepassementsModule } from "./modules/depassements/depassements.module";
 import { ConsignesModule } from "./modules/consignes/consignes.module";
+import { DepassementsModule } from "./modules/depassements/depassements.module";
 import { ElementControleModule } from "./modules/element-controle/element-controle.module";
 import { FormulaireModule } from "./modules/formulaire/formulaire.module";
 import { GroupementModule } from "./modules/groupement/groupement.module";
 import { ImportTonnageMainModule } from "./modules/importTonnage/import-tonnage-main.module";
 import { ModeOperatoireModule } from "./modules/mode-operatoire/mode-operatoire.module";
+import { MoralEntitiesModule } from "./modules/moral-entities/moral-entities.module";
 import { PostesRondierModule } from "./modules/postesRondier/postesRondier.module";
 import { ProductsModule } from "./modules/products/products.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
@@ -75,6 +76,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     FormulaireModule,
     ArretsModule,
     DepassementsModule,
+    MoralEntitiesModule,
   ],
   providers: [
     LoggerService,

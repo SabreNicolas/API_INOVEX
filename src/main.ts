@@ -194,6 +194,7 @@ async function bootstrap() {
       .addTag("Postes Rondier", "Gestion des postes rondier")
       .addTag("Arrêts", "Gestion des arrêts")
       .addTag("Dépassements", "Gestion des dépassements")
+      .addTag("Entités morales", "Gestion des entités morales / producteurs")
       .addTag("Health", "Vérification de l'état de l'API")
       .build();
 
