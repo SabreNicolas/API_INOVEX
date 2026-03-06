@@ -149,13 +149,48 @@ async function bootstrap() {
 
   // Swagger documentation (disabled in production)
   if (nodeEnv !== "prod") {
+    const swaggerDescription = [
+      "API pour l'outil de gestion INOVEX",
+      "",
+      "## Sommaire",
+      "",
+      "- [Authentification](#/Authentification)",
+      "- [Utilisateurs](#/Utilisateurs)",
+      "- [Sites](#/Sites)",
+      "- [Produits](#/Produits)",
+      "- [Formulaires](#/Formulaires)",
+      "- [Consignes](#/Consignes)",
+      "- [Badges](#/Badges)",
+      "- [Groupements](#/Groupements)",
+      "- [Modes opératoires](#/Modes%20op%C3%A9ratoires)",
+      "- [Import Tonnage](#/Import%20Tonnage)",
+      "- [Zones de contrôle](#/Zones%20de%20contr%C3%B4le)",
+      "- [Éléments de contrôle](#/%C3%89l%C3%A9ments%20de%20contr%C3%B4le)",
+      "- [Rondier](#/Rondier)",
+      "- [Postes Rondier](#/Postes%20Rondier)",
+      "- [Health](#/Health)",
+    ].join("\n");
+
     const swaggerConfig = new DocumentBuilder()
       .setTitle("API Inovex")
-      .setDescription("API pour l'outil de gestionINOVEX")
+      .setDescription(swaggerDescription)
       .setVersion("2.0.0")
       .addCookieAuth("accessToken")
       .addTag("Authentification", "Endpoints de connexion/déconnexion")
       .addTag("Utilisateurs", "Gestion des utilisateurs")
+      .addTag("Sites", "Gestion des sites/usines")
+      .addTag("Produits", "Gestion des produits")
+      .addTag("Formulaires", "Gestion des formulaires")
+      .addTag("Consignes", "Gestion des consignes")
+      .addTag("Badges", "Gestion des badges")
+      .addTag("Groupements", "Gestion des groupements")
+      .addTag("Modes opératoires", "Gestion des modes opératoires")
+      .addTag("Import Tonnage", "Import et gestion des tonnages")
+      .addTag("Zones de contrôle", "Gestion des zones de contrôle")
+      .addTag("Éléments de contrôle", "Gestion des éléments de contrôle")
+      .addTag("Rondier", "Gestion du rondier")
+      .addTag("Postes Rondier", "Gestion des postes rondier")
+      .addTag("Health", "Vérification de l'état de l'API")
       .build();
 
     const document = SwaggerModule.createDocument(app, swaggerConfig);
