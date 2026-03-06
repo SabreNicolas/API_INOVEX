@@ -111,10 +111,13 @@ export class DepassementsService {
     endDate: Date
   ): Promise<DepassementTotalByLigne[]> {
     try {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
       const depassements = await this.depassementRepository.find({
         where: {
           idUsine,
-          date_heure_debut: Between(startDate, endDate),
+          date_heure_debut: Between(startDate, adjustedEndDate),
         },
         order: { ligne: "ASC", choixDepassements: "ASC" },
       });
@@ -222,9 +225,12 @@ export class DepassementsService {
     PaginatedResult<DepassementsGroupedByLigne> | DepassementsGroupedByLigne[]
   > {
     try {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
       const whereCondition = {
         idUsine,
-        date_heure_debut: Between(startDate, endDate),
+        date_heure_debut: Between(startDate, adjustedEndDate),
       };
 
       if (!pagination) {

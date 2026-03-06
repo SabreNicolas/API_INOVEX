@@ -82,10 +82,13 @@ export class ArretsService {
     endDate: Date
   ): Promise<ArretTotalByLigne[]> {
     try {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
       const arrets = await this.arretRepository.find({
         relations: ["product"],
         where: {
-          date_heure_debut: Between(startDate, endDate),
+          date_heure_debut: Between(startDate, adjustedEndDate),
           product: { idUsine },
         },
         order: { date_heure_debut: "ASC" },
@@ -190,8 +193,11 @@ export class ArretsService {
     pagination?: PaginationDto
   ): Promise<PaginatedResult<ArretsGroupedByLigne> | ArretsGroupedByLigne[]> {
     try {
+      const adjustedEndDate = new Date(endDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + 1);
+
       const whereCondition = {
-        date_heure_debut: Between(startDate, endDate),
+        date_heure_debut: Between(startDate, adjustedEndDate),
         product: { idUsine },
       };
 
