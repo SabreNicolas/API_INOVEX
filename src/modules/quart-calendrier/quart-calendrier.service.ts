@@ -1,0 +1,276 @@
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+
+import { LoggerService } from "../../common/services/logger.service";
+import {
+  ActionEnregistrement,
+  QuartAction,
+  QuartCalendrier,
+} from "../../entities";
+import { CreateQuartCalendrierDto, UpdateQuartCalendrierDto } from "./dto";
+
+@Injectable()
+export class QuartCalendrierService {
+  constructor(
+    @InjectRepository(QuartCalendrier)
+    private readonly quartCalendrierRepository: Repository<QuartCalendrier>,
+    @InjectRepository(QuartAction)
+    private readonly quartActionRepository: Repository<QuartAction>,
+    @InjectRepository(ActionEnregistrement)
+    private readonly actionEnregistrementRepository: Repository<ActionEnregistrement>,
+    private readonly logger: LoggerService
+  ) {}
+
+  async findByDateRange(
+    idUsine: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<QuartCalendrier[]> {
+    try {
+      return this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .where("qc.idUsine = :idUsine", { idUsine })
+        .andWhere(
+          "(qc.date_heure_debut BETWEEN :startDate AND :endDate OR qc.date_heure_fin BETWEEN :startDate AND :endDate OR (qc.date_heure_debut <= :startDate AND (qc.date_heure_fin >= :endDate OR qc.date_heure_fin IS NULL)))",
+          { startDate, endDate }
+        )
+        .orderBy("qc.date_heure_debut", "ASC")
+        .getMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des entrées du calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async findOne(id: number, idUsine: number): Promise<QuartCalendrier> {
+    try {
+      const entry = await this.quartCalendrierRepository.findOne({
+        where: { id, idUsine },
+      });
+
+      if (!entry) {
+        throw new NotFoundException(
+          `Entrée calendrier avec l'ID ${id} non trouvée`
+        );
+      }
+
+      return entry;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la récupération de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  private async resolveActionId(
+    dto: CreateQuartCalendrierDto,
+    idUsine: number
+  ): Promise<number | null> {
+    if (dto.idZone) return null;
+    if (!dto.idAction) return null;
+
+    const actionEnregistrement =
+      await this.actionEnregistrementRepository.findOne({
+        where: { id: dto.idAction },
+      });
+
+    if (!actionEnregistrement) {
+      throw new NotFoundException(
+        `ActionEnregistrement avec l'ID ${dto.idAction} non trouvée`
+      );
+    }
+
+    const quartAction = this.quartActionRepository.create({
+      nom: actionEnregistrement.nom,
+      idUsine,
+      date_heure_debut: new Date(dto.date_heure_debut),
+      date_heure_fin: dto.date_heure_fin
+        ? new Date(dto.date_heure_fin)
+        : new Date(dto.date_heure_debut),
+    });
+
+    const savedAction = await this.quartActionRepository.save(quartAction);
+    return savedAction.id;
+  }
+
+  async create(
+    idUsine: number,
+    createDto: CreateQuartCalendrierDto
+  ): Promise<{ id: number }> {
+    try {
+      const resolvedActionId = await this.resolveActionId(createDto, idUsine);
+
+      const entry = this.quartCalendrierRepository.create({
+        idUsine,
+        idZone: createDto.idZone ?? null,
+        idAction: resolvedActionId,
+        date_heure_debut: new Date(createDto.date_heure_debut),
+        quart: createDto.quart,
+        termine: createDto.termine ?? 0,
+        date_heure_fin: createDto.date_heure_fin
+          ? new Date(createDto.date_heure_fin)
+          : null,
+        idUser: createDto.idUser ?? null,
+        finReccurrence: createDto.finReccurrence ?? null,
+        recurrencePhrase: createDto.recurrencePhrase ?? null,
+      });
+
+      const saved = await this.quartCalendrierRepository.save(entry);
+
+      this.logger.log(
+        `Entrée calendrier créée (ID: ${saved.id})`,
+        "QuartCalendrierService"
+      );
+
+      return { id: saved.id };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async createBatch(
+    idUsine: number,
+    createDtos: CreateQuartCalendrierDto[]
+  ): Promise<{ ids: number[] }> {
+    try {
+      const entries = await Promise.all(
+        createDtos.map(async dto => {
+          const resolvedActionId = await this.resolveActionId(dto, idUsine);
+
+          return this.quartCalendrierRepository.create({
+            idUsine,
+            idZone: dto.idZone ?? null,
+            idAction: resolvedActionId,
+            date_heure_debut: new Date(dto.date_heure_debut),
+            quart: dto.quart,
+            termine: dto.termine ?? 0,
+            date_heure_fin: dto.date_heure_fin
+              ? new Date(dto.date_heure_fin)
+              : null,
+            idUser: dto.idUser ?? null,
+            finReccurrence: dto.finReccurrence ?? null,
+            recurrencePhrase: dto.recurrencePhrase ?? null,
+          });
+        })
+      );
+
+      const saved = await this.quartCalendrierRepository.save(entries);
+
+      this.logger.log(
+        `${saved.length} entrées calendrier créées en batch`,
+        "QuartCalendrierService"
+      );
+
+      return { ids: saved.map(e => e.id) };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création batch des entrées calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async update(
+    id: number,
+    idUsine: number,
+    updateDto: UpdateQuartCalendrierDto
+  ): Promise<void> {
+    try {
+      const existing = await this.quartCalendrierRepository.findOne({
+        where: { id, idUsine },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(
+          `Entrée calendrier avec l'ID ${id} non trouvée`
+        );
+      }
+
+      const updateData: Partial<QuartCalendrier> = {};
+
+      if (updateDto.idZone !== undefined) updateData.idZone = updateDto.idZone;
+      if (updateDto.idAction !== undefined)
+        updateData.idAction = updateDto.idAction;
+      if (updateDto.date_heure_debut !== undefined)
+        updateData.date_heure_debut = new Date(updateDto.date_heure_debut);
+      if (updateDto.quart !== undefined) updateData.quart = updateDto.quart;
+      if (updateDto.termine !== undefined)
+        updateData.termine = updateDto.termine;
+      if (updateDto.date_heure_fin !== undefined)
+        updateData.date_heure_fin = new Date(updateDto.date_heure_fin);
+      if (updateDto.idUser !== undefined) updateData.idUser = updateDto.idUser;
+      if (updateDto.finReccurrence !== undefined)
+        updateData.finReccurrence = updateDto.finReccurrence;
+      if (updateDto.recurrencePhrase !== undefined)
+        updateData.recurrencePhrase = updateDto.recurrencePhrase;
+
+      if (Object.keys(updateData).length > 0) {
+        await this.quartCalendrierRepository.update(id, updateData);
+      }
+
+      this.logger.log(
+        `Entrée calendrier mise à jour: ID ${id}`,
+        "QuartCalendrierService"
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la mise à jour de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async delete(id: number, idUsine: number): Promise<void> {
+    try {
+      const existing = await this.quartCalendrierRepository.findOne({
+        where: { id, idUsine },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(
+          `Entrée calendrier avec l'ID ${id} non trouvée`
+        );
+      }
+
+      await this.quartCalendrierRepository.delete(id);
+
+      this.logger.log(
+        `Entrée calendrier supprimée: ID ${id}`,
+        "QuartCalendrierService"
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la suppression de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+}

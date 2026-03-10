@@ -24,6 +24,8 @@ import { ProductsModule } from "./modules/products/products.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UsersModule } from "./modules/users/users.module";
+import { QuartActionsModule } from "./modules/quart-actions/quart-actions.module";
+import { QuartCalendrierModule } from "./modules/quart-calendrier/quart-calendrier.module";
 import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
 @Module({
@@ -77,6 +79,8 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     ArretsModule,
     DepassementsModule,
     MoralEntitiesModule,
+    QuartCalendrierModule,
+    QuartActionsModule,
   ],
   providers: [
     LoggerService,
