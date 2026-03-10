@@ -93,7 +93,9 @@ export class MoralEntitiesService {
         .getOne();
 
       if (!entity) {
-        throw new NotFoundException(`Entité morale avec l'ID ${id} non trouvée`);
+        throw new NotFoundException(
+          `Entité morale avec l'ID ${id} non trouvée`
+        );
       }
 
       return entity as MoralEntityWithTypeDechet;
@@ -151,7 +153,9 @@ export class MoralEntitiesService {
       });
 
       if (!existing) {
-        throw new NotFoundException(`Entité morale avec l'ID ${id} non trouvée`);
+        throw new NotFoundException(
+          `Entité morale avec l'ID ${id} non trouvée`
+        );
       }
 
       await this.moralEntityRepository.update(id, {
@@ -183,7 +187,9 @@ export class MoralEntitiesService {
       });
 
       if (!existing) {
-        throw new NotFoundException(`Entité morale avec l'ID ${id} non trouvée`);
+        throw new NotFoundException(
+          `Entité morale avec l'ID ${id} non trouvée`
+        );
       }
 
       await this.moralEntityRepository.delete(id);

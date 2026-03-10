@@ -9,10 +9,7 @@ import { MoralEntitiesController } from "./moral-entities.controller";
 import { MoralEntitiesService } from "./moral-entities.service";
 
 @Module({
-  imports: [
-    AuthModule,
-    TypeOrmModule.forFeature([MoralEntityNew, ProductNew]),
-  ],
+  imports: [AuthModule, TypeOrmModule.forFeature([MoralEntityNew, ProductNew])],
   controllers: [MoralEntitiesController],
   providers: [MoralEntitiesService, LoggerService],
   exports: [MoralEntitiesService],

@@ -11,6 +11,9 @@ import {
 
 import { LoggerService } from "../../common/services/logger.service";
 import {
+  ImportTonnage,
+  ImportTonnageReactif,
+  ImportTonnageSortant,
   MeasureNew,
   MoralEntityNew,
   ProductNew,
@@ -18,6 +21,7 @@ import {
 } from "../../entities";
 import {
   CreateMeasureDto,
+  CreateMeasuresBatchDto,
   CreateProductDto,
   UpdateMeasureDto,
   UpdateProductDto,
@@ -34,6 +38,12 @@ export class ProductsService {
     private readonly measureNewRepository: Repository<MeasureNew>,
     @InjectRepository(MoralEntityNew)
     private readonly moralEntityNewRepository: Repository<MoralEntityNew>,
+    @InjectRepository(ImportTonnage)
+    private readonly importTonnageRepository: Repository<ImportTonnage>,
+    @InjectRepository(ImportTonnageSortant)
+    private readonly importTonnageSortantRepository: Repository<ImportTonnageSortant>,
+    @InjectRepository(ImportTonnageReactif)
+    private readonly importTonnageReactifRepository: Repository<ImportTonnageReactif>,
     private readonly logger: LoggerService
   ) {}
 
@@ -422,6 +432,56 @@ export class ProductsService {
   }
 
   /**
+   * Créer plusieurs mesures en batch
+   * SQL Server limite à 2100 paramètres par requête, donc on découpe en chunks
+   */
+  async createMeasuresBatch(
+    batchDto: CreateMeasuresBatchDto
+  ): Promise<{ inserted: number; measures: MeasureNew[] }> {
+    try {
+      const now = new Date();
+      const CHUNK_SIZE = 300; // 6 colonnes × 300 = 1800 paramètres (< 2100)
+
+      const measuresToCreate = batchDto.measures.map(item =>
+        this.measureNewRepository.create({
+          EntryDate: item.EntryDate,
+          Value: item.Value,
+          ProductId: item.ProductId,
+          ProducerId: item.ProducerId ?? null,
+          CreateDate: now,
+          LastModifiedDate: now,
+        })
+      );
+
+      const allSavedMeasures: MeasureNew[] = [];
+
+      // Découper en chunks pour éviter la limite SQL Server
+      for (let i = 0; i < measuresToCreate.length; i += CHUNK_SIZE) {
+        const chunk = measuresToCreate.slice(i, i + CHUNK_SIZE);
+        const savedChunk = await this.measureNewRepository.save(chunk);
+        allSavedMeasures.push(...savedChunk);
+      }
+
+      this.logger.log(
+        `${allSavedMeasures.length} mesures créées en batch`,
+        "ProductsService"
+      );
+
+      return {
+        inserted: allSavedMeasures.length,
+        measures: allSavedMeasures,
+      };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création des mesures en batch",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Mettre à jour une mesure
    */
   async updateMeasure(
@@ -742,6 +802,262 @@ export class ProductsService {
     } catch (error) {
       this.logger.error(
         `Erreur lors de la récupération des produits compteurs avec mesures`,
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Supprimer les mesures entrants entre deux dates
+   * Join avec import_tonnage (apporteurs/moralEntities)
+   * Si deleteAll = true, supprime toutes les mesures avec ProducerId != 0 et != null
+   */
+  async deleteMeasuresEntrants(
+    startDate: Date,
+    endDate: Date,
+    idUsine: number,
+    deleteAll: boolean = false
+  ): Promise<{ deleted: number }> {
+    try {
+      if (deleteAll) {
+        // Supprimer toutes les mesures avec ProducerId != 0 et != null
+        const result = await this.measureNewRepository
+          .createQueryBuilder()
+          .delete()
+          .from(MeasureNew)
+          .where("ProducerId IS NOT NULL")
+          .andWhere("ProducerId != 0")
+          .execute();
+
+        this.logger.log(
+          `${result.affected} mesures entrants supprimées (toutes avec ProducerId != 0 et != null)`,
+          "ProductsService"
+        );
+
+        return { deleted: result.affected || 0 };
+      }
+
+      // Comportement par défaut : suppression entre deux dates
+      // Ajuster startDate pour commencer à 00:00:00.000
+      const startDateAdjusted = new Date(startDate);
+      startDateAdjusted.setHours(0, 0, 0, 0);
+
+      // Ajuster endDate pour inclure toute la journée (23:59:59.999)
+      const endDateAdjusted = new Date(endDate);
+      endDateAdjusted.setHours(23, 59, 59, 999);
+
+      // Récupérer les ProducerIds depuis import_tonnage pour cette usine
+      const importTonnages = await this.importTonnageRepository.find({
+        where: { idUsine },
+        select: ["ProducerId"],
+      });
+
+      const producerIds = [...new Set(importTonnages.map(it => it.ProducerId))];
+
+      if (producerIds.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const result = await this.measureNewRepository
+        .createQueryBuilder()
+        .delete()
+        .from(MeasureNew)
+        .where("ProducerId IN (:...producerIds)", { producerIds })
+        .andWhere("EntryDate >= :startDate", { startDate: startDateAdjusted })
+        .andWhere("EntryDate <= :endDate", { endDate: endDateAdjusted })
+        .execute();
+
+      this.logger.log(
+        `${result.affected} mesures entrants supprimées entre ${startDate.toISOString()} et ${endDate.toISOString()}`,
+        "ProductsService"
+      );
+
+      return { deleted: result.affected || 0 };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la suppression des mesures entrants",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Supprimer les mesures sortants entre deux dates
+   * Join avec import_tonnageSortants
+   * Si deleteAll = true, supprime toutes les mesures de produits avec Enabled=1 et typeId=5
+   */
+  async deleteMeasuresSortants(
+    startDate: Date,
+    endDate: Date,
+    idUsine: number,
+    deleteAll: boolean = false
+  ): Promise<{ deleted: number }> {
+    try {
+      if (deleteAll) {
+        // Récupérer les ProductIds des produits avec Enabled=1 et typeId=5
+        const products = await this.productsRepository.find({
+          where: {
+            idUsine,
+            Enabled: 1,
+            typeId: 5,
+          },
+          select: ["Id"],
+        });
+
+        const productIds = products.map(p => p.Id);
+
+        if (productIds.length === 0) {
+          return { deleted: 0 };
+        }
+
+        const result = await this.measureNewRepository
+          .createQueryBuilder()
+          .delete()
+          .from(MeasureNew)
+          .where("ProductId IN (:...productIds)", { productIds })
+          .execute();
+
+        this.logger.log(
+          `${result.affected} mesures sortants supprimées (toutes avec Enabled=1 et typeId=5)`,
+          "ProductsService"
+        );
+
+        return { deleted: result.affected || 0 };
+      }
+
+      // Comportement par défaut : suppression entre deux dates
+      // Ajuster startDate pour commencer à 00:00:00.000
+      const startDateAdjusted = new Date(startDate);
+      startDateAdjusted.setHours(0, 0, 0, 0);
+
+      // Ajuster endDate pour inclure toute la journée (23:59:59.999)
+      const endDateAdjusted = new Date(endDate);
+      endDateAdjusted.setHours(23, 59, 59, 999);
+
+      // Récupérer les ProductIds depuis import_tonnageSortants pour cette usine
+      const importSortants = await this.importTonnageSortantRepository.find({
+        where: { idUsine },
+        select: ["ProductId"],
+      });
+
+      const productIds = [...new Set(importSortants.map(is => is.ProductId))];
+
+      if (productIds.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const result = await this.measureNewRepository
+        .createQueryBuilder()
+        .delete()
+        .from(MeasureNew)
+        .where("ProductId IN (:...productIds)", { productIds })
+        .andWhere("EntryDate >= :startDate", { startDate: startDateAdjusted })
+        .andWhere("EntryDate <= :endDate", { endDate: endDateAdjusted })
+        .execute();
+
+      this.logger.log(
+        `${result.affected} mesures sortants supprimées entre ${startDate.toISOString()} et ${endDate.toISOString()}`,
+        "ProductsService"
+      );
+
+      return { deleted: result.affected || 0 };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la suppression des mesures sortants",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Supprimer les mesures réactifs entre deux dates
+   * Join avec import_tonnageReactifs
+   * Si deleteAll = true, supprime toutes les mesures de produits avec Enabled=1 et Name LIKE '%livraison%'
+   */
+  async deleteMeasuresReactifs(
+    startDate: Date,
+    endDate: Date,
+    idUsine: number,
+    deleteAll: boolean = false
+  ): Promise<{ deleted: number }> {
+    try {
+      if (deleteAll) {
+        // Récupérer les ProductIds des produits avec Enabled=1 et Name LIKE '%livraison%'
+        const products = await this.productsRepository.find({
+          where: {
+            idUsine,
+            Enabled: 1,
+            Name: Like(`%livraison%`),
+          },
+          select: ["Id"],
+        });
+
+        const productIds = products.map(p => p.Id);
+
+        if (productIds.length === 0) {
+          return { deleted: 0 };
+        }
+
+        const result = await this.measureNewRepository
+          .createQueryBuilder()
+          .delete()
+          .from(MeasureNew)
+          .where("ProductId IN (:...productIds)", { productIds })
+          .execute();
+
+        this.logger.log(
+          `${result.affected} mesures réactifs supprimées (toutes avec Enabled=1 et Name LIKE '%livraison%')`,
+          "ProductsService"
+        );
+
+        return { deleted: result.affected || 0 };
+      }
+
+      // Comportement par défaut : suppression entre deux dates
+      // Ajuster startDate pour commencer à 00:00:00.000
+      const startDateAdjusted = new Date(startDate);
+      startDateAdjusted.setHours(0, 0, 0, 0);
+
+      // Ajuster endDate pour inclure toute la journée (23:59:59.999)
+      const endDateAdjusted = new Date(endDate);
+      endDateAdjusted.setHours(23, 59, 59, 999);
+
+      // Récupérer les ProductIds depuis import_tonnageReactifs pour cette usine
+      const importReactifs = await this.importTonnageReactifRepository.find({
+        where: { idUsine },
+        select: ["ProductId"],
+      });
+
+      const productIds = [...new Set(importReactifs.map(ir => ir.ProductId))];
+
+      if (productIds.length === 0) {
+        return { deleted: 0 };
+      }
+
+      const result = await this.measureNewRepository
+        .createQueryBuilder()
+        .delete()
+        .from(MeasureNew)
+        .where("ProductId IN (:...productIds)", { productIds })
+        .andWhere("EntryDate >= :startDate", { startDate: startDateAdjusted })
+        .andWhere("EntryDate <= :endDate", { endDate: endDateAdjusted })
+        .execute();
+
+      this.logger.log(
+        `${result.affected} mesures réactifs supprimées entre ${startDate.toISOString()} et ${endDate.toISOString()}`,
+        "ProductsService"
+      );
+
+      return { deleted: result.affected || 0 };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la suppression des mesures réactifs",
         error instanceof Error ? error.stack : String(error),
         "ProductsService"
       );

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -24,6 +25,7 @@ import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
 import {
   CreateMeasureDto,
+  CreateMeasuresBatchDto,
   CreateProductDto,
   UpdateMeasureDto,
   UpdateProductDto,
@@ -400,6 +402,154 @@ export class ProductsController {
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async createMeasure(@Body() createDto: CreateMeasureDto) {
     return this.productsService.createMeasure(createDto);
+  }
+
+  @Post("measures-batch")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Créer plusieurs mesures en batch",
+  })
+  @ApiResponse({
+    status: 201,
+    description: "Mesures créées avec succès",
+  })
+  @ApiResponse({ status: 400, description: "Données invalides" })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async createMeasuresBatch(@Body() batchDto: CreateMeasuresBatchDto) {
+    return this.productsService.createMeasuresBatch(batchDto);
+  }
+
+  @Delete("measures/entrants")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Supprimer les mesures entrants entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    type: String,
+    description: "Date de début (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "endDate",
+    type: String,
+    description: "Date de fin (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "deleteAll",
+    type: Boolean,
+    description:
+      "Si true, supprime toutes les mesures avec ProducerId != 0 ou != null",
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Mesures entrants supprimées avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async deleteMeasuresEntrants(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Query("deleteAll") deleteAll: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.deleteMeasuresEntrants(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine,
+      deleteAll === "true"
+    );
+  }
+
+  @Delete("measures/sortants")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Supprimer les mesures sortants entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    type: String,
+    description: "Date de début (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "endDate",
+    type: String,
+    description: "Date de fin (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "deleteAll",
+    type: Boolean,
+    description:
+      "Si true, supprime toutes les mesures de produits avec Enabled=1 et typeId=5",
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Mesures sortants supprimées avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async deleteMeasuresSortants(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Query("deleteAll") deleteAll: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.deleteMeasuresSortants(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine,
+      deleteAll === "true"
+    );
+  }
+
+  @Delete("measures/reactifs")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Supprimer les mesures réactifs entre deux dates",
+  })
+  @ApiQuery({
+    name: "startDate",
+    type: String,
+    description: "Date de début (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "endDate",
+    type: String,
+    description: "Date de fin (YYYY-MM-DD)",
+    required: true,
+  })
+  @ApiQuery({
+    name: "deleteAll",
+    type: Boolean,
+    description:
+      "Si true, supprime toutes les mesures de produits avec Enabled=1 et Name LIKE '%livraison%'",
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Mesures réactifs supprimées avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async deleteMeasuresReactifs(
+    @Query("startDate") startDate: string,
+    @Query("endDate") endDate: string,
+    @Query("deleteAll") deleteAll: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.productsService.deleteMeasuresReactifs(
+      new Date(startDate),
+      new Date(endDate),
+      currentUser.idUsine,
+      deleteAll === "true"
+    );
   }
 
   @Patch("measures/:id")

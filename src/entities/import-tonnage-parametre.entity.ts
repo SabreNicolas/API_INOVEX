@@ -31,8 +31,20 @@ export class ImportTonnageParametre {
   @Column({ type: "int" })
   tonnage: number;
 
-  @Column({ type: "int" })
-  entreeSortie: number;
+  @Column({ type: "int", nullable: true })
+  entreeSortie: number | null;
+
+  @Column({ length: 50, nullable: true })
+  dateFormat: string;
+
+  @Column({ type: "bit", default: false })
+  skipEmptyRows: boolean;
+
+  @Column({ type: "bit", default: false })
+  deleteAll: boolean;
+
+  @Column({ length: 50, nullable: true })
+  poids: string;
 
   @Column({ type: "int" })
   idUsine: number;

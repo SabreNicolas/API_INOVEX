@@ -3,6 +3,9 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { LoggerService } from "../../common/services/logger.service";
 import {
+  ImportTonnage,
+  ImportTonnageReactif,
+  ImportTonnageSortant,
   MeasureNew,
   MoralEntityNew,
   ProductNew,
@@ -15,7 +18,15 @@ import { ProductsService } from "./products.service";
 @Module({
   imports: [
     AuthModule,
-    TypeOrmModule.forFeature([ProductNew, TypeNew, MeasureNew, MoralEntityNew]),
+    TypeOrmModule.forFeature([
+      ProductNew,
+      TypeNew,
+      MeasureNew,
+      MoralEntityNew,
+      ImportTonnage,
+      ImportTonnageSortant,
+      ImportTonnageReactif,
+    ]),
   ],
   controllers: [ProductsController],
   providers: [ProductsService, LoggerService],
