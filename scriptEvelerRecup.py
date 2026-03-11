@@ -103,7 +103,7 @@ for p in listeProducts:
 
     time.sleep(10)
     
-print("Fin du script Eveler")
+print("Fin du script Eveler pour le " + str(hier))
 
 ## Cette API permet de lister tous les compteurs de votre périmètre
 ## l'information meta.computed.last_data indique la date de la dernière

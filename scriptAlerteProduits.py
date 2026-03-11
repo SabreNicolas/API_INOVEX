@@ -33,41 +33,44 @@ for site in listeSites['data']:
         valAvantHier = response.json()['data']
         req = f"https://fr-couvinove301:3100/ValuesProducts/{product['Id']}/{hier}"
         response = requests.get(req, headers=headers, verify=False)
+        print(response.json())
         valHier = response.json()['data']
-        if product['typeAlerte'] == "max":
-            if float(valHier[0]['Value']) > float(product['valeurAlerte']):
-                valeur_max = product['valeurAlerte']
-                alertes.append({
-                    'typeAlerte': 'max',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurMax': valeur_max
-                })
-                print(f"Alerte max déclenchée pour le produit {product['Id']} sur le site {site['id']}")
-        elif product['typeAlerte'] == "min":
-            if float(valHier[0]['Value']) < float(product['valeurAlerte']):
-                valeur_min = product['valeurAlerte']
-                alertes.append({
-                    'typeAlerte': 'min',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurMin': valeur_min
-                })
-                print(f"Alerte min déclenchée pour le produit {product['Id']} sur le site {site['id']}")
-        elif product['typeAlerte'] == "ecart":
-            ecart = abs(float(valHier[0]['Value']) - float(valAvantHier[0]['Value']))
-            if ecart > float(product['valeurAlerte']):
-                alertes.append({
-                    'typeAlerte': 'ecart',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurAvantHier': valAvantHier[0]['Value'],
-                    'ecart': ecart
-                })
-                print(f"Alerte écart déclenchée pour le produit {product['Id']} sur le site {site['id']}")
+        print(valHier)
+        if valHier != [] :
+            if product['typeAlerte'] == "max":
+                if float(valHier[0]['Value']) > float(product['valeurAlerte']):
+                    valeur_max = product['valeurAlerte']
+                    alertes.append({
+                        'typeAlerte': 'max',
+                        'nomProduit': product['Name'],
+                        'idProduct': product['Id'],
+                        'valeurHier': valHier[0]['Value'],
+                        'valeurMax': valeur_max
+                    })
+                    print(f"Alerte max déclenchée pour le produit {product['Id']} sur le site {site['id']}")
+            elif product['typeAlerte'] == "min":
+                if float(valHier[0]['Value']) < float(product['valeurAlerte']):
+                    valeur_min = product['valeurAlerte']
+                    alertes.append({
+                        'typeAlerte': 'min',
+                        'nomProduit': product['Name'],
+                        'idProduct': product['Id'],
+                        'valeurHier': valHier[0]['Value'],
+                        'valeurMin': valeur_min
+                    })
+                    print(f"Alerte min déclenchée pour le produit {product['Id']} sur le site {site['id']}")
+            elif product['typeAlerte'] == "ecart":
+                ecart = abs(float(valHier[0]['Value']) - float(valAvantHier[0]['Value']))
+                if ecart > float(product['valeurAlerte']):
+                    alertes.append({
+                        'typeAlerte': 'ecart',
+                        'nomProduit': product['Name'],
+                        'idProduct': product['Id'],
+                        'valeurHier': valHier[0]['Value'],
+                        'valeurAvantHier': valAvantHier[0]['Value'],
+                        'ecart': ecart
+                    })
+                    print(f"Alerte écart déclenchée pour le produit {product['Id']} sur le site {site['id']}")
     # Envoi d'un mail groupé si alertes détectées
     if alertes:
         # Construction du paramètre alertes pour l'API (JSON encodé en string)

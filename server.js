@@ -1402,7 +1402,7 @@ app.get("/ArretsSum/:dateDeb/:dateFin/:idUsine", middleware, (request, response)
 //Récupérer le total des arrêts pour 1 four
 app.get("/ArretsSumFour/:dateDeb/:dateFin/:idUsine/:numFour", middleware, (request, response) => {
   const reqP = request.params
-  pool.query("SELECT 'Total Four " + reqP.numFour + "' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = " + reqP.idUsine + " AND CAST(a.date_heure_debut as datetime2) BETWEEN '" + reqP.dateDeb + "' AND '" + reqP.dateFin + "' AND p.Name LIKE '%" + reqP.numFour + "%'", (err, data) => {
+  pool.query("SELECT 'Total Four " + reqP.numFour + "' as Name, COALESCE(SUM(a.duree),0) as Duree FROM arrets a INNER JOIN products_new p ON a.productId = p.Id WHERE p.idUsine = " + reqP.idUsine + " AND CAST(a.date_heure_debut as datetime2) BETWEEN '" + reqP.dateDeb + "' AND '" + reqP.dateFin + "' AND p.Name LIKE '%" + reqP.numFour + "%' AND p.Name NOT LIKE '%GTA%'", (err, data) => {
     if (err) {
       currentLineError = currentLine(); throw err;
     }
@@ -5840,3 +5840,27 @@ app.get("/AffichageValidationDonnees/:idUsine", middleware, (request, response) 
   });
 });
 ///////////FIN Validation Données//////////////
+
+app.get("/getHeuresQuart/:idUsine", (request, response) => {
+  const reqP = request.params
+  pool.query("SELECT debutQuartMatin, finQuartMatin, debutQuartAM, finQuartAM, debutQuartNuit, finQuartNuit, margeHeuresQuart FROM site WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    data = data['recordset'];
+    response.json({ data });
+  }
+  );
+});
+
+app.put("/updateHeuresQuart/:idUsine", (request, response) => {
+  const reqP = request.params
+  const reqQ = request.query
+  pool.query("UPDATE site SET margeHeuresQuart = " + reqQ.margeHeuresQuart +  ", debutQuartMatin = '" + reqQ.debutQuartMatin + "', finQuartMatin = '" + reqQ.finQuartMatin + "', debutQuartAM = '" + reqQ.debutQuartAM + "', finQuartAM = '" + reqQ.finQuartAM + "', debutQuartNuit = '" + reqQ.debutQuartNuit + "', finQuartNuit = '" + reqQ.finQuartNuit + "' WHERE id = " + reqP.idUsine, (err, data) => {
+    if (err) {
+      currentLineError = currentLine(); throw err;
+    }
+    response.json("Mise à jour des heures de quart OK");
+  }
+  );
+});
