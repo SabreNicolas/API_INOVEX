@@ -1,6 +1,27 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 
+export class CreateActionEnregistrementDto {
+  @ApiProperty({
+    example: "Contrôle visuel",
+    description: "Nom de l'action enregistrement",
+  })
+  @IsString()
+  @IsNotEmpty({ message: "Le nom est requis" })
+  @MaxLength(500, { message: "Le nom ne peut pas dépasser 500 caractères" })
+  nom: string;
+}
+
+export class UpdateActionEnregistrementDto {
+  @ApiPropertyOptional({
+    example: "Contrôle visuel modifié",
+    description: "Nom de l'action enregistrement",
+  })
+  @IsString()
+  @MaxLength(500, { message: "Le nom ne peut pas dépasser 500 caractères" })
+  nom: string;
+}
+
 export class CreateQuartActionDto {
   @ApiProperty({
     example: "Vérification des équipements",

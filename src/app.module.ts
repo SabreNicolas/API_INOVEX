@@ -24,8 +24,12 @@ import { ProductsModule } from "./modules/products/products.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UsersModule } from "./modules/users/users.module";
+import { AnomalieModule } from "./modules/anomalie/anomalie.module";
 import { QuartActionsModule } from "./modules/quart-actions/quart-actions.module";
+import { QuartActualiteModule } from "./modules/quart-actualite/quart-actualite.module";
 import { QuartCalendrierModule } from "./modules/quart-calendrier/quart-calendrier.module";
+import { QuartEvenementModule } from "./modules/quart-evenement/quart-evenement.module";
+import { QuartLiensExternesModule } from "./modules/quart-liens-externes/quart-liens-externes.module";
 import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
 @Module({
@@ -81,6 +85,10 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     MoralEntitiesModule,
     QuartCalendrierModule,
     QuartActionsModule,
+    QuartActualiteModule,
+    QuartEvenementModule,
+    QuartLiensExternesModule,
+    AnomalieModule,
   ],
   providers: [
     LoggerService,

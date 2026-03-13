@@ -21,7 +21,10 @@ export class QuartActualite {
   importance: number;
 
   @Column({ type: "tinyint", default: 0 })
-  isValide: number;
+  isQuart: number;
+
+  @Column({ type: "tinyint", default: 1 })
+  isActive: number;
 
   @Column({ type: "nvarchar", length: 2000, nullable: true })
   description: string | null;

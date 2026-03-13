@@ -148,36 +148,46 @@ export class QuartCalendrierService {
     idUsine: number,
     createDtos: CreateQuartCalendrierDto[]
   ): Promise<{ ids: number[] }> {
+    // SQL Server limite à 2100 paramètres par requête (~10 colonnes par entrée)
+    const CHUNK_SIZE = 200;
+
     try {
-      const entries = await Promise.all(
-        createDtos.map(async dto => {
-          const resolvedActionId = await this.resolveActionId(dto, idUsine);
+      const ids: number[] = [];
 
-          return this.quartCalendrierRepository.create({
-            idUsine,
-            idZone: dto.idZone ?? null,
-            idAction: resolvedActionId,
-            date_heure_debut: new Date(dto.date_heure_debut),
-            quart: dto.quart,
-            termine: dto.termine ?? 0,
-            date_heure_fin: dto.date_heure_fin
-              ? new Date(dto.date_heure_fin)
-              : null,
-            idUser: dto.idUser ?? null,
-            finReccurrence: dto.finReccurrence ?? null,
-            recurrencePhrase: dto.recurrencePhrase ?? null,
-          });
-        })
-      );
+      for (let i = 0; i < createDtos.length; i += CHUNK_SIZE) {
+        const dtoChunk = createDtos.slice(i, i + CHUNK_SIZE);
 
-      const saved = await this.quartCalendrierRepository.save(entries);
+        const entries = await Promise.all(
+          dtoChunk.map(async dto => {
+            const resolvedActionId = await this.resolveActionId(dto, idUsine);
+
+            return this.quartCalendrierRepository.create({
+              idUsine,
+              idZone: dto.idZone ?? null,
+              idAction: resolvedActionId,
+              date_heure_debut: new Date(dto.date_heure_debut),
+              quart: dto.quart,
+              termine: dto.termine ?? 0,
+              date_heure_fin: dto.date_heure_fin
+                ? new Date(dto.date_heure_fin)
+                : null,
+              idUser: dto.idUser ?? null,
+              finReccurrence: dto.finReccurrence ?? null,
+              recurrencePhrase: dto.recurrencePhrase ?? null,
+            });
+          })
+        );
+
+        const saved = await this.quartCalendrierRepository.save(entries);
+        ids.push(...saved.map(e => e.id));
+      }
 
       this.logger.log(
-        `${saved.length} entrées calendrier créées en batch`,
+        `${ids.length} entrées calendrier créées en batch`,
         "QuartCalendrierService"
       );
 
-      return { ids: saved.map(e => e.id) };
+      return { ids };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création batch des entrées calendrier",

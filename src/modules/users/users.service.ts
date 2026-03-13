@@ -373,6 +373,48 @@ export class UsersService {
     }
   }
 
+  async findWithEmail(idUsine?: number): Promise<Record<string, unknown>[]> {
+    try {
+      const queryBuilder = this.userRepository
+        .createQueryBuilder("user")
+        .select([
+          "user.Id",
+          "user.login",
+          "user.Nom",
+          "user.Prenom",
+          "user.email",
+          "user.loginGMAO",
+          "user.posteUser",
+          "user.isAdmin",
+          "user.isRondier",
+          "user.isSaisie",
+          "user.isQSE",
+          "user.isRapport",
+          "user.isChefQuart",
+          "user.isSuperAdmin",
+          "user.isMail",
+          "user.isActif",
+          "user.idUsine",
+        ])
+        .where("LEN(user.email) > 0")
+        .orderBy("user.Nom", "ASC");
+
+      if (idUsine) {
+        queryBuilder.andWhere("user.idUsine = :idUsine", { idUsine });
+      }
+
+      const users = await queryBuilder.getMany();
+      return users.map(user => transformUser(user));
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des utilisateurs avec email",
+        error instanceof Error ? error.stack : String(error),
+        "UsersService"
+      );
+      throw error;
+    }
+  }
+
   async restore(id: number, idUsine?: number): Promise<void> {
     try {
       const whereCondition: { Id: number; idUsine?: number } = { Id: id };

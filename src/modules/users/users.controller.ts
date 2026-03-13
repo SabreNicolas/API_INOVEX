@@ -34,6 +34,21 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get("email")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer tous les utilisateurs ayant un email",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des utilisateurs avec email récupérée",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findWithEmail(@CurrentUser() currentUser: RequestUser) {
+    return this.usersService.findWithEmail(currentUser.idUsine);
+  }
+
   @Get("me")
   @RequireRondier()
   @ApiOperation({

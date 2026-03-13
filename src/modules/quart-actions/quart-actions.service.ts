@@ -2,6 +2,11 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
+import {
+  createPaginatedResult,
+  PaginatedResult,
+  PaginationDto,
+} from "../../common/dto/pagination.dto";
 import { LoggerService } from "../../common/services/logger.service";
 import { ActionEnregistrement, QuartAction } from "../../entities";
 import { CreateQuartActionDto, UpdateQuartActionDto } from "./dto";
@@ -34,15 +39,146 @@ export class QuartActionsService {
     }
   }
 
-  async findAll(idUsine: number): Promise<QuartAction[]> {
+  async findAll(
+    idUsine: number,
+    pagination?: PaginationDto
+  ): Promise<PaginatedResult<QuartAction> | QuartAction[]> {
     try {
-      return this.quartActionRepository.find({
-        where: { idUsine },
+      const whereCondition = { idUsine };
+
+      if (!pagination) {
+        return this.quartActionRepository.find({
+          where: whereCondition,
+          order: { date_heure_debut: "DESC" },
+        });
+      }
+
+      const { page = 1, limit = 20 } = pagination;
+      const offset = (page - 1) * limit;
+
+      const [actions, total] = await this.quartActionRepository.findAndCount({
+        where: whereCondition,
         order: { date_heure_debut: "DESC" },
+        skip: offset,
+        take: limit,
       });
+
+      return createPaginatedResult(actions, total, page, limit);
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des actions",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  async findActiveOnDate(
+    idUsine: number,
+    date: Date,
+    pagination?: PaginationDto
+  ): Promise<PaginatedResult<QuartAction> | QuartAction[]> {
+    try {
+      const queryBuilder = this.quartActionRepository
+        .createQueryBuilder("action")
+        .where("action.idUsine = :idUsine", { idUsine })
+        .andWhere(
+          "(action.date_heure_debut <= :date AND action.date_heure_fin >= :date)",
+          { date }
+        )
+        .orderBy("action.date_heure_debut", "DESC");
+
+      if (!pagination) {
+        return queryBuilder.getMany();
+      }
+
+      const { page = 1, limit = 20 } = pagination;
+      const offset = (page - 1) * limit;
+
+      const [actions, total] = await queryBuilder
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      return createPaginatedResult(actions, total, page, limit);
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des actions actives sur la date",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  async findByDateRange(
+    idUsine: number,
+    dateDebut: Date,
+    dateFin: Date,
+    pagination?: PaginationDto
+  ): Promise<PaginatedResult<QuartAction> | QuartAction[]> {
+    try {
+      const queryBuilder = this.quartActionRepository
+        .createQueryBuilder("action")
+        .where("action.idUsine = :idUsine", { idUsine })
+        .andWhere(
+          "(action.date_heure_debut BETWEEN :dateDebut AND :dateFin OR action.date_heure_fin BETWEEN :dateDebut AND :dateFin OR (action.date_heure_debut <= :dateDebut AND action.date_heure_fin >= :dateFin))",
+          { dateDebut, dateFin }
+        )
+        .orderBy("action.date_heure_debut", "DESC");
+
+      if (!pagination) {
+        return queryBuilder.getMany();
+      }
+
+      const { page = 1, limit = 20 } = pagination;
+      const offset = (page - 1) * limit;
+
+      const [actions, total] = await queryBuilder
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      return createPaginatedResult(actions, total, page, limit);
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des actions par plage de dates",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  async findFuture(
+    idUsine: number,
+    date: Date,
+    pagination?: PaginationDto
+  ): Promise<PaginatedResult<QuartAction> | QuartAction[]> {
+    try {
+      const queryBuilder = this.quartActionRepository
+        .createQueryBuilder("action")
+        .where("action.idUsine = :idUsine", { idUsine })
+        .andWhere("action.date_heure_debut > :date", { date })
+        .orderBy("action.date_heure_debut", "ASC");
+
+      if (!pagination) {
+        return queryBuilder.getMany();
+      }
+
+      const { page = 1, limit = 20 } = pagination;
+      const offset = (page - 1) * limit;
+
+      const [actions, total] = await queryBuilder
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      return createPaginatedResult(actions, total, page, limit);
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des actions à venir",
         error instanceof Error ? error.stack : String(error),
         "QuartActionsService"
       );
@@ -163,6 +299,103 @@ export class QuartActionsService {
       }
       this.logger.error(
         "Erreur lors de la suppression de l'action",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  // --- Actions Enregistrement ---
+
+  async createEnregistrement(
+    idUsine: number,
+    nom: string
+  ): Promise<{ id: number }> {
+    try {
+      const enregistrement = this.actionEnregistrementRepository.create({
+        nom,
+        idUsine,
+      });
+
+      const saved =
+        await this.actionEnregistrementRepository.save(enregistrement);
+
+      this.logger.log(
+        `Action enregistrement créée: ${saved.nom} (ID: ${saved.id})`,
+        "QuartActionsService"
+      );
+
+      return { id: saved.id };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création de l'action enregistrement",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  async updateEnregistrement(
+    id: number,
+    idUsine: number,
+    nom: string
+  ): Promise<void> {
+    try {
+      const existing = await this.actionEnregistrementRepository.findOne({
+        where: { id, idUsine },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(
+          `Action enregistrement avec l'ID ${id} non trouvée`
+        );
+      }
+
+      await this.actionEnregistrementRepository.update(id, { nom });
+
+      this.logger.log(
+        `Action enregistrement mise à jour: ID ${id}`,
+        "QuartActionsService"
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la mise à jour de l'action enregistrement",
+        error instanceof Error ? error.stack : String(error),
+        "QuartActionsService"
+      );
+      throw error;
+    }
+  }
+
+  async deleteEnregistrement(id: number, idUsine: number): Promise<void> {
+    try {
+      const existing = await this.actionEnregistrementRepository.findOne({
+        where: { id, idUsine },
+      });
+
+      if (!existing) {
+        throw new NotFoundException(
+          `Action enregistrement avec l'ID ${id} non trouvée`
+        );
+      }
+
+      await this.actionEnregistrementRepository.delete(id);
+
+      this.logger.log(
+        `Action enregistrement supprimée: ID ${id}`,
+        "QuartActionsService"
+      );
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la suppression de l'action enregistrement",
         error instanceof Error ? error.stack : String(error),
         "QuartActionsService"
       );

@@ -75,8 +75,8 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Limit request body size (protection DoS)
-  app.use(express.json({ limit: "10mb" }));
-  app.use(express.urlencoded({ limit: "10mb", extended: true }));
+  app.use(express.json({ limit: "100mb" }));
+  app.use(express.urlencoded({ limit: "100mb", extended: true }));
 
   // Serve static files from uploads directory
   app.use("/uploads", express.static(join(process.cwd(), "uploads")));

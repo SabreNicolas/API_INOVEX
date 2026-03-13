@@ -14,6 +14,6 @@ export class QuartLienExterne {
   @Column({ type: "int" })
   idUsine: number;
 
-  @Column({ type: "int" })
-  actif: number;
+  @Column({ type: "bit" })
+  actif: boolean;
 }
