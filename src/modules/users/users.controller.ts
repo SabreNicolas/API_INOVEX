@@ -34,6 +34,21 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get("rondier")
+  @RequireAdmin()
+  @ApiOperation({
+    summary: "Récupérer tous les utilisateurs rondiers",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des utilisateurs rondiers récupérée avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findRondiers(@CurrentUser() currentUser: RequestUser) {
+    return this.usersService.findRondiers(currentUser.idUsine);
+  }
+
   @Get("email")
   @RequireAdmin()
   @ApiOperation({

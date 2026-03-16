@@ -28,9 +28,7 @@ export class UsersService {
   async findAll(
     pagination?: PaginationDto,
     idUsine?: number
-  ): Promise<
-    PaginatedResult<Record<string, unknown>> | Record<string, unknown>[]
-  > {
+  ): Promise<PaginatedResult<User> | User[]> {
     try {
       const whereCondition = idUsine ? { idUsine } : {};
 
@@ -60,7 +58,7 @@ export class UsersService {
           order: { Id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
         });
-        return users.map(user => transformUser(user));
+        return users;
       }
 
       const { page = 1, limit = 20 } = pagination;
@@ -92,8 +90,7 @@ export class UsersService {
         take: limit,
       });
 
-      const transformedUsers = users.map(user => transformUser(user));
-      return createPaginatedResult(transformedUsers, total, page, limit);
+      return createPaginatedResult(users, total, page, limit);
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des utilisateurs",
@@ -104,10 +101,7 @@ export class UsersService {
     }
   }
 
-  async findOne(
-    id: number,
-    idUsine?: number
-  ): Promise<Record<string, unknown>> {
+  async findOne(id: number, idUsine?: number): Promise<User> {
     try {
       const whereCondition: { Id: number; idUsine?: number } = { Id: id };
       if (idUsine) {
@@ -141,7 +135,7 @@ export class UsersService {
         throw new NotFoundException(`Utilisateur avec l'ID ${id} non trouvé`);
       }
 
-      return transformUser(user);
+      return user;
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
@@ -373,7 +367,52 @@ export class UsersService {
     }
   }
 
-  async findWithEmail(idUsine?: number): Promise<Record<string, unknown>[]> {
+  async findRondiers(idUsine?: number): Promise<User[]> {
+    try {
+      const whereCondition: Record<string, unknown> = {
+        isRondier: true,
+        isActif: true,
+      };
+      if (idUsine) {
+        whereCondition.idUsine = idUsine;
+      }
+
+      const users = await this.userRepository.find({
+        where: whereCondition,
+        select: [
+          "Id",
+          "login",
+          "Nom",
+          "Prenom",
+          "email",
+          "loginGMAO",
+          "posteUser",
+          "isAdmin",
+          "isRondier",
+          "isSaisie",
+          "isQSE",
+          "isRapport",
+          "isChefQuart",
+          "isSuperAdmin",
+          "isMail",
+          "isActif",
+          "idUsine",
+        ],
+        order: { Nom: "ASC" },
+      });
+
+      return users;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des utilisateurs rondiers",
+        error instanceof Error ? error.stack : String(error),
+        "UsersService"
+      );
+      throw error;
+    }
+  }
+
+  async findWithEmail(idUsine?: number): Promise<User[]> {
     try {
       const queryBuilder = this.userRepository
         .createQueryBuilder("user")
@@ -403,8 +442,7 @@ export class UsersService {
         queryBuilder.andWhere("user.idUsine = :idUsine", { idUsine });
       }
 
-      const users = await queryBuilder.getMany();
-      return users.map(user => transformUser(user));
+      return queryBuilder.getMany();
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des utilisateurs avec email",
@@ -453,31 +491,4 @@ export class UsersService {
       throw error;
     }
   }
-}
-
-/**
- * Transforme un utilisateur pour renvoyer id, nom, prenom en minuscules
- */
-export function transformUser(
-  user: Omit<User, "pwd">
-): Record<string, unknown> {
-  return {
-    id: user.Id,
-    login: user.login,
-    nom: user.Nom,
-    prenom: user.Prenom,
-    email: user.email,
-    loginGMAO: user.loginGMAO,
-    posteUser: user.posteUser,
-    isAdmin: user.isAdmin,
-    isRondier: user.isRondier,
-    isSaisie: user.isSaisie,
-    isQSE: user.isQSE,
-    isRapport: user.isRapport,
-    isChefQuart: user.isChefQuart,
-    isSuperAdmin: user.isSuperAdmin,
-    isMail: user.isMail,
-    isActif: user.isActif,
-    idUsine: user.idUsine,
-  };
 }

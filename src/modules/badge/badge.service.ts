@@ -14,7 +14,6 @@ import {
 } from "../../common/dto/pagination.dto";
 import { LoggerService } from "../../common/services/logger.service";
 import { Badge, User, ZoneControle } from "../../entities";
-import { transformUser } from "../users/users.service";
 import {
   AssignBadgeToUserDto,
   AssignBadgeToZoneDto,
@@ -517,7 +516,7 @@ export class BadgeService {
   async findUsersWithoutBadge(
     idUsine: number,
     pagination?: PaginationDto
-  ): Promise<PaginatedResult<Partial<User>> | Partial<User>[]> {
+  ): Promise<PaginatedResult<User> | User[]> {
     try {
       const queryBuilder = this.userRepository
         .createQueryBuilder("user")
@@ -541,7 +540,7 @@ export class BadgeService {
 
       if (!pagination) {
         const users = await queryBuilder.getMany();
-        return users.map(user => transformUser(user));
+        return users;
       }
 
       const { page = 1, limit = 20 } = pagination;
@@ -551,8 +550,7 @@ export class BadgeService {
         .skip(offset)
         .take(limit)
         .getManyAndCount();
-      const transformedUsers = users.map(user => transformUser(user));
-      return createPaginatedResult(transformedUsers, total, page, limit);
+      return createPaginatedResult(users, total, page, limit);
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des utilisateurs sans badge",

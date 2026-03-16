@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { User } from "./user.entity";
 
 @Entity("enregistrement_affectation_equipe")
 export class EnregistrementAffectationEquipe {
@@ -7,6 +15,10 @@ export class EnregistrementAffectationEquipe {
 
   @Column({ type: "int" })
   idRondier: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "idRondier" })
+  rondier: User;
 
   @Column({ type: "int" })
   idEquipe: number;
