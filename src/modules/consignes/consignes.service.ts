@@ -32,6 +32,7 @@ export class ConsignesService {
       if (!pagination) {
         return this.consigneRepository.find({
           where: whereCondition,
+          relations: ["typeConsigne"],
           order: { id: "DESC" },
         });
       }
@@ -41,6 +42,7 @@ export class ConsignesService {
 
       const [consignes, total] = await this.consigneRepository.findAndCount({
         where: whereCondition,
+        relations: ["typeConsigne"],
         order: { id: "DESC" },
         skip: offset,
         take: limit,

@@ -8,6 +8,7 @@ import { HttpsRedirectMiddleware } from "./common/middlewares/https-redirect.mid
 import { LoggerService } from "./common/services/logger.service";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { AnomalieModule } from "./modules/anomalie/anomalie.module";
 import { ArretsModule } from "./modules/arrets/arrets.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
@@ -21,15 +22,14 @@ import { ModeOperatoireModule } from "./modules/mode-operatoire/mode-operatoire.
 import { MoralEntitiesModule } from "./modules/moral-entities/moral-entities.module";
 import { PostesRondierModule } from "./modules/postesRondier/postesRondier.module";
 import { ProductsModule } from "./modules/products/products.module";
-import { RondierModule } from "./modules/rondier/rondier.module";
-import { SiteModule } from "./modules/site/site.module";
-import { UsersModule } from "./modules/users/users.module";
-import { AnomalieModule } from "./modules/anomalie/anomalie.module";
 import { QuartActionsModule } from "./modules/quart-actions/quart-actions.module";
 import { QuartActualiteModule } from "./modules/quart-actualite/quart-actualite.module";
 import { QuartCalendrierModule } from "./modules/quart-calendrier/quart-calendrier.module";
 import { QuartEvenementModule } from "./modules/quart-evenement/quart-evenement.module";
 import { QuartLiensExternesModule } from "./modules/quart-liens-externes/quart-liens-externes.module";
+import { RondierModule } from "./modules/rondier/rondier.module";
+import { SiteModule } from "./modules/site/site.module";
+import { UsersModule } from "./modules/users/users.module";
 import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
 @Module({
@@ -45,17 +45,17 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
       {
         name: "short",
         ttl: 1000,
-        limit: 100,
+        limit: 1000,
       },
       {
         name: "medium",
         ttl: 10000,
-        limit: 100,
+        limit: 1000,
       },
       {
         name: "long",
         ttl: 60000,
-        limit: 100,
+        limit: 1000,
       },
     ]),
 

@@ -6,6 +6,7 @@ import {
   ActionEnregistrement,
   QuartAction,
   QuartCalendrier,
+  ZoneControle,
 } from "../../entities";
 import { AuthModule } from "../auth/auth.module";
 import { QuartCalendrierController } from "./quart-calendrier.controller";
@@ -18,6 +19,7 @@ import { QuartCalendrierService } from "./quart-calendrier.service";
       QuartCalendrier,
       QuartAction,
       ActionEnregistrement,
+      ZoneControle,
     ]),
   ],
   controllers: [QuartCalendrierController],

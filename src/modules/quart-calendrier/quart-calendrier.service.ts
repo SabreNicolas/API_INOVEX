@@ -7,6 +7,7 @@ import {
   ActionEnregistrement,
   QuartAction,
   QuartCalendrier,
+  ZoneControle,
 } from "../../entities";
 import { CreateQuartCalendrierDto, UpdateQuartCalendrierDto } from "./dto";
 
@@ -19,6 +20,8 @@ export class QuartCalendrierService {
     private readonly quartActionRepository: Repository<QuartAction>,
     @InjectRepository(ActionEnregistrement)
     private readonly actionEnregistrementRepository: Repository<ActionEnregistrement>,
+    @InjectRepository(ZoneControle)
+    private readonly zoneControleRepository: Repository<ZoneControle>,
     private readonly logger: LoggerService
   ) {}
 
@@ -246,6 +249,92 @@ export class QuartCalendrierService {
       }
       this.logger.error(
         "Erreur lors de la mise à jour de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async findOccurrences(idUsine: number): Promise<
+    {
+      type: "zone" | "action";
+      idZone: number | null;
+      nom: string | null;
+      quart: number;
+      recurrencePhrase: string | null;
+      finReccurrence: string | null;
+      premiereOccurrence: Date;
+      derniereOccurrence: Date;
+      totalOccurrences: number;
+    }[]
+  > {
+    try {
+      // Grouper les entrées récurrentes par (idZone, quart, recurrencePhrase)
+      // Pour les actions, on joint quart_action et on groupe par nom (chaque occurrence a un idAction différent)
+      // On prend MAX(finReccurrence) pour ne garder que la série la plus récente
+      const groups = await this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .leftJoin("quart_action", "qa", "qa.id = qc.idAction")
+        .select("qc.idZone", "idZone")
+        .addSelect("qa.nom", "actionNom")
+        .addSelect("qc.quart", "quart")
+        .addSelect("MAX(qc.finReccurrence)", "finReccurrence")
+        .addSelect("qc.recurrencePhrase", "recurrencePhrase")
+        .addSelect("MIN(qc.date_heure_debut)", "premiereOccurrence")
+        .addSelect("MAX(qc.date_heure_debut)", "derniereOccurrence")
+        .addSelect("COUNT(*)", "totalOccurrences")
+        .where("qc.idUsine = :idUsine", { idUsine })
+        .andWhere("qc.recurrencePhrase IS NOT NULL")
+        .groupBy("qc.idZone")
+        .addGroupBy("qa.nom")
+        .addGroupBy("qc.quart")
+        .addGroupBy("qc.recurrencePhrase")
+        .orderBy("MAX(qc.date_heure_debut)", "DESC")
+        .getRawMany();
+
+      // Récupérer les noms des zones référencées
+      const zoneIds = [
+        ...new Set(
+          groups.filter(g => g.idZone != null).map(g => Number(g.idZone))
+        ),
+      ];
+
+      const zonesMap = new Map<number, string>();
+
+      // SQL Server limite à 2100 paramètres par requête, on batch par 2000
+      const BATCH_SIZE = 2000;
+
+      for (let i = 0; i < zoneIds.length; i += BATCH_SIZE) {
+        const batch = zoneIds.slice(i, i + BATCH_SIZE);
+        const zones = await this.zoneControleRepository
+          .createQueryBuilder("z")
+          .where("z.Id IN (:...batch)", { batch })
+          .getMany();
+        for (const z of zones) {
+          zonesMap.set(z.Id, z.nom ?? "");
+        }
+      }
+
+      return groups.map(g => {
+        const isZone = g.idZone != null;
+        return {
+          type: isZone ? ("zone" as const) : ("action" as const),
+          idZone: g.idZone != null ? Number(g.idZone) : null,
+          nom: isZone
+            ? (zonesMap.get(Number(g.idZone)) ?? null)
+            : (g.actionNom ?? null),
+          quart: Number(g.quart),
+          recurrencePhrase: g.recurrencePhrase,
+          finReccurrence: g.finReccurrence,
+          premiereOccurrence: new Date(g.premiereOccurrence),
+          derniereOccurrence: new Date(g.derniereOccurrence),
+          totalOccurrences: Number(g.totalOccurrences),
+        };
+      });
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des occurrences",
         error instanceof Error ? error.stack : String(error),
         "QuartCalendrierService"
       );

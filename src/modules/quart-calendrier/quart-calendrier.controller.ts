@@ -37,6 +37,20 @@ export class QuartCalendrierController {
     private readonly quartCalendrierService: QuartCalendrierService
   ) {}
 
+  @Get("occurrences")
+  @RequireRondier()
+  @ApiOperation({
+    summary:
+      "Lister les séries d'occurrences récurrentes (zones/actions groupées)",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des occurrences groupées avec leur fin de récurrence",
+  })
+  async findOccurrences(@CurrentUser() currentUser: RequestUser) {
+    return this.quartCalendrierService.findOccurrences(currentUser.idUsine);
+  }
+
   @Get()
   @RequireRondier()
   @ApiOperation({
