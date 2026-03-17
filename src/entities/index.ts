@@ -37,6 +37,7 @@ export * from "./quart-action.entity";
 export * from "./quart-actualite.entity";
 export * from "./quart-calendrier.entity";
 export * from "./quart-evenement.entity";
+export * from "./quart-evenement-cause.entity";
 export * from "./quart-historique.entity";
 export * from "./quart-lien-externe.entity";
 export * from "./rapport.entity";

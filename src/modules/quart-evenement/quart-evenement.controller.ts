@@ -8,9 +8,14 @@ import {
   Patch,
   Post,
   Query,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
+  ApiBody,
+  ApiConsumes,
   ApiCookieAuth,
   ApiOperation,
   ApiParam,
@@ -23,6 +28,7 @@ import { RequireAdmin, RequireRondier } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { FileUploadService } from "../../common/services/file-upload.service";
 import { CreateQuartEvenementDto, UpdateQuartEvenementDto } from "./dto";
 import { QuartEvenementService } from "./quart-evenement.service";
 
@@ -31,7 +37,10 @@ import { QuartEvenementService } from "./quart-evenement.service";
 @Controller("quart-evenements")
 @UseGuards(AuthGuard)
 export class QuartEvenementController {
-  constructor(private readonly quartEvenementService: QuartEvenementService) {}
+  constructor(
+    private readonly quartEvenementService: QuartEvenementService,
+    private readonly fileUploadService: FileUploadService
+  ) {}
 
   @Get()
   @RequireRondier()
@@ -75,11 +84,43 @@ export class QuartEvenementController {
 
   @Post()
   @RequireAdmin()
+  @UseInterceptors(FileInterceptor("file"))
+  @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Créer un nouvel événement" })
+  @ApiBody({
+    description: "Création d'un événement avec fichier optionnel",
+    schema: {
+      type: "object",
+      properties: {
+        titre: { type: "string", example: "Panne équipement" },
+        description: { type: "string", example: "Description détaillée" },
+        date_heure_debut: { type: "string", format: "date-time" },
+        date_heure_fin: { type: "string", format: "date-time" },
+        groupementGMAO: { type: "string" },
+        equipementGMAO: { type: "string" },
+        importance: { type: "number", example: 1 },
+        demande_travaux: { type: "string" },
+        consigne: { type: "number", example: 0 },
+        cause: { type: "string" },
+        file: { type: "string", format: "binary" },
+      },
+      required: ["titre", "date_heure_debut", "date_heure_fin"],
+    },
+  })
   @ApiResponse({ status: 201, description: "Événement créé avec succès" })
   @ApiResponse({ status: 400, description: "Données invalides" })
-  async create(@Body() createDto: CreateQuartEvenementDto) {
-    return this.quartEvenementService.create(createDto);
+  async create(
+    @Body() createDto: CreateQuartEvenementDto,
+    @CurrentUser() currentUser: RequestUser,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    let fileUrl: string | undefined;
+    if (file) {
+      const uploadedFile =
+        await this.fileUploadService.saveQuartEvenementFile(file);
+      fileUrl = uploadedFile.url;
+    }
+    return this.quartEvenementService.create(createDto, currentUser.idUsine, fileUrl);
   }
 
   @Patch(":id")

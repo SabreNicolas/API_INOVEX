@@ -34,23 +34,14 @@ export class FileUploadService {
   private ensureUploadDirExists(): void {
     const consignesDir = join(this.uploadPath, "consignes");
     const modeOperatoireDir = join(this.uploadPath, "mode-operatoire");
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    if (!existsSync(consignesDir)) {
+    const quartEvenementsDir = join(this.uploadPath, "quart-evenements");
+    for (const dir of [consignesDir, modeOperatoireDir, quartEvenementsDir]) {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      mkdirSync(consignesDir, { recursive: true });
-      this.logger.log(
-        `Dossier d'upload créé: ${consignesDir}`,
-        "FileUploadService"
-      );
-    }
-    // eslint-disable-next-line security/detect-non-literal-fs-filename
-    if (!existsSync(modeOperatoireDir)) {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      mkdirSync(modeOperatoireDir, { recursive: true });
-      this.logger.log(
-        `Dossier d'upload créé: ${modeOperatoireDir}`,
-        "FileUploadService"
-      );
+      if (!existsSync(dir)) {
+        // eslint-disable-next-line security/detect-non-literal-fs-filename
+        mkdirSync(dir, { recursive: true });
+        this.logger.log(`Dossier d'upload créé: ${dir}`, "FileUploadService");
+      }
     }
   }
 
@@ -93,6 +84,42 @@ export class FileUploadService {
         originalname: file.originalname,
         path: filePath,
         url: `/uploads/consignes/${filename}`,
+      };
+    } catch (error) {
+      this.logger.error(
+        `Erreur lors de l'upload du fichier: ${file.originalname}`,
+        error instanceof Error ? error.stack : String(error),
+        "FileUploadService"
+      );
+      throw new BadRequestException(
+        "Erreur lors de l'enregistrement du fichier"
+      );
+    }
+  }
+
+  async saveQuartEvenementFile(
+    file: Express.Multer.File
+  ): Promise<UploadedFileInfo> {
+    this.validateFile(file);
+
+    const extension = file.originalname.split(".").pop() || "";
+    const filename = `${uuidv4()}.${extension}`;
+    const filePath = join(this.uploadPath, "quart-evenements", filename);
+
+    try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
+      writeFileSync(filePath, file.buffer);
+
+      this.logger.log(
+        `Fichier uploadé: ${filename} (original: ${file.originalname})`,
+        "FileUploadService"
+      );
+
+      return {
+        filename,
+        originalname: file.originalname,
+        path: filePath,
+        url: `/uploads/quart-evenements/${filename}`,
       };
     } catch (error) {
       this.logger.error(

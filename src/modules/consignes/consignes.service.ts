@@ -243,6 +243,7 @@ export class ConsignesService {
 
   async create(
     createDto: CreateConsigneDto,
+    idUsine: number,
     fileUrl?: string
   ): Promise<{ id: number }> {
     try {
@@ -257,7 +258,7 @@ export class ConsignesService {
           : null,
         type: createDto.type || null,
         url: fileUrl || createDto.url || null,
-        idUsine: createDto.idUsine,
+        idUsine,
         isActive: 1,
       });
 

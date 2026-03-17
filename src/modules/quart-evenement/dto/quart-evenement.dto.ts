@@ -106,14 +106,6 @@ export class CreateQuartEvenementDto {
   @MaxLength(250)
   url?: string;
 
-  @ApiProperty({
-    example: 1,
-    description: "ID de l'usine",
-  })
-  @Type(() => Number)
-  @IsInt({ message: "L'ID usine doit être un entier" })
-  @IsNotEmpty({ message: "L'ID usine est requis" })
-  idUsine: number;
 }
 
 export class UpdateQuartEvenementDto {

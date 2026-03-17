@@ -61,14 +61,6 @@ export class CreateConsigneDto {
   @MaxLength(250, { message: "L'URL ne peut pas dépasser 250 caractères" })
   url?: string;
 
-  @ApiProperty({
-    example: 1,
-    description: "ID de l'usine",
-  })
-  @Type(() => Number)
-  @IsInt({ message: "L'ID usine doit être un entier" })
-  @IsNotEmpty({ message: "L'ID usine est requis" })
-  idUsine: number;
 }
 
 export class UpdateConsigneDto {

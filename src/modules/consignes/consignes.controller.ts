@@ -204,16 +204,16 @@ export class ConsignesController {
         dateDebut: { type: "string", format: "date-time" },
         dateFin: { type: "string", format: "date-time" },
         type: { type: "number", example: 1 },
-        idUsine: { type: "number", example: 1 },
         file: { type: "string", format: "binary" },
       },
-      required: ["titre", "idUsine"],
+      required: ["titre"],
     },
   })
   @ApiResponse({ status: 201, description: "Consigne créée avec succès" })
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateConsigneDto,
+    @CurrentUser() currentUser: RequestUser,
     @UploadedFile() file?: Express.Multer.File
   ) {
     let fileUrl: string | undefined;
@@ -221,7 +221,7 @@ export class ConsignesController {
       const uploadedFile = await this.fileUploadService.saveConsigneFile(file);
       fileUrl = uploadedFile.url;
     }
-    return this.consignesService.create(createDto, fileUrl);
+    return this.consignesService.create(createDto, currentUser.idUsine, fileUrl);
   }
 
   @Patch(":id")

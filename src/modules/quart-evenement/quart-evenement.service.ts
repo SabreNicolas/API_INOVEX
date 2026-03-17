@@ -79,7 +79,11 @@ export class QuartEvenementService {
     }
   }
 
-  async create(createDto: CreateQuartEvenementDto): Promise<{ id: number }> {
+  async create(
+    createDto: CreateQuartEvenementDto,
+    idUsine: number,
+    fileUrl?: string
+  ): Promise<{ id: number }> {
     try {
       const evenement = this.quartEvenementRepository.create({
         titre: createDto.titre,
@@ -92,8 +96,8 @@ export class QuartEvenementService {
         demande_travaux: createDto.demande_travaux ?? "0",
         consigne: createDto.consigne ?? 0,
         cause: createDto.cause || null,
-        url: createDto.url || null,
-        idUsine: createDto.idUsine,
+        url: fileUrl || createDto.url || null,
+        idUsine,
         isActive: 1,
       });
 
