@@ -105,7 +105,6 @@ export class CreateQuartEvenementDto {
   @IsString()
   @MaxLength(250)
   url?: string;
-
 }
 
 export class UpdateQuartEvenementDto {

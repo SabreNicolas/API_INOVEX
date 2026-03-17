@@ -60,7 +60,6 @@ export class CreateConsigneDto {
   @IsString()
   @MaxLength(250, { message: "L'URL ne peut pas dépasser 250 caractères" })
   url?: string;
-
 }
 
 export class UpdateConsigneDto {

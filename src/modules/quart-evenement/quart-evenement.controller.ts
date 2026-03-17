@@ -120,7 +120,11 @@ export class QuartEvenementController {
         await this.fileUploadService.saveQuartEvenementFile(file);
       fileUrl = uploadedFile.url;
     }
-    return this.quartEvenementService.create(createDto, currentUser.idUsine, fileUrl);
+    return this.quartEvenementService.create(
+      createDto,
+      currentUser.idUsine,
+      fileUrl
+    );
   }
 
   @Patch(":id")

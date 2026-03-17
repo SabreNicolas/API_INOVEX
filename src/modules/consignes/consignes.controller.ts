@@ -221,7 +221,11 @@ export class ConsignesController {
       const uploadedFile = await this.fileUploadService.saveConsigneFile(file);
       fileUrl = uploadedFile.url;
     }
-    return this.consignesService.create(createDto, currentUser.idUsine, fileUrl);
+    return this.consignesService.create(
+      createDto,
+      currentUser.idUsine,
+      fileUrl
+    );
   }
 
   @Patch(":id")
