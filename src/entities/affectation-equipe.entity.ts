@@ -1,4 +1,13 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { Equipe } from "./equipe.entity";
+import { User } from "./user.entity";
 
 @Entity("affectation_equipe")
 export class AffectationEquipe {
@@ -28,4 +37,12 @@ export class AffectationEquipe {
 
   @Column({ length: 255, default: "" })
   comm_tp: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "idRondier" })
+  rondier: User;
+
+  @ManyToOne(() => Equipe, equipe => equipe.affectations)
+  @JoinColumn({ name: "idEquipe" })
+  equipeEntity: Equipe;
 }

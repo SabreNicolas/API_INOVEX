@@ -55,6 +55,32 @@ export class QuartEvenementService {
     }
   }
 
+  async findByDateRange(
+    idUsine: number,
+    dateDebut: Date,
+    dateFin: Date
+  ): Promise<QuartEvenement[]> {
+    try {
+      return this.quartEvenementRepository
+        .createQueryBuilder("e")
+        .where("e.idUsine = :idUsine", { idUsine })
+        .andWhere("e.isActive = 1")
+        .andWhere(
+          "(e.date_heure_debut BETWEEN :dateDebut AND :dateFin OR e.date_heure_fin BETWEEN :dateDebut AND :dateFin OR (e.date_heure_debut <= :dateDebut AND e.date_heure_fin >= :dateFin))",
+          { dateDebut, dateFin }
+        )
+        .orderBy("e.date_heure_debut", "ASC")
+        .getMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des événements par date",
+        error instanceof Error ? error.stack : String(error),
+        "QuartEvenementService"
+      );
+      throw error;
+    }
+  }
+
   async findOne(id: number, idUsine: number): Promise<QuartEvenement> {
     try {
       const evenement = await this.quartEvenementRepository.findOne({

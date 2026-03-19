@@ -2,37 +2,20 @@ import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
 import { Type } from "class-transformer";
 import { IsDateString, IsInt, IsOptional, Max, Min } from "class-validator";
 
-export class QuartHorairesQueryDto {
-  @ApiProperty({
-    description: "Date (format YYYY-MM-DD ou ISO)",
-    example: "2026-03-13",
-  })
-  @IsDateString()
-  date: string;
-
-  @ApiProperty({
-    description: "Numéro du quart (1=matin, 2=après-midi, 3=nuit)",
-    example: 1,
-  })
-  @Type(() => Number)
-  @IsInt({ message: "Le quart doit être un entier" })
-  quart: number;
-}
-
-export class QuartCalendrierQueryDto {
+export class DateRangeQueryDto {
   @ApiProperty({
     description: "Date de début (format ISO)",
-    example: "2026-03-01T00:00:00",
+    example: "2026-03-01T00:00:00.000Z",
   })
   @IsDateString()
-  startDate: string;
+  dateDebut: string;
 
   @ApiProperty({
     description: "Date de fin (format ISO)",
-    example: "2026-03-31T23:59:59",
+    example: "2026-03-31T23:59:59.000Z",
   })
   @IsDateString()
-  endDate: string;
+  dateFin: string;
 
   @ApiPropertyOptional({
     description: "Numéro de la page (commence à 1)",

@@ -16,6 +16,7 @@ import { ConsignesModule } from "./modules/consignes/consignes.module";
 import { DepassementsModule } from "./modules/depassements/depassements.module";
 import { ElementControleModule } from "./modules/element-controle/element-controle.module";
 import { EnregistrementEquipeModule } from "./modules/enregistrement-equipe/enregistrement-equipe.module";
+import { EquipeModule } from "./modules/equipe/equipe.module";
 import { FormulaireModule } from "./modules/formulaire/formulaire.module";
 import { GroupementModule } from "./modules/groupement/groupement.module";
 import { ImportTonnageMainModule } from "./modules/importTonnage/import-tonnage-main.module";
@@ -76,6 +77,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     BadgeModule,
     ConsignesModule,
     EnregistrementEquipeModule,
+    EquipeModule,
     ZoneControleModule,
     GroupementModule,
     ElementControleModule,

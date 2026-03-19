@@ -108,7 +108,7 @@ export class ConsignesService {
     try {
       const queryBuilder = this.consigneRepository
         .createQueryBuilder("consigne")
-        .leftJoinAndSelect("consigne.type", "type", "type.Id = consigne.type")
+        .leftJoinAndSelect("consigne.typeConsigne", "type")
         .where("consigne.idUsine = :idUsine", { idUsine })
         .andWhere("consigne.isActive = 1")
         .andWhere(

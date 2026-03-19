@@ -1,3 +1,5 @@
+process.env.TZ = "UTC";
+
 import { ClassSerializerInterceptor, ValidationPipe } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { NestFactory, Reflector } from "@nestjs/core";

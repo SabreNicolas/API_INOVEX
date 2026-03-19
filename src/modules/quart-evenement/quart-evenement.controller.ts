@@ -26,6 +26,7 @@ import {
 
 import { RequireAdmin, RequireRondier } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { FileUploadService } from "../../common/services/file-upload.service";
@@ -63,6 +64,24 @@ export class QuartEvenementController {
     @CurrentUser() currentUser: RequestUser
   ) {
     return this.quartEvenementService.findAll(currentUser.idUsine, pagination);
+  }
+
+  @Get("by-date")
+  @RequireRondier()
+  @ApiOperation({ summary: "Récupérer les événements par plage de dates" })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des événements dans la plage de dates",
+  })
+  async findByDateRange(
+    @Query() query: DateRangeQueryDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.quartEvenementService.findByDateRange(
+      currentUser.idUsine,
+      new Date(query.dateDebut),
+      new Date(query.dateFin)
+    );
   }
 
   @Get(":id")

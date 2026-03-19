@@ -1,4 +1,15 @@
-import { Column, Entity, PrimaryGeneratedColumn, Unique } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  Unique,
+} from "typeorm";
+
+import { QuartAction } from "./quart-action.entity";
+import { User } from "./user.entity";
+import { ZoneControle } from "./zone-controle.entity";
 
 /** quart: 1->matin, 2->aprem, 3->nuit | termine: 0->création, 1->fait */
 @Entity("quart_calendrier")
@@ -43,4 +54,16 @@ export class QuartCalendrier {
 
   @Column({ type: "nvarchar", length: 100, nullable: true })
   recurrencePhrase: string | null;
+
+  @ManyToOne(() => ZoneControle, { nullable: true })
+  @JoinColumn({ name: "idZone" })
+  zone: ZoneControle | null;
+
+  @ManyToOne(() => QuartAction, { nullable: true })
+  @JoinColumn({ name: "idAction" })
+  action: QuartAction | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: "idUser" })
+  user: User | null;
 }

@@ -25,6 +25,48 @@ export class QuartCalendrierService {
     private readonly logger: LoggerService
   ) {}
 
+  async findHorairesByDateAndQuart(
+    idUsine: number,
+    date: string,
+    quart: number
+  ): Promise<{
+    date_heure_debut: Date | null;
+    date_heure_fin: Date | null;
+  }> {
+    try {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const row = await this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .select("MIN(qc.date_heure_debut)", "date_heure_debut")
+        .addSelect("MAX(qc.date_heure_fin)", "date_heure_fin")
+        .where("qc.idUsine = :idUsine", { idUsine })
+        .andWhere("qc.quart = :quart", { quart })
+        .andWhere("qc.date_heure_debut >= :startOfDay", { startOfDay })
+        .andWhere("qc.date_heure_debut <= :endOfDay", { endOfDay })
+        .getRawOne();
+
+      return {
+        date_heure_debut: row?.date_heure_debut
+          ? new Date(row.date_heure_debut)
+          : null,
+        date_heure_fin: row?.date_heure_fin
+          ? new Date(row.date_heure_fin)
+          : null,
+      };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des horaires de quart",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
   async findByDateRange(
     idUsine: number,
     startDate: Date,
@@ -33,6 +75,9 @@ export class QuartCalendrierService {
     try {
       return this.quartCalendrierRepository
         .createQueryBuilder("qc")
+        .leftJoinAndSelect("qc.action", "action")
+        .leftJoinAndSelect("qc.zone", "zone")
+        .leftJoinAndSelect("qc.user", "user")
         .where("qc.idUsine = :idUsine", { idUsine })
         .andWhere(
           "(qc.date_heure_debut BETWEEN :startDate AND :endDate OR qc.date_heure_fin BETWEEN :startDate AND :endDate OR (qc.date_heure_debut <= :startDate AND (qc.date_heure_fin >= :endDate OR qc.date_heure_fin IS NULL)))",
@@ -43,6 +88,62 @@ export class QuartCalendrierService {
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des entrées du calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async findZonesByDateRange(
+    idUsine: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<QuartCalendrier[]> {
+    try {
+      return this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .leftJoinAndSelect("qc.zone", "zone")
+        .leftJoinAndSelect("qc.user", "user")
+        .where("qc.idUsine = :idUsine", { idUsine })
+        .andWhere("qc.idZone IS NOT NULL")
+        .andWhere(
+          "(qc.date_heure_debut = :startDate AND qc.date_heure_fin = :endDate)",
+          { startDate, endDate }
+        )
+        .orderBy("qc.date_heure_debut", "ASC")
+        .getMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des zones du calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async findActionsByDateRange(
+    idUsine: number,
+    startDate: Date,
+    endDate: Date
+  ): Promise<QuartCalendrier[]> {
+    try {
+      return this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .leftJoinAndSelect("qc.action", "action")
+        .leftJoinAndSelect("qc.user", "user")
+        .where("qc.idUsine = :idUsine", { idUsine })
+        .andWhere("qc.idAction IS NOT NULL")
+        .andWhere(
+          "(qc.date_heure_debut = :startDate AND qc.date_heure_fin = :endDate)",
+          { startDate, endDate }
+        )
+        .orderBy("qc.date_heure_debut", "ASC")
+        .getMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des actions du calendrier",
         error instanceof Error ? error.stack : String(error),
         "QuartCalendrierService"
       );
@@ -81,6 +182,22 @@ export class QuartCalendrierService {
     idUsine: number
   ): Promise<number | null> {
     if (dto.idZone) return null;
+
+    // Cas 1 : un quart_action existant est passé directement
+    if (dto.idQuartAction) {
+      const existing = await this.quartActionRepository.findOne({
+        where: { id: dto.idQuartAction },
+      });
+      console.log("Existing QuartAction:", existing);
+      if (!existing) {
+        throw new NotFoundException(
+          `QuartAction avec l'ID ${dto.idQuartAction} non trouvée`
+        );
+      }
+      return existing.id;
+    }
+
+    // Cas 2 : un ActionEnregistrement est passé → on crée un quart_action
     if (!dto.idAction) return null;
 
     const actionEnregistrement =

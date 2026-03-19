@@ -15,14 +15,22 @@ import {
 @ValidatorConstraint({ name: "eitherZoneOrAction", async: false })
 class EitherZoneOrActionConstraint implements ValidatorConstraintInterface {
   validate(_: unknown, args: ValidationArguments) {
-    const obj = args.object as { idZone?: number; idAction?: number };
+    const obj = args.object as {
+      idZone?: number;
+      idAction?: number;
+      idQuartAction?: number;
+    };
     const hasZone = obj.idZone !== undefined && obj.idZone !== null;
     const hasAction = obj.idAction !== undefined && obj.idAction !== null;
-    return (hasZone || hasAction) && !(hasZone && hasAction);
+    const hasQuartAction =
+      obj.idQuartAction !== undefined && obj.idQuartAction !== null;
+    // Exactement un des trois
+    const count = [hasZone, hasAction, hasQuartAction].filter(Boolean).length;
+    return count === 1;
   }
 
   defaultMessage() {
-    return "Vous devez fournir soit idZone, soit idAction (pas les deux)";
+    return "Vous devez fournir exactement un parmi idZone, idAction ou idQuartAction";
   }
 }
 
@@ -39,12 +47,22 @@ export class CreateQuartCalendrierDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: "ID de l'action (si type=action)",
+    description: "ID de l'action enregistrée (si type=action, crée un quart_action)",
   })
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: "idAction doit être un entier" })
   idAction?: number;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description:
+      "ID d'un quart_action existant (si type=action, utilise directement)",
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: "idQuartAction doit être un entier" })
+  idQuartAction?: number;
 
   @ApiProperty({
     example: "2026-03-10T08:00:00.000Z",

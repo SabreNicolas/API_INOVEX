@@ -26,6 +26,7 @@ import {
 
 import { RequireAdmin, RequireRondier } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { FileUploadService } from "../../common/services/file-upload.service";
@@ -90,45 +91,19 @@ export class ConsignesController {
   @Get("by-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les consignes par plage de dates" })
-  @ApiQuery({
-    name: "dateDebut",
-    required: true,
-    type: String,
-    description: "Date de début (format ISO)",
-  })
-  @ApiQuery({
-    name: "dateFin",
-    required: true,
-    type: String,
-    description: "Date de fin (format ISO)",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
   @ApiResponse({
     status: 200,
     description: "Liste des consignes dans la plage de dates",
   })
   async findByDateRange(
-    @Query("dateDebut") dateDebut: string,
-    @Query("dateFin") dateFin: string,
-    @Query() pagination: PaginationDto,
+    @Query() query: DateRangeQueryDto,
     @CurrentUser() currentUser: RequestUser
   ) {
     return this.consignesService.findByDateRange(
       currentUser.idUsine,
-      new Date(dateDebut),
-      new Date(dateFin),
-      pagination
+      new Date(query.dateDebut),
+      new Date(query.dateFin),
+      { page: query.page, limit: query.limit }
     );
   }
 

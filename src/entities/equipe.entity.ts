@@ -1,4 +1,14 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { AffectationEquipe } from "./affectation-equipe.entity";
+import { User } from "./user.entity";
 
 @Entity("equipe")
 export class Equipe {
@@ -16,4 +26,11 @@ export class Equipe {
 
   @Column({ type: "date", nullable: true })
   date: string | null;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: "idChefQuart" })
+  chefQuart: User;
+
+  @OneToMany(() => AffectationEquipe, aff => aff.equipeEntity)
+  affectations: AffectationEquipe[];
 }

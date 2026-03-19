@@ -24,6 +24,7 @@ import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import {
   CreateQuartCalendrierDto,
   QuartCalendrierQueryDto,
+  QuartHorairesQueryDto,
   UpdateQuartCalendrierDto,
 } from "./dto";
 import { QuartCalendrierService } from "./quart-calendrier.service";
@@ -37,6 +38,28 @@ export class QuartCalendrierController {
     private readonly quartCalendrierService: QuartCalendrierService
   ) {}
 
+  @Get("horaires")
+  @RequireRondier()
+  @ApiOperation({
+    summary:
+      "Récupérer les heures de début et de fin de quart par date et numéro de quart",
+  })
+  @ApiResponse({
+    status: 200,
+    description:
+      "Liste des zones avec leurs heures de début et de fin pour ce quart",
+  })
+  async findHoraires(
+    @Query() query: QuartHorairesQueryDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.quartCalendrierService.findHorairesByDateAndQuart(
+      currentUser.idUsine,
+      query.date,
+      query.quart
+    );
+  }
+
   @Get("occurrences")
   @RequireRondier()
   @ApiOperation({
@@ -49,6 +72,46 @@ export class QuartCalendrierController {
   })
   async findOccurrences(@CurrentUser() currentUser: RequestUser) {
     return this.quartCalendrierService.findOccurrences(currentUser.idUsine);
+  }
+
+  @Get("zones")
+  @RequireRondier()
+  @ApiOperation({
+    summary: "Récupérer les zones du calendrier entre 2 dates",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des zones du calendrier",
+  })
+  async findZonesByDateRange(
+    @Query() query: QuartCalendrierQueryDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.quartCalendrierService.findZonesByDateRange(
+      currentUser.idUsine,
+      new Date(query.startDate),
+      new Date(query.endDate)
+    );
+  }
+
+  @Get("actions")
+  @RequireRondier()
+  @ApiOperation({
+    summary: "Récupérer les actions du calendrier entre 2 dates",
+  })
+  @ApiResponse({
+    status: 200,
+    description: "Liste des actions du calendrier",
+  })
+  async findActionsByDateRange(
+    @Query() query: QuartCalendrierQueryDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.quartCalendrierService.findActionsByDateRange(
+      currentUser.idUsine,
+      new Date(query.startDate),
+      new Date(query.endDate)
+    );
   }
 
   @Get()
