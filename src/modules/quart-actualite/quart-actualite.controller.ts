@@ -138,23 +138,6 @@ export class QuartActualiteController {
     );
   }
 
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer une actualité par ID" })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de l'actualité",
-  })
-  @ApiResponse({ status: 200, description: "Actualité trouvée" })
-  @ApiResponse({ status: 404, description: "Actualité non trouvée" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.quartActualiteService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle actualité" })

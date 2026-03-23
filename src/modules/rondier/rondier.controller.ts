@@ -235,32 +235,6 @@ export class RondierController {
     );
   }
 
-  @Get("reprises-rondes/:id")
-  @RequireRondier()
-  @ApiOperation({
-    summary: "Récupérer une reprise de ronde par ID",
-    description: "Récupère une reprise de ronde spécifique par son ID",
-  })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de la reprise de ronde",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Reprise de ronde trouvée",
-  })
-  @ApiResponse({
-    status: 404,
-    description: "Reprise de ronde non trouvée",
-  })
-  async findOneRepriseRonde(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.rondeService.findOneRepriseRonde(id, currentUser.idUsine);
-  }
-
   @Post("reprises-rondes")
   @RequireRondier()
   @ApiOperation({

@@ -47,25 +47,6 @@ export class EnregistrementEquipeController {
     return this.enregistrementEquipeService.findAll(currentUser.idUsine);
   }
 
-  @Get(":id")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer une équipe et ses affectations par ID",
-  })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de l'équipe",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations récupérées avec succès",
-  })
-  @ApiResponse({ status: 404, description: "Équipe non trouvée" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.enregistrementEquipeService.findOne(id);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({

@@ -40,23 +40,6 @@ export class QuartLiensExternesController {
     return this.quartLiensExternesService.findAll(currentUser.idUsine);
   }
 
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer un lien externe par ID" })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID du lien externe",
-  })
-  @ApiResponse({ status: 200, description: "Lien externe trouvé" })
-  @ApiResponse({ status: 404, description: "Lien externe non trouvé" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.quartLiensExternesService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireRondier()
   @ApiOperation({ summary: "Créer un lien externe" })

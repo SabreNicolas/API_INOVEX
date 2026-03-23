@@ -8,8 +8,8 @@ import {
   DepassementNew,
   DepassementProduit,
 } from "@/entities";
-import { AuthModule } from "../auth/auth.module";
 
+import { AuthModule } from "../auth/auth.module";
 import { DepassementsController } from "./depassements.controller";
 import { DepassementsService } from "./depassements.service";
 

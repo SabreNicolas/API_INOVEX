@@ -80,16 +80,6 @@ export class GroupementController {
     return this.groupementService.findByZone(zoneId, pagination);
   }
 
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer un groupement par ID" })
-  @ApiParam({ name: "id", type: "number", description: "ID du groupement" })
-  @ApiResponse({ status: 200, description: "Groupement trouvé" })
-  @ApiResponse({ status: 404, description: "Groupement non trouvé" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.groupementService.findOne(id);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouveau groupement" })

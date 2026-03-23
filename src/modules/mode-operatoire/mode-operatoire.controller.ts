@@ -62,47 +62,6 @@ export class ModeOperatoireController {
     return this.modeOperatoireService.findAll(currentUser.idUsine, pagination);
   }
 
-  @Get("zone/:zoneId")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer les modes opératoires d'une zone" })
-  @ApiParam({ name: "zoneId", type: "number", description: "ID de la zone" })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des modes opératoires de la zone",
-  })
-  async findByZone(
-    @Param("zoneId", ParseIntPipe) zoneId: number,
-    @Query() pagination: PaginationDto
-  ) {
-    return this.modeOperatoireService.findByZone(zoneId, pagination);
-  }
-
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer un mode opératoire par ID" })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID du mode opératoire",
-  })
-  @ApiResponse({ status: 200, description: "Mode opératoire trouvé" })
-  @ApiResponse({ status: 404, description: "Mode opératoire non trouvé" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.modeOperatoireService.findOne(id);
-  }
-
   @Post()
   @RequireAdmin()
   @UseInterceptors(FileInterceptor("fichier"))

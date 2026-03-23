@@ -20,7 +20,6 @@ import {
 } from "@nestjs/swagger";
 
 import { CurrentUser, RequireAdmin } from "@/common/decorators";
-import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
 import { DepassementsService } from "./depassements.service";
@@ -29,10 +28,7 @@ import {
   CreateChoixDepassementProduitDto,
   CreateDepassementNewDto,
   CreateDepassementProduitDto,
-  UpdateChoixDepassementDto,
-  UpdateChoixDepassementProduitDto,
   UpdateDepassementNewDto,
-  UpdateDepassementProduitDto,
 } from "./dto";
 import { GetDepassementsByDateDto } from "./dto/get-depassements-by-date.dto";
 
@@ -42,29 +38,6 @@ import { GetDepassementsByDateDto } from "./dto/get-depassements-by-date.dto";
 @UseGuards(AuthGuard)
 export class DepassementsController {
   constructor(private readonly depassementsService: DepassementsService) {}
-
-  @Get()
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer tous les dépassements" })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
-  @ApiResponse({ status: 200, description: "Liste des dépassements" })
-  async findAll(
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.depassementsService.findAll(currentUser.idUsine, pagination);
-  }
 
   @Get("choix")
   @RequireAdmin()
@@ -157,8 +130,6 @@ export class DepassementsController {
     );
   }
 
-  // ==================== CHOIX DEPASSEMENT ====================
-
   @Get("choix-depassements")
   @RequireAdmin()
   @ApiOperation({ summary: "Récupérer tous les choix de dépassements" })
@@ -169,8 +140,6 @@ export class DepassementsController {
   async findAllChoixDepassement() {
     return this.depassementsService.findAllChoixDepassement();
   }
-
-  // ==================== CHOIX DEPASSEMENT PRODUIT ====================
 
   @Get("choix-depassements-produits")
   @RequireAdmin()
@@ -185,8 +154,6 @@ export class DepassementsController {
     return this.depassementsService.findAllChoixDepassementProduit();
   }
 
-  // ==================== DEPASSEMENT PRODUIT (LIAISON) ====================
-
   @Get("depassements-produits")
   @RequireAdmin()
   @ApiOperation({
@@ -198,21 +165,6 @@ export class DepassementsController {
   })
   async findAllDepassementProduit() {
     return this.depassementsService.findAllDepassementProduit();
-  }
-
-  // ==================== DEPASSEMENT BY ID ====================
-
-  @Get(":id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer un dépassement par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID du dépassement" })
-  @ApiResponse({ status: 200, description: "Dépassement trouvé" })
-  @ApiResponse({ status: 404, description: "Dépassement non trouvé" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.depassementsService.findOne(id, currentUser.idUsine);
   }
 
   @Post()
@@ -256,18 +208,6 @@ export class DepassementsController {
     return { message: "Dépassement supprimé avec succès" };
   }
 
-  // ==================== CHOIX DEPASSEMENT (by ID) ====================
-
-  @Get("choix-depassements/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer un choix de dépassement par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID du choix" })
-  @ApiResponse({ status: 200, description: "Choix de dépassement trouvé" })
-  @ApiResponse({ status: 404, description: "Choix non trouvé" })
-  async findOneChoixDepassement(@Param("id", ParseIntPipe) id: number) {
-    return this.depassementsService.findOneChoixDepassement(id);
-  }
-
   @Post("choix-depassements")
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouveau choix de dépassement" })
@@ -279,20 +219,6 @@ export class DepassementsController {
     return this.depassementsService.createChoixDepassement(dto);
   }
 
-  @Patch("choix-depassements/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Mettre à jour un choix de dépassement" })
-  @ApiParam({ name: "id", type: Number, description: "ID du choix" })
-  @ApiResponse({ status: 200, description: "Choix mis à jour" })
-  @ApiResponse({ status: 404, description: "Choix non trouvé" })
-  async updateChoixDepassement(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateChoixDepassementDto
-  ) {
-    await this.depassementsService.updateChoixDepassement(id, dto);
-    return { message: "Choix de dépassement mis à jour avec succès" };
-  }
-
   @Delete("choix-depassements/:id")
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un choix de dépassement" })
@@ -302,21 +228,6 @@ export class DepassementsController {
   async deleteChoixDepassement(@Param("id", ParseIntPipe) id: number) {
     await this.depassementsService.deleteChoixDepassement(id);
     return { message: "Choix de dépassement supprimé avec succès" };
-  }
-
-  // ==================== CHOIX DEPASSEMENT PRODUIT (by ID) ====================
-
-  @Get("choix-depassements-produits/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer un choix de dépassement produit par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID du choix produit" })
-  @ApiResponse({
-    status: 200,
-    description: "Choix de dépassement produit trouvé",
-  })
-  @ApiResponse({ status: 404, description: "Choix produit non trouvé" })
-  async findOneChoixDepassementProduit(@Param("id", ParseIntPipe) id: number) {
-    return this.depassementsService.findOneChoixDepassementProduit(id);
   }
 
   @Post("choix-depassements-produits")
@@ -332,20 +243,6 @@ export class DepassementsController {
     return this.depassementsService.createChoixDepassementProduit(dto);
   }
 
-  @Patch("choix-depassements-produits/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Mettre à jour un choix de dépassement produit" })
-  @ApiParam({ name: "id", type: Number, description: "ID du choix produit" })
-  @ApiResponse({ status: 200, description: "Choix produit mis à jour" })
-  @ApiResponse({ status: 404, description: "Choix produit non trouvé" })
-  async updateChoixDepassementProduit(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateChoixDepassementProduitDto
-  ) {
-    await this.depassementsService.updateChoixDepassementProduit(id, dto);
-    return { message: "Choix de dépassement produit mis à jour avec succès" };
-  }
-
   @Delete("choix-depassements-produits/:id")
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un choix de dépassement produit" })
@@ -357,18 +254,6 @@ export class DepassementsController {
     return { message: "Choix de dépassement produit supprimé avec succès" };
   }
 
-  // ==================== DEPASSEMENT PRODUIT (by ID) ====================
-
-  @Get("depassements-produits/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer une liaison dépassement-produit par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID de la liaison" })
-  @ApiResponse({ status: 200, description: "Liaison trouvée" })
-  @ApiResponse({ status: 404, description: "Liaison non trouvée" })
-  async findOneDepassementProduit(@Param("id", ParseIntPipe) id: number) {
-    return this.depassementsService.findOneDepassementProduit(id);
-  }
-
   @Post("depassements-produits")
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle liaison dépassement-produit" })
@@ -378,20 +263,6 @@ export class DepassementsController {
   })
   async createDepassementProduit(@Body() dto: CreateDepassementProduitDto) {
     return this.depassementsService.createDepassementProduit(dto);
-  }
-
-  @Patch("depassements-produits/:id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Mettre à jour une liaison dépassement-produit" })
-  @ApiParam({ name: "id", type: Number, description: "ID de la liaison" })
-  @ApiResponse({ status: 200, description: "Liaison mise à jour" })
-  @ApiResponse({ status: 404, description: "Liaison non trouvée" })
-  async updateDepassementProduit(
-    @Param("id", ParseIntPipe) id: number,
-    @Body() dto: UpdateDepassementProduitDto
-  ) {
-    await this.depassementsService.updateDepassementProduit(id, dto);
-    return { message: "Liaison dépassement-produit mise à jour avec succès" };
   }
 
   @Delete("depassements-produits/:id")

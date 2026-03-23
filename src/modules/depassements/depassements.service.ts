@@ -20,10 +20,7 @@ import {
   CreateChoixDepassementProduitDto,
   CreateDepassementNewDto,
   CreateDepassementProduitDto,
-  UpdateChoixDepassementDto,
-  UpdateChoixDepassementProduitDto,
   UpdateDepassementNewDto,
-  UpdateDepassementProduitDto,
 } from "./dto";
 
 export interface DepassementsGroupedByLigne {
@@ -181,50 +178,6 @@ export class DepassementsService {
     }
   }
 
-  async findAll(
-    idUsine: number,
-    pagination?: PaginationDto
-  ): Promise<
-    PaginatedResult<DepassementsGroupedByLigne> | DepassementsGroupedByLigne[]
-  > {
-    try {
-      const whereCondition = { idUsine };
-
-      if (!pagination) {
-        const depassements = await this.depassementRepository.find({
-          where: whereCondition,
-          order: { ligne: "ASC", date_heure_debut: "DESC" },
-        });
-        return this.groupByLigne(depassements);
-      }
-
-      const { page = 1, limit = 20 } = pagination;
-      const offset = (page - 1) * limit;
-
-      const [depassements, total] =
-        await this.depassementRepository.findAndCount({
-          where: whereCondition,
-          order: { ligne: "ASC", date_heure_debut: "DESC" },
-          skip: offset,
-          take: limit,
-        });
-
-      return createPaginatedResult(
-        this.groupByLigne(depassements),
-        total,
-        page,
-        limit
-      );
-    } catch (error) {
-      this.logger.error(
-        "Erreur lors de la récupération des dépassements",
-        error instanceof Error ? error.stack : String(error),
-        "DepassementsService"
-      );
-      throw error;
-    }
-  }
-
   async findByDateRange(
     idUsine: number,
     startDate: Date,
@@ -270,30 +223,6 @@ export class DepassementsService {
     } catch (error) {
       this.logger.error(
         "Erreur lors de la récupération des dépassements par date",
-        error instanceof Error ? error.stack : String(error),
-        "DepassementsService"
-      );
-      throw error;
-    }
-  }
-
-  async findOne(id: number, idUsine: number): Promise<DepassementNew> {
-    try {
-      const depassement = await this.depassementRepository.findOne({
-        where: { id, idUsine },
-      });
-
-      if (!depassement) {
-        throw new NotFoundException(`Dépassement avec l'ID ${id} non trouvé`);
-      }
-
-      return depassement;
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      this.logger.error(
-        "Erreur lors de la récupération du dépassement",
         error instanceof Error ? error.stack : String(error),
         "DepassementsService"
       );
@@ -418,18 +347,6 @@ export class DepassementsService {
     return this.choixDepassementRepository.find({ order: { nom: "ASC" } });
   }
 
-  async findOneChoixDepassement(id: number): Promise<ChoixDepassement> {
-    const choix = await this.choixDepassementRepository.findOne({
-      where: { id },
-    });
-    if (!choix) {
-      throw new NotFoundException(
-        `Choix de dépassement avec l'ID ${id} non trouvé`
-      );
-    }
-    return choix;
-  }
-
   async createChoixDepassement(
     dto: CreateChoixDepassementDto
   ): Promise<{ id: number }> {
@@ -440,25 +357,6 @@ export class DepassementsService {
       "DepassementsService"
     );
     return { id: saved.id };
-  }
-
-  async updateChoixDepassement(
-    id: number,
-    dto: UpdateChoixDepassementDto
-  ): Promise<void> {
-    const existing = await this.choixDepassementRepository.findOne({
-      where: { id },
-    });
-    if (!existing) {
-      throw new NotFoundException(
-        `Choix de dépassement avec l'ID ${id} non trouvé`
-      );
-    }
-    await this.choixDepassementRepository.update(id, dto);
-    this.logger.log(
-      `Choix de dépassement mis à jour: ID ${id}`,
-      "DepassementsService"
-    );
   }
 
   async deleteChoixDepassement(id: number): Promise<void> {
@@ -485,20 +383,6 @@ export class DepassementsService {
     });
   }
 
-  async findOneChoixDepassementProduit(
-    id: number
-  ): Promise<ChoixDepassementProduit> {
-    const choix = await this.choixDepassementProduitRepository.findOne({
-      where: { id },
-    });
-    if (!choix) {
-      throw new NotFoundException(
-        `Choix de dépassement produit avec l'ID ${id} non trouvé`
-      );
-    }
-    return choix;
-  }
-
   async createChoixDepassementProduit(
     dto: CreateChoixDepassementProduitDto
   ): Promise<{ id: number }> {
@@ -509,25 +393,6 @@ export class DepassementsService {
       "DepassementsService"
     );
     return { id: saved.id };
-  }
-
-  async updateChoixDepassementProduit(
-    id: number,
-    dto: UpdateChoixDepassementProduitDto
-  ): Promise<void> {
-    const existing = await this.choixDepassementProduitRepository.findOne({
-      where: { id },
-    });
-    if (!existing) {
-      throw new NotFoundException(
-        `Choix de dépassement produit avec l'ID ${id} non trouvé`
-      );
-    }
-    await this.choixDepassementProduitRepository.update(id, dto);
-    this.logger.log(
-      `Choix de dépassement produit mis à jour: ID ${id}`,
-      "DepassementsService"
-    );
   }
 
   async deleteChoixDepassementProduit(id: number): Promise<void> {
@@ -552,18 +417,6 @@ export class DepassementsService {
     return this.depassementProduitRepository.find();
   }
 
-  async findOneDepassementProduit(id: number): Promise<DepassementProduit> {
-    const liaison = await this.depassementProduitRepository.findOne({
-      where: { id },
-    });
-    if (!liaison) {
-      throw new NotFoundException(
-        `Liaison dépassement-produit avec l'ID ${id} non trouvée`
-      );
-    }
-    return liaison;
-  }
-
   async createDepassementProduit(
     dto: CreateDepassementProduitDto
   ): Promise<{ id: number }> {
@@ -574,25 +427,6 @@ export class DepassementsService {
       "DepassementsService"
     );
     return { id: saved.id };
-  }
-
-  async updateDepassementProduit(
-    id: number,
-    dto: UpdateDepassementProduitDto
-  ): Promise<void> {
-    const existing = await this.depassementProduitRepository.findOne({
-      where: { id },
-    });
-    if (!existing) {
-      throw new NotFoundException(
-        `Liaison dépassement-produit avec l'ID ${id} non trouvée`
-      );
-    }
-    await this.depassementProduitRepository.update(id, dto);
-    this.logger.log(
-      `Liaison dépassement-produit mise à jour: ID ${id}`,
-      "DepassementsService"
-    );
   }
 
   async deleteDepassementProduit(id: number): Promise<void> {

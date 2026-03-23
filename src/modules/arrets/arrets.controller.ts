@@ -20,7 +20,6 @@ import {
 } from "@nestjs/swagger";
 
 import { CurrentUser, RequireAdmin } from "@/common/decorators";
-import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
 import { ArretsService } from "./arrets.service";
@@ -33,29 +32,6 @@ import { GetArretsByDateDto } from "./dto/get-arrets-by-date.dto";
 @UseGuards(AuthGuard)
 export class ArretsController {
   constructor(private readonly arretsService: ArretsService) {}
-
-  @Get()
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer tous les arrêts" })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
-  @ApiResponse({ status: 200, description: "Liste des arrêts" })
-  async findAll(
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.arretsService.findAll(currentUser.idUsine, pagination);
-  }
 
   @Get("total-by-date")
   @RequireAdmin()
@@ -134,52 +110,6 @@ export class ArretsController {
     );
   }
 
-  @Get("product/:productId")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer les arrêts d'un produit" })
-  @ApiParam({
-    name: "productId",
-    type: Number,
-    description: "ID du produit",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
-  @ApiResponse({ status: 200, description: "Liste des arrêts du produit" })
-  async findByProduct(
-    @Param("productId", ParseIntPipe) productId: number,
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.arretsService.findByProduct(
-      currentUser.idUsine,
-      productId,
-      pagination
-    );
-  }
-
-  @Get(":id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer un arrêt par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
-  @ApiResponse({ status: 200, description: "Arrêt trouvé" })
-  @ApiResponse({ status: 404, description: "Arrêt non trouvé" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.arretsService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouvel arrêt" })
@@ -189,7 +119,7 @@ export class ArretsController {
     @Body() createDto: CreateArretDto,
     @CurrentUser() currentUser: RequestUser
   ) {
-    return this.arretsService.create(createDto, currentUser.id);
+    return this.arretsService.create(createDto, currentUser.idUsine);
   }
 
   @Patch(":id")

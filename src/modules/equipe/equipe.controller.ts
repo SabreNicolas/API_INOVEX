@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -34,21 +33,6 @@ import { EquipeService } from "./equipe.service";
 export class EquipeController {
   constructor(private readonly equipeService: EquipeService) {}
 
-  @Get()
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer toutes les équipes avec leurs affectations",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des équipes avec affectations récupérée avec succès",
-  })
-  @ApiResponse({ status: 401, description: "Non autorisé" })
-  @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findAll(@CurrentUser() currentUser: RequestUser) {
-    return this.equipeService.findAll(currentUser.idUsine);
-  }
-
   @Get("by-date")
   @RequireRondier()
   @ApiOperation({
@@ -67,25 +51,6 @@ export class EquipeController {
       query.date,
       query.quart
     );
-  }
-
-  @Get(":id")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer une équipe et ses affectations par ID",
-  })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de l'équipe",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations récupérées avec succès",
-  })
-  @ApiResponse({ status: 404, description: "Équipe non trouvée" })
-  async findOne(@Param("id", ParseIntPipe) id: number) {
-    return this.equipeService.findOne(id);
   }
 
   @Post()
@@ -128,25 +93,5 @@ export class EquipeController {
   ) {
     await this.equipeService.update(id, updateDto, currentUser.idUsine);
     return { message: "Équipe mise à jour avec succès" };
-  }
-
-  @Delete(":id")
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Supprimer une équipe et toutes ses affectations",
-  })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de l'équipe",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations supprimées avec succès",
-  })
-  @ApiResponse({ status: 404, description: "Équipe non trouvée" })
-  async delete(@Param("id", ParseIntPipe) id: number) {
-    await this.equipeService.delete(id);
-    return { message: "Équipe et ses affectations supprimées avec succès" };
   }
 }

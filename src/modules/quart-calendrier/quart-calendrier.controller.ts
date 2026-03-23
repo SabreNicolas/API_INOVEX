@@ -154,21 +154,6 @@ export class QuartCalendrierController {
     );
   }
 
-  @Post()
-  @RequireRondier()
-  @ApiOperation({ summary: "Créer une entrée dans le calendrier" })
-  @ApiResponse({
-    status: 201,
-    description: "Entrée calendrier créée avec succès",
-  })
-  @ApiResponse({ status: 400, description: "Données invalides" })
-  async create(
-    @Body() createDto: CreateQuartCalendrierDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.quartCalendrierService.create(currentUser.idUsine, createDto);
-  }
-
   @Patch(":id")
   @RequireRondier()
   @ApiOperation({ summary: "Mettre à jour une entrée du calendrier" })

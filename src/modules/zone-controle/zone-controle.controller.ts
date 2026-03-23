@@ -56,16 +56,6 @@ export class ZoneControleController {
     return this.zoneControleService.findAll(currentUser.idUsine, pagination);
   }
 
-  @Get("groupements")
-  @RequireRondier()
-  @ApiOperation({
-    summary: "Récupérer toutes les zones avec leurs groupements",
-  })
-  @ApiResponse({ status: 200, description: "Liste des zones avec groupements" })
-  async findAllWithGroupements(@CurrentUser() currentUser: RequestUser) {
-    return this.zoneControleService.findAllWithGroupements(currentUser.idUsine);
-  }
-
   @Get("groupements/elements-controle")
   @RequireRondier()
   @ApiOperation({
@@ -82,19 +72,6 @@ export class ZoneControleController {
     return this.zoneControleService.findAllWithGroupementsAndElements(
       currentUser.idUsine
     );
-  }
-
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer une zone de contrôle par ID" })
-  @ApiParam({ name: "id", type: "number", description: "ID de la zone" })
-  @ApiResponse({ status: 200, description: "Zone de contrôle trouvée" })
-  @ApiResponse({ status: 404, description: "Zone de contrôle non trouvée" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.zoneControleService.findOne(id, currentUser.idUsine);
   }
 
   @Post()

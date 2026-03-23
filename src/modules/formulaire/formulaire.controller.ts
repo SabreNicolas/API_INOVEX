@@ -33,36 +33,6 @@ import { FormulaireService } from "./formulaire.service";
 export class FormulaireController {
   constructor(private readonly formulaireService: FormulaireService) {}
 
-  @Get()
-  @RequireAdmin()
-  @ApiOperation({
-    summary: "Récupérer tous les formulaires",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page (défaut: 1)",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page (défaut: 20, max: 100)",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des formulaires récupérée avec succès",
-  })
-  @ApiResponse({ status: 401, description: "Non autorisé" })
-  @ApiResponse({ status: 403, description: "Accès interdit" })
-  async findAll(
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.formulaireService.findAll(pagination, currentUser.idUsine);
-  }
-
   @Get("with-products")
   @RequireAdmin()
   @ApiOperation({

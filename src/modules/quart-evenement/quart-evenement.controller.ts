@@ -84,23 +84,6 @@ export class QuartEvenementController {
     );
   }
 
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer un événement par ID" })
-  @ApiParam({
-    name: "id",
-    type: "number",
-    description: "ID de l'événement",
-  })
-  @ApiResponse({ status: 200, description: "Événement trouvé" })
-  @ApiResponse({ status: 404, description: "Événement non trouvé" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.quartEvenementService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @UseInterceptors(FileInterceptor("file"))

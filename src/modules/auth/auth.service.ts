@@ -12,8 +12,8 @@ import { Repository } from "typeorm";
 import { AUTH_CONSTANTS } from "../../common/constants";
 import { LoggerService } from "../../common/services/logger.service";
 import { User } from "../../entities";
-import { LoginDto } from "./dto";
 import { Site } from "../../entities/site.entity";
+import { LoginDto } from "./dto";
 
 @Injectable()
 export class AuthService {

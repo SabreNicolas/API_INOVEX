@@ -87,34 +87,25 @@ describe("UsersController", () => {
     jest.clearAllMocks();
   });
 
+  const mockCurrentUser = {
+    id: 1,
+    login: "testuser",
+    nom: "Doe",
+    prenom: "John",
+    isRondier: true,
+    isSaisie: false,
+    isQSE: false,
+    isRapport: false,
+    isAdmin: true,
+    isChefQuart: false,
+    isSuperAdmin: false,
+    idUsine: 1,
+    role: 5,
+    roleName: "Admin" as const,
+  };
+
   it("should be defined", () => {
     expect(controller).toBeDefined();
-  });
-
-  describe("getMe", () => {
-    it("should return current user info", async () => {
-      const currentUser = {
-        id: 1,
-        login: "testuser",
-        nom: "Doe",
-        prenom: "John",
-        isRondier: true,
-        isSaisie: false,
-        isQSE: false,
-        isRapport: false,
-        isAdmin: false,
-        isChefQuart: false,
-        isSuperAdmin: false,
-        role: 1,
-        roleName: "Rondier",
-      };
-      mockUsersService.findOne.mockResolvedValue(mockUser);
-
-      const result = await controller.getMe(currentUser);
-
-      expect(result).toEqual(mockUser);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(1);
-    });
   });
 
   describe("findAll", () => {
@@ -122,10 +113,10 @@ describe("UsersController", () => {
       const users = [mockUser, { ...mockUser, Id: 2, login: "user2" }];
       mockUsersService.findAll.mockResolvedValue(users);
 
-      const result = await controller.findAll({});
+      const result = await controller.findAll({}, mockCurrentUser);
 
       expect(result).toEqual(users);
-      expect(mockUsersService.findAll).toHaveBeenCalledWith({});
+      expect(mockUsersService.findAll).toHaveBeenCalledWith({}, 1);
     });
 
     it("should return paginated users", async () => {
@@ -140,24 +131,16 @@ describe("UsersController", () => {
       };
       mockUsersService.findAll.mockResolvedValue(paginatedResult);
 
-      const result = await controller.findAll({ page: 1, limit: 10 });
+      const result = await controller.findAll(
+        { page: 1, limit: 10 },
+        mockCurrentUser
+      );
 
       expect(result).toEqual(paginatedResult);
-      expect(mockUsersService.findAll).toHaveBeenCalledWith({
-        page: 1,
-        limit: 10,
-      });
-    });
-  });
-
-  describe("findOne", () => {
-    it("should return a user by id", async () => {
-      mockUsersService.findOne.mockResolvedValue(mockUser);
-
-      const result = await controller.findOne(1);
-
-      expect(result).toEqual(mockUser);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(1);
+      expect(mockUsersService.findAll).toHaveBeenCalledWith(
+        { page: 1, limit: 10 },
+        1
+      );
     });
   });
 
@@ -166,64 +149,27 @@ describe("UsersController", () => {
       const createUserDto = {
         login: "newuser",
         password: "password123",
-        nom: "New",
-        prenom: "User",
+        Nom: "New",
+        Prenom: "User",
       };
       mockUsersService.create.mockResolvedValue({ id: 2 });
 
-      const result = await controller.create(createUserDto);
+      const result = await controller.create(createUserDto, mockCurrentUser);
 
       expect(result).toEqual({ id: 2 });
-      expect(mockUsersService.create).toHaveBeenCalledWith(createUserDto);
+      expect(mockUsersService.create).toHaveBeenCalledWith(createUserDto, 1);
     });
   });
 
   describe("update", () => {
     it("should update a user", async () => {
-      const updateUserDto = { nom: "Updated", prenom: "Name" };
+      const updateUserDto = { Nom: "Updated", Prenom: "Name" };
       mockUsersService.update.mockResolvedValue(undefined);
 
-      const result = await controller.update(1, updateUserDto);
+      const result = await controller.update(1, updateUserDto, mockCurrentUser);
 
       expect(result).toEqual({ message: "Utilisateur mis à jour avec succès" });
-      expect(mockUsersService.update).toHaveBeenCalledWith(1, updateUserDto);
-    });
-  });
-
-  describe("delete", () => {
-    it("should delete a user", async () => {
-      const currentUser = {
-        id: 2,
-        login: "admin",
-        nom: "Admin",
-        prenom: "User",
-        isRondier: false,
-        isSaisie: false,
-        isQSE: false,
-        isRapport: false,
-        isAdmin: true,
-        isChefQuart: false,
-        isSuperAdmin: false,
-        role: 5,
-        roleName: "Admin",
-      };
-      mockUsersService.delete.mockResolvedValue(undefined);
-
-      const result = await controller.delete(1, currentUser);
-
-      expect(result).toEqual({ message: "Utilisateur désactivé avec succès" });
-      expect(mockUsersService.delete).toHaveBeenCalledWith(1, 2);
-    });
-  });
-
-  describe("restore", () => {
-    it("should restore a deleted user", async () => {
-      mockUsersService.restore.mockResolvedValue(undefined);
-
-      const result = await controller.restore(1);
-
-      expect(result).toEqual({ message: "Utilisateur réactivé avec succès" });
-      expect(mockUsersService.restore).toHaveBeenCalledWith(1);
+      expect(mockUsersService.update).toHaveBeenCalledWith(1, updateUserDto, 1);
     });
   });
 });

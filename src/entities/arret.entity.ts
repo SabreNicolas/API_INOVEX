@@ -1,3 +1,4 @@
+import { ApiHideProperty } from "@nestjs/swagger";
 import {
   Column,
   Entity,
@@ -7,7 +8,6 @@ import {
   Unique,
 } from "typeorm";
 
-import { ApiHideProperty } from "@nestjs/swagger";
 import { ProductNew } from "./product-new.entity";
 
 @Entity("arrets")

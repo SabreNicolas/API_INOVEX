@@ -3,8 +3,8 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { LoggerService } from "@/common/services/logger.service";
 import { Arret } from "@/entities";
-import { AuthModule } from "../auth/auth.module";
 
+import { AuthModule } from "../auth/auth.module";
 import { ArretsController } from "./arrets.controller";
 import { ArretsService } from "./arrets.service";
 

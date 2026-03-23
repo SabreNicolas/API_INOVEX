@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   ParseIntPipe,
@@ -58,19 +57,6 @@ export class MoralEntitiesController {
     return this.moralEntitiesService.findAll(currentUser.idUsine, pagination);
   }
 
-  @Get(":id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Récupérer une entité morale par ID" })
-  @ApiParam({ name: "id", type: Number, description: "ID de l'entité morale" })
-  @ApiResponse({ status: 200, description: "Entité morale trouvée" })
-  @ApiResponse({ status: 404, description: "Entité morale non trouvée" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.moralEntitiesService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle entité morale" })
@@ -96,19 +82,5 @@ export class MoralEntitiesController {
   ) {
     await this.moralEntitiesService.update(id, currentUser.idUsine, updateDto);
     return { message: "Entité morale mise à jour avec succès" };
-  }
-
-  @Delete(":id")
-  @RequireAdmin()
-  @ApiOperation({ summary: "Supprimer une entité morale" })
-  @ApiParam({ name: "id", type: Number, description: "ID de l'entité morale" })
-  @ApiResponse({ status: 200, description: "Entité morale supprimée" })
-  @ApiResponse({ status: 404, description: "Entité morale non trouvée" })
-  async delete(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    await this.moralEntitiesService.delete(id, currentUser.idUsine);
-    return { message: "Entité morale supprimée avec succès" };
   }
 }

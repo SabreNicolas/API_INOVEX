@@ -151,19 +151,6 @@ export class ConsignesController {
     return this.consignesService.findTypes();
   }
 
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer une consigne par ID" })
-  @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
-  @ApiResponse({ status: 200, description: "Consigne trouvée" })
-  @ApiResponse({ status: 404, description: "Consigne non trouvée" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.consignesService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @UseInterceptors(FileInterceptor("file"))

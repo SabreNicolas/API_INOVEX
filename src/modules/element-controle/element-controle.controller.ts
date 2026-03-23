@@ -90,55 +90,6 @@ export class ElementControleController {
     );
   }
 
-  @Get("groupement/:idGroupement")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer les éléments d'un groupement" })
-  @ApiParam({
-    name: "idGroupement",
-    type: "number",
-    description: "ID du groupement",
-  })
-  @ApiQuery({
-    name: "page",
-    required: false,
-    type: Number,
-    description: "Numéro de page",
-  })
-  @ApiQuery({
-    name: "limit",
-    required: false,
-    type: Number,
-    description: "Éléments par page",
-  })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des éléments du groupement",
-  })
-  async findByGroupement(
-    @Param("idGroupement", ParseIntPipe) idGroupement: number,
-    @Query() pagination: PaginationDto,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.elementControleService.findByGroupement(
-      idGroupement,
-      currentUser.idUsine,
-      pagination
-    );
-  }
-
-  @Get(":id")
-  @RequireRondier()
-  @ApiOperation({ summary: "Récupérer un élément de contrôle par ID" })
-  @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
-  @ApiResponse({ status: 200, description: "Élément de contrôle trouvé" })
-  @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
-  async findOne(
-    @Param("id", ParseIntPipe) id: number,
-    @CurrentUser() currentUser: RequestUser
-  ) {
-    return this.elementControleService.findOne(id, currentUser.idUsine);
-  }
-
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouvel élément de contrôle" })

@@ -5,10 +5,10 @@ import { FileUploadService } from "../../common/services/file-upload.service";
 import { LoggerService } from "../../common/services/logger.service";
 import { QuartEvenement, QuartEvenementCause } from "../../entities";
 import { AuthModule } from "../auth/auth.module";
-import { QuartEvenementCauseController } from "./quart-evenement-cause.controller";
-import { QuartEvenementCauseService } from "./quart-evenement-cause.service";
 import { QuartEvenementController } from "./quart-evenement.controller";
 import { QuartEvenementService } from "./quart-evenement.service";
+import { QuartEvenementCauseController } from "./quart-evenement-cause.controller";
+import { QuartEvenementCauseService } from "./quart-evenement-cause.service";
 
 @Module({
   imports: [
