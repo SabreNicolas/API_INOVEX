@@ -1,4 +1,12 @@
-import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from "typeorm";
+
+import { User } from "./user.entity";
 
 @Entity("ronde")
 export class Ronde {
@@ -13,6 +21,10 @@ export class Ronde {
 
   @Column({ type: "int", nullable: true })
   userId: number | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: "userId" })
+  user: User | null;
 
   @Column({ type: "nvarchar", length: 255, nullable: true })
   commentaire: string | null;
@@ -34,6 +46,10 @@ export class Ronde {
 
   @Column({ type: "int", nullable: true })
   chefQuartId: number | null;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: "chefQuartId" })
+  chefQuart: User | null;
 
   @Column({ type: "int", default: 1 })
   idUsine: number;
