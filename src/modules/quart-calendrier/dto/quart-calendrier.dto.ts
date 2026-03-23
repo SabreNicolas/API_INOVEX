@@ -47,7 +47,8 @@ export class CreateQuartCalendrierDto {
 
   @ApiPropertyOptional({
     example: 1,
-    description: "ID de l'action enregistrée (si type=action, crée un quart_action)",
+    description:
+      "ID de l'action enregistrée (si type=action, crée un quart_action)",
   })
   @IsOptional()
   @Type(() => Number)

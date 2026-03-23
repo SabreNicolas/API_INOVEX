@@ -156,8 +156,8 @@ export class UsersService {
     const {
       login,
       password,
-      nom,
-      prenom,
+      Nom,
+      Prenom,
       email,
       loginGMAO,
       posteUser,
@@ -193,8 +193,8 @@ export class UsersService {
       const user = this.userRepository.create({
         login,
         pwd: hashedPassword,
-        Nom: nom,
-        Prenom: prenom,
+        Nom: Nom,
+        Prenom: Prenom,
         email: email || "",
         loginGMAO: loginGMAO || "",
         posteUser: posteUser || "",
@@ -265,8 +265,8 @@ export class UsersService {
       const updateData: Partial<User> = {};
 
       if (updateUserDto.login) updateData.login = updateUserDto.login;
-      if (updateUserDto.nom) updateData.Nom = updateUserDto.nom;
-      if (updateUserDto.prenom) updateData.Prenom = updateUserDto.prenom;
+      if (updateUserDto.Nom) updateData.Nom = updateUserDto.Nom;
+      if (updateUserDto.Prenom) updateData.Prenom = updateUserDto.Prenom;
       if (updateUserDto.email !== undefined)
         updateData.email = updateUserDto.email;
       if (updateUserDto.loginGMAO !== undefined)
