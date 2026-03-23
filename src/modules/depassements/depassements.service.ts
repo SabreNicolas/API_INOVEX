@@ -15,7 +15,16 @@ import {
   DepassementProduit,
 } from "@/entities";
 
-import { CreateDepassementNewDto, UpdateDepassementNewDto } from "./dto";
+import {
+  CreateChoixDepassementDto,
+  CreateChoixDepassementProduitDto,
+  CreateDepassementNewDto,
+  CreateDepassementProduitDto,
+  UpdateChoixDepassementDto,
+  UpdateChoixDepassementProduitDto,
+  UpdateDepassementNewDto,
+  UpdateDepassementProduitDto,
+} from "./dto";
 
 export interface DepassementsGroupedByLigne {
   ligne: string;
@@ -401,5 +410,204 @@ export class DepassementsService {
       );
       throw error;
     }
+  }
+
+  // ==================== CHOIX DEPASSEMENT ====================
+
+  async findAllChoixDepassement(): Promise<ChoixDepassement[]> {
+    return this.choixDepassementRepository.find({ order: { nom: "ASC" } });
+  }
+
+  async findOneChoixDepassement(id: number): Promise<ChoixDepassement> {
+    const choix = await this.choixDepassementRepository.findOne({
+      where: { id },
+    });
+    if (!choix) {
+      throw new NotFoundException(
+        `Choix de dépassement avec l'ID ${id} non trouvé`
+      );
+    }
+    return choix;
+  }
+
+  async createChoixDepassement(
+    dto: CreateChoixDepassementDto
+  ): Promise<{ id: number }> {
+    const choix = this.choixDepassementRepository.create(dto);
+    const saved = await this.choixDepassementRepository.save(choix);
+    this.logger.log(
+      `Choix de dépassement créé (ID: ${saved.id})`,
+      "DepassementsService"
+    );
+    return { id: saved.id };
+  }
+
+  async updateChoixDepassement(
+    id: number,
+    dto: UpdateChoixDepassementDto
+  ): Promise<void> {
+    const existing = await this.choixDepassementRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Choix de dépassement avec l'ID ${id} non trouvé`
+      );
+    }
+    await this.choixDepassementRepository.update(id, dto);
+    this.logger.log(
+      `Choix de dépassement mis à jour: ID ${id}`,
+      "DepassementsService"
+    );
+  }
+
+  async deleteChoixDepassement(id: number): Promise<void> {
+    const existing = await this.choixDepassementRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Choix de dépassement avec l'ID ${id} non trouvé`
+      );
+    }
+    await this.choixDepassementRepository.delete(id);
+    this.logger.log(
+      `Choix de dépassement supprimé: ID ${id}`,
+      "DepassementsService"
+    );
+  }
+
+  // ==================== CHOIX DEPASSEMENT PRODUIT ====================
+
+  async findAllChoixDepassementProduit(): Promise<ChoixDepassementProduit[]> {
+    return this.choixDepassementProduitRepository.find({
+      order: { nom: "ASC" },
+    });
+  }
+
+  async findOneChoixDepassementProduit(
+    id: number
+  ): Promise<ChoixDepassementProduit> {
+    const choix = await this.choixDepassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!choix) {
+      throw new NotFoundException(
+        `Choix de dépassement produit avec l'ID ${id} non trouvé`
+      );
+    }
+    return choix;
+  }
+
+  async createChoixDepassementProduit(
+    dto: CreateChoixDepassementProduitDto
+  ): Promise<{ id: number }> {
+    const choix = this.choixDepassementProduitRepository.create(dto);
+    const saved = await this.choixDepassementProduitRepository.save(choix);
+    this.logger.log(
+      `Choix de dépassement produit créé (ID: ${saved.id})`,
+      "DepassementsService"
+    );
+    return { id: saved.id };
+  }
+
+  async updateChoixDepassementProduit(
+    id: number,
+    dto: UpdateChoixDepassementProduitDto
+  ): Promise<void> {
+    const existing = await this.choixDepassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Choix de dépassement produit avec l'ID ${id} non trouvé`
+      );
+    }
+    await this.choixDepassementProduitRepository.update(id, dto);
+    this.logger.log(
+      `Choix de dépassement produit mis à jour: ID ${id}`,
+      "DepassementsService"
+    );
+  }
+
+  async deleteChoixDepassementProduit(id: number): Promise<void> {
+    const existing = await this.choixDepassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Choix de dépassement produit avec l'ID ${id} non trouvé`
+      );
+    }
+    await this.choixDepassementProduitRepository.delete(id);
+    this.logger.log(
+      `Choix de dépassement produit supprimé: ID ${id}`,
+      "DepassementsService"
+    );
+  }
+
+  // ==================== DEPASSEMENT PRODUIT (LIAISON) ====================
+
+  async findAllDepassementProduit(): Promise<DepassementProduit[]> {
+    return this.depassementProduitRepository.find();
+  }
+
+  async findOneDepassementProduit(id: number): Promise<DepassementProduit> {
+    const liaison = await this.depassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!liaison) {
+      throw new NotFoundException(
+        `Liaison dépassement-produit avec l'ID ${id} non trouvée`
+      );
+    }
+    return liaison;
+  }
+
+  async createDepassementProduit(
+    dto: CreateDepassementProduitDto
+  ): Promise<{ id: number }> {
+    const liaison = this.depassementProduitRepository.create(dto);
+    const saved = await this.depassementProduitRepository.save(liaison);
+    this.logger.log(
+      `Liaison dépassement-produit créée (ID: ${saved.id})`,
+      "DepassementsService"
+    );
+    return { id: saved.id };
+  }
+
+  async updateDepassementProduit(
+    id: number,
+    dto: UpdateDepassementProduitDto
+  ): Promise<void> {
+    const existing = await this.depassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Liaison dépassement-produit avec l'ID ${id} non trouvée`
+      );
+    }
+    await this.depassementProduitRepository.update(id, dto);
+    this.logger.log(
+      `Liaison dépassement-produit mise à jour: ID ${id}`,
+      "DepassementsService"
+    );
+  }
+
+  async deleteDepassementProduit(id: number): Promise<void> {
+    const existing = await this.depassementProduitRepository.findOne({
+      where: { id },
+    });
+    if (!existing) {
+      throw new NotFoundException(
+        `Liaison dépassement-produit avec l'ID ${id} non trouvée`
+      );
+    }
+    await this.depassementProduitRepository.delete(id);
+    this.logger.log(
+      `Liaison dépassement-produit supprimée: ID ${id}`,
+      "DepassementsService"
+    );
   }
 }

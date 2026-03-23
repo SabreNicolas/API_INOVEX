@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { IsNull, Repository } from "typeorm";
 
 import { LoggerService } from "../../common/services/logger.service";
 import {
@@ -267,47 +267,65 @@ export class QuartCalendrierService {
   async createBatch(
     idUsine: number,
     createDtos: CreateQuartCalendrierDto[]
-  ): Promise<{ ids: number[] }> {
+  ): Promise<{ ids: number[]; skipped: number }> {
     // SQL Server limite à 2100 paramètres par requête (~10 colonnes par entrée)
     const CHUNK_SIZE = 200;
 
     try {
       const ids: number[] = [];
+      let skipped = 0;
 
       for (let i = 0; i < createDtos.length; i += CHUNK_SIZE) {
         const dtoChunk = createDtos.slice(i, i + CHUNK_SIZE);
 
-        const entries = await Promise.all(
-          dtoChunk.map(async dto => {
-            const resolvedActionId = await this.resolveActionId(dto, idUsine);
+        for (const dto of dtoChunk) {
+          const resolvedActionId = await this.resolveActionId(dto, idUsine);
+          const dateHeureDebut = new Date(dto.date_heure_debut);
+          const dateHeureFin = dto.date_heure_fin
+            ? new Date(dto.date_heure_fin)
+            : null;
 
-            return this.quartCalendrierRepository.create({
+          // Vérifier si l'entrée existe déjà (contrainte UNIQUE)
+          const existing = await this.quartCalendrierRepository.findOne({
+            where: {
               idUsine,
-              idZone: dto.idZone ?? null,
-              idAction: resolvedActionId,
-              date_heure_debut: new Date(dto.date_heure_debut),
+              idZone: dto.idZone ?? IsNull(),
+              idAction: resolvedActionId ?? IsNull(),
+              date_heure_debut: dateHeureDebut,
+              date_heure_fin: dateHeureFin ?? IsNull(),
               quart: dto.quart,
-              termine: dto.termine ?? 0,
-              date_heure_fin: dto.date_heure_fin
-                ? new Date(dto.date_heure_fin)
-                : null,
-              idUser: dto.idUser ?? null,
-              finReccurrence: dto.finReccurrence ?? null,
-              recurrencePhrase: dto.recurrencePhrase ?? null,
-            });
-          })
-        );
+            },
+          });
 
-        const saved = await this.quartCalendrierRepository.save(entries);
-        ids.push(...saved.map(e => e.id));
+          if (existing) {
+            skipped++;
+            continue;
+          }
+
+          const entry = this.quartCalendrierRepository.create({
+            idUsine,
+            idZone: dto.idZone ?? null,
+            idAction: resolvedActionId,
+            date_heure_debut: dateHeureDebut,
+            quart: dto.quart,
+            termine: dto.termine ?? 0,
+            date_heure_fin: dateHeureFin,
+            idUser: dto.idUser ?? null,
+            finReccurrence: dto.finReccurrence ?? null,
+            recurrencePhrase: dto.recurrencePhrase ?? null,
+          });
+
+          const saved = await this.quartCalendrierRepository.save(entry);
+          ids.push(saved.id);
+        }
       }
 
       this.logger.log(
-        `${ids.length} entrées calendrier créées en batch`,
+        `${ids.length} entrées calendrier créées en batch, ${skipped} doublons ignorés`,
         "QuartCalendrierService"
       );
 
-      return { ids };
+      return { ids, skipped };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création batch des entrées calendrier",
