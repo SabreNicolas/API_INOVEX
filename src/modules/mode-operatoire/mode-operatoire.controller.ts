@@ -92,12 +92,17 @@ export class ModeOperatoireController {
   })
   async create(
     @Body() createDto: CreateModeOperatoireDto,
+    @CurrentUser() currentUser: RequestUser,
     @UploadedFile() file: Express.Multer.File
   ) {
     if (!file) {
       throw new BadRequestException("Le fichier est obligatoire");
     }
-    return this.modeOperatoireService.create(createDto, file);
+    return this.modeOperatoireService.create(
+      createDto,
+      file,
+      currentUser.idUsine
+    );
   }
 
   @Patch(":id")
@@ -129,9 +134,15 @@ export class ModeOperatoireController {
   async update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateDto: UpdateModeOperatoireDto,
+    @CurrentUser() currentUser: RequestUser,
     @UploadedFile() file?: Express.Multer.File
   ) {
-    await this.modeOperatoireService.update(id, updateDto, file);
+    await this.modeOperatoireService.update(
+      id,
+      updateDto,
+      file,
+      currentUser.idUsine
+    );
     return { message: "Mode opératoire mis à jour avec succès" };
   }
 

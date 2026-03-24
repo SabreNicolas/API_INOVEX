@@ -180,7 +180,13 @@ export class ConsignesController {
   ) {
     let fileUrl: string | undefined;
     if (file) {
-      const uploadedFile = await this.fileUploadService.saveConsigneFile(file);
+      const uploadedFile = await this.fileUploadService.saveConsigneFile(
+        file,
+        currentUser.idUsine,
+        createDto.date_heure_debut
+          ? new Date(createDto.date_heure_debut)
+          : undefined
+      );
       fileUrl = uploadedFile.url;
     }
     return this.consignesService.create(
@@ -216,11 +222,18 @@ export class ConsignesController {
   async update(
     @Param("id", ParseIntPipe) id: number,
     @Body() updateDto: UpdateConsigneDto,
+    @CurrentUser() currentUser: RequestUser,
     @UploadedFile() file?: Express.Multer.File
   ) {
     let fileUrl: string | undefined;
     if (file) {
-      const uploadedFile = await this.fileUploadService.saveConsigneFile(file);
+      const uploadedFile = await this.fileUploadService.saveConsigneFile(
+        file,
+        currentUser.idUsine,
+        updateDto.date_heure_debut
+          ? new Date(updateDto.date_heure_debut)
+          : undefined
+      );
       fileUrl = uploadedFile.url;
     }
     await this.consignesService.update(

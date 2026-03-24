@@ -170,11 +170,14 @@ export class ModeOperatoireService {
 
   async create(
     createDto: CreateModeOperatoireDto,
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    idUsine: number
   ): Promise<{ id: number }> {
     try {
-      const uploadedFile =
-        await this.fileUploadService.saveModeOperatoireFile(file);
+      const uploadedFile = await this.fileUploadService.saveModeOperatoireFile(
+        file,
+        idUsine
+      );
 
       const modeOperatoire = this.modeOperatoireRepository.create({
         nom: createDto.nom,
@@ -203,7 +206,8 @@ export class ModeOperatoireService {
   async update(
     id: number,
     updateDto: UpdateModeOperatoireDto,
-    file?: Express.Multer.File
+    file?: Express.Multer.File,
+    idUsine?: number
   ): Promise<void> {
     try {
       const existing = await this.modeOperatoireRepository.findOne({
@@ -229,7 +233,7 @@ export class ModeOperatoireService {
 
         // Uploader le nouveau fichier
         const uploadedFile =
-          await this.fileUploadService.saveModeOperatoireFile(file);
+          await this.fileUploadService.saveModeOperatoireFile(file, idUsine!);
         updateData.fichier = uploadedFile.url;
       }
 

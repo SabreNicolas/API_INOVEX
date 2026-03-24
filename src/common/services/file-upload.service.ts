@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
 import { join } from "path";
+import { Repository } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
 
+import { Site } from "../../entities";
 import { LoggerService } from "./logger.service";
 
 export interface UploadedFileInfo {
@@ -27,8 +30,27 @@ export class FileUploadService {
   ];
   private readonly maxFileSize = 10 * 1024 * 1024; // 10MB
 
-  constructor(private readonly logger: LoggerService) {
+  constructor(
+    @InjectRepository(Site)
+    private readonly siteRepository: Repository<Site>,
+    private readonly logger: LoggerService
+  ) {
     this.ensureUploadDirExists();
+  }
+
+  private async getUsineFolderName(idUsine: number): Promise<string> {
+    const site = await this.siteRepository.findOne({ where: { id: idUsine } });
+    if (!site) {
+      throw new BadRequestException(`Usine avec l'ID ${idUsine} non trouvée`);
+    }
+    return site.localisation;
+  }
+
+  private ensureSubDirExists(subDir: string): void {
+    if (!existsSync(subDir)) {
+      mkdirSync(subDir, { recursive: true });
+      this.logger.log(`Dossier d'upload créé: ${subDir}`, "FileUploadService");
+    }
   }
 
   private ensureUploadDirExists(): void {
@@ -63,12 +85,28 @@ export class FileUploadService {
     }
   }
 
-  async saveConsigneFile(file: Express.Multer.File): Promise<UploadedFileInfo> {
+  async saveConsigneFile(
+    file: Express.Multer.File,
+    idUsine: number,
+    date?: Date
+  ): Promise<UploadedFileInfo> {
     this.validateFile(file);
 
+    const usineFolderName = await this.getUsineFolderName(idUsine);
+    const refDate = date || new Date();
+    const annee = refDate.getFullYear().toString();
+    const mois = (refDate.getMonth() + 1).toString().padStart(2, "0");
     const extension = file.originalname.split(".").pop() || "";
     const filename = `${uuidv4()}.${extension}`;
-    const filePath = join(this.uploadPath, "consignes", filename);
+    const dirPath = join(
+      this.uploadPath,
+      "consignes",
+      usineFolderName,
+      annee,
+      mois
+    );
+    this.ensureSubDirExists(dirPath);
+    const filePath = join(dirPath, filename);
 
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -83,7 +121,7 @@ export class FileUploadService {
         filename,
         originalname: file.originalname,
         path: filePath,
-        url: `/uploads/consignes/${filename}`,
+        url: `/uploads/consignes/${usineFolderName}/${annee}/${mois}/${filename}`,
       };
     } catch (error) {
       this.logger.error(
@@ -98,13 +136,27 @@ export class FileUploadService {
   }
 
   async saveQuartEvenementFile(
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    idUsine: number,
+    date?: Date
   ): Promise<UploadedFileInfo> {
     this.validateFile(file);
 
+    const usineFolderName = await this.getUsineFolderName(idUsine);
+    const refDate = date || new Date();
+    const annee = refDate.getFullYear().toString();
+    const mois = (refDate.getMonth() + 1).toString().padStart(2, "0");
     const extension = file.originalname.split(".").pop() || "";
     const filename = `${uuidv4()}.${extension}`;
-    const filePath = join(this.uploadPath, "quart-evenements", filename);
+    const dirPath = join(
+      this.uploadPath,
+      "quart-evenements",
+      usineFolderName,
+      annee,
+      mois
+    );
+    this.ensureSubDirExists(dirPath);
+    const filePath = join(dirPath, filename);
 
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -119,7 +171,7 @@ export class FileUploadService {
         filename,
         originalname: file.originalname,
         path: filePath,
-        url: `/uploads/quart-evenements/${filename}`,
+        url: `/uploads/quart-evenements/${usineFolderName}/${annee}/${mois}/${filename}`,
       };
     } catch (error) {
       this.logger.error(
@@ -158,13 +210,26 @@ export class FileUploadService {
   }
 
   async saveModeOperatoireFile(
-    file: Express.Multer.File
+    file: Express.Multer.File,
+    idUsine: number
   ): Promise<UploadedFileInfo> {
     this.validateFile(file);
 
+    const usineFolderName = await this.getUsineFolderName(idUsine);
+    const now = new Date();
+    const annee = now.getFullYear().toString();
+    const mois = (now.getMonth() + 1).toString().padStart(2, "0");
     const extension = file.originalname.split(".").pop() || "";
     const filename = `${uuidv4()}.${extension}`;
-    const filePath = join(this.uploadPath, "mode-operatoire", filename);
+    const dirPath = join(
+      this.uploadPath,
+      "mode-operatoire",
+      usineFolderName,
+      annee,
+      mois
+    );
+    this.ensureSubDirExists(dirPath);
+    const filePath = join(dirPath, filename);
 
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
@@ -179,7 +244,7 @@ export class FileUploadService {
         filename,
         originalname: file.originalname,
         path: filePath,
-        url: `/uploads/mode-operatoire/${filename}`,
+        url: `/uploads/mode-operatoire/${usineFolderName}/${annee}/${mois}/${filename}`,
       };
     } catch (error) {
       this.logger.error(

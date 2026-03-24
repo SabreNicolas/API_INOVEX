@@ -118,8 +118,13 @@ export class QuartEvenementController {
   ) {
     let fileUrl: string | undefined;
     if (file) {
-      const uploadedFile =
-        await this.fileUploadService.saveQuartEvenementFile(file);
+      const uploadedFile = await this.fileUploadService.saveQuartEvenementFile(
+        file,
+        currentUser.idUsine,
+        createDto.date_heure_debut
+          ? new Date(createDto.date_heure_debut)
+          : undefined
+      );
       fileUrl = uploadedFile.url;
     }
     return this.quartEvenementService.create(
