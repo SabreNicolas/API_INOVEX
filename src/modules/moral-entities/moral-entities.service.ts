@@ -88,7 +88,7 @@ export class MoralEntitiesService {
           "LEFT(p.Code, 5) = LEFT(mr.Code, 5) AND p.idUsine = :idUsine",
           { idUsine }
         )
-        .where("mr.Id = :id", { id })
+        .where("mr.id = :id", { id })
         .andWhere("mr.idUsine = :idUsine", { idUsine })
         .getOne();
 
@@ -115,7 +115,7 @@ export class MoralEntitiesService {
   async create(
     createDto: CreateMoralEntityDto,
     idUsine: number
-  ): Promise<{ Id: number }> {
+  ): Promise<{ id: number }> {
     try {
       const entity = this.moralEntityRepository.create({
         ...createDto,
@@ -127,11 +127,11 @@ export class MoralEntitiesService {
       const saved = await this.moralEntityRepository.save(entity);
 
       this.logger.log(
-        `Entité morale créée (ID: ${saved.Id})`,
+        `Entité morale créée (ID: ${saved.id})`,
         "MoralEntitiesService"
       );
 
-      return { Id: saved.Id };
+      return { id: saved.id };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création de l'entité morale",
@@ -149,7 +149,7 @@ export class MoralEntitiesService {
   ): Promise<void> {
     try {
       const existing = await this.moralEntityRepository.findOne({
-        where: { Id: id, idUsine },
+        where: { id: id, idUsine },
       });
 
       if (!existing) {
@@ -183,7 +183,7 @@ export class MoralEntitiesService {
   async delete(id: number, idUsine: number): Promise<void> {
     try {
       const existing = await this.moralEntityRepository.findOne({
-        where: { Id: id, idUsine },
+        where: { id: id, idUsine },
       });
 
       if (!existing) {

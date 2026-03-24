@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { ImportTonnageParametre } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -55,10 +62,7 @@ export class ImportTonnageParametreController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des paramètres d'import tonnage récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ImportTonnageParametre)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -76,10 +80,7 @@ export class ImportTonnageParametreController {
   @ApiOperation({
     summary: "Créer un nouveau paramètre d'import tonnage",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Paramètre d'import tonnage créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ImportTonnageParametre)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateImportTonnageParametreDto,
@@ -101,10 +102,7 @@ export class ImportTonnageParametreController {
     type: "number",
     description: "ID du paramètre d'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Paramètre d'import tonnage mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Paramètre d'import tonnage non trouvé",
@@ -127,10 +125,7 @@ export class ImportTonnageParametreController {
     type: "number",
     description: "ID du paramètre d'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Paramètre d'import tonnage supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Paramètre d'import tonnage non trouvé",

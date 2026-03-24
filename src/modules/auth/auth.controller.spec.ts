@@ -27,6 +27,7 @@ describe("AuthController", () => {
   const mockAuthService = {
     login: jest.fn(),
     refreshTokens: jest.fn(),
+    revokeRefreshToken: jest.fn(),
   };
 
   const mockJwtService = {
@@ -154,13 +155,18 @@ describe("AuthController", () => {
   });
 
   describe("logout", () => {
-    it("should logout and clear cookies", () => {
+    it("should logout, revoke token and clear cookies", async () => {
+      const mockReq = createMockRequest({ refreshToken: "some-token" });
       const mockRes = createMockResponse();
+      mockAuthService.revokeRefreshToken.mockResolvedValue(undefined);
 
-      const result = controller.logout(mockRes);
+      const result = await controller.logout(mockReq, mockRes);
 
       expect(result.success).toBe(true);
       expect(result.message).toBe("Déconnexion réussie");
+      expect(mockAuthService.revokeRefreshToken).toHaveBeenCalledWith(
+        "some-token"
+      );
       expect(mockRes.clearCookie).toHaveBeenCalled();
     });
   });

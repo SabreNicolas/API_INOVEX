@@ -188,7 +188,6 @@ export class QuartCalendrierService {
       const existing = await this.quartActionRepository.findOne({
         where: { id: dto.idQuartAction },
       });
-      console.log("Existing QuartAction:", existing);
       if (!existing) {
         throw new NotFoundException(
           `QuartAction avec l'ID ${dto.idQuartAction} non trouvée`
@@ -444,10 +443,10 @@ export class QuartCalendrierService {
         const batch = zoneIds.slice(i, i + BATCH_SIZE);
         const zones = await this.zoneControleRepository
           .createQueryBuilder("z")
-          .where("z.Id IN (:...batch)", { batch })
+          .where("z.id IN (:...batch)", { batch })
           .getMany();
         for (const z of zones) {
-          zonesMap.set(z.Id, z.nom ?? "");
+          zonesMap.set(z.id, z.nom ?? "");
         }
       }
 

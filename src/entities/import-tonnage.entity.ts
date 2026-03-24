@@ -32,11 +32,11 @@ export class ImportTonnage {
 
   // Relations
   @ManyToOne(() => MoralEntityNew)
-  @JoinColumn({ name: "ProducerId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "ProducerId", referencedColumnName: "id" })
   producer: MoralEntityNew;
 
   @ManyToOne(() => ProductNew)
-  @JoinColumn({ name: "ProductId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "ProductId", referencedColumnName: "id" })
   product: ProductNew;
 
   @ManyToOne(() => Site)

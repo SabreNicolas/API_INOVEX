@@ -17,7 +17,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireAdmin } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "../../common/decorators";
+import { EnregistrementEquipe } from "../../entities";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { CreateEnregistrementEquipeDto } from "./dto/create-enregistrement-equipe.dto";
 import { UpdateEnregistrementEquipeDto } from "./dto/update-enregistrement-equipe.dto";
@@ -37,10 +44,7 @@ export class EnregistrementEquipeController {
   @ApiOperation({
     summary: "Récupérer toutes les équipes avec leurs affectations",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des équipes avec affectations récupérée avec succès",
-  })
+  @ApiOkArrayResponseWrapped(EnregistrementEquipe)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(@CurrentUser() currentUser: RequestUser) {
@@ -52,10 +56,7 @@ export class EnregistrementEquipeController {
   @ApiOperation({
     summary: "Créer une équipe avec ses affectations",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Équipe et affectations créées avec succès",
-  })
+  @ApiCreatedResponseWrapped(EnregistrementEquipe)
   @ApiResponse({
     status: 400,
     description: "Données invalides ou nom déjà utilisé",
@@ -81,10 +82,7 @@ export class EnregistrementEquipeController {
     type: "number",
     description: "ID de l'équipe",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations mises à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Équipe non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -109,10 +107,7 @@ export class EnregistrementEquipeController {
     type: "number",
     description: "ID de l'équipe",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations supprimées avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Équipe non trouvée" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.enregistrementEquipeService.delete(id);

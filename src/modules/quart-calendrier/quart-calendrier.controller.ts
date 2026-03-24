@@ -18,9 +18,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  RequireRondier,
+} from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { QuartCalendrier } from "../../entities";
 import {
   CreateQuartCalendrierDto,
   QuartCalendrierQueryDto,
@@ -79,10 +85,7 @@ export class QuartCalendrierController {
   @ApiOperation({
     summary: "Récupérer les zones du calendrier entre 2 dates",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des zones du calendrier",
-  })
+  @ApiOkArrayResponseWrapped(QuartCalendrier)
   async findZonesByDateRange(
     @Query() query: QuartCalendrierQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -99,10 +102,7 @@ export class QuartCalendrierController {
   @ApiOperation({
     summary: "Récupérer les actions du calendrier entre 2 dates",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actions du calendrier",
-  })
+  @ApiOkArrayResponseWrapped(QuartCalendrier)
   async findActionsByDateRange(
     @Query() query: QuartCalendrierQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -119,10 +119,7 @@ export class QuartCalendrierController {
   @ApiOperation({
     summary: "Récupérer les entrées du calendrier entre 2 dates",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des entrées du calendrier",
-  })
+  @ApiOkArrayResponseWrapped(QuartCalendrier)
   async findByDateRange(
     @Query() query: QuartCalendrierQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -139,10 +136,7 @@ export class QuartCalendrierController {
   @ApiOperation({
     summary: "Créer plusieurs entrées dans le calendrier en une fois",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Entrées calendrier créées avec succès",
-  })
+  @ApiCreatedResponseWrapped(QuartCalendrier)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async createBatch(
     @Body() createDtos: CreateQuartCalendrierDto[],
@@ -162,7 +156,7 @@ export class QuartCalendrierController {
     type: "number",
     description: "ID de l'entrée calendrier",
   })
-  @ApiResponse({ status: 200, description: "Entrée calendrier mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Entrée calendrier non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -185,7 +179,7 @@ export class QuartCalendrierController {
     type: "number",
     description: "ID de l'entrée calendrier",
   })
-  @ApiResponse({ status: 200, description: "Entrée calendrier supprimée" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Entrée calendrier non trouvée" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

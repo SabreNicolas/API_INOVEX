@@ -10,8 +10,8 @@ import { User } from "./user.entity";
 
 @Entity("ronde")
 export class Ronde {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "nvarchar", length: 255, nullable: true })
   dateHeure: string | null;

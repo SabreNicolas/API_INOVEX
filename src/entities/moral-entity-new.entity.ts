@@ -5,8 +5,8 @@ import { ProductNew } from "./product-new.entity";
 
 @Entity("moralentities_new")
 export class MoralEntityNew {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "datetime2", nullable: true })
   CreateDate: Date | null;

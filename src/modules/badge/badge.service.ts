@@ -50,7 +50,7 @@ export class BadgeService {
       if (!pagination) {
         return this.badgeRepository.find({
           where: whereCondition,
-          order: { Id: "ASC" },
+          order: { id: "ASC" },
         });
       }
 
@@ -59,7 +59,7 @@ export class BadgeService {
 
       const [badges, total] = await this.badgeRepository.findAndCount({
         where: whereCondition,
-        order: { Id: "ASC" },
+        order: { id: "ASC" },
         skip: offset,
         take: limit,
       });
@@ -93,7 +93,7 @@ export class BadgeService {
       if (!pagination) {
         return this.badgeRepository.find({
           where: whereCondition,
-          order: { Id: "ASC" },
+          order: { id: "ASC" },
         });
       }
 
@@ -102,7 +102,7 @@ export class BadgeService {
 
       const [badges, total] = await this.badgeRepository.findAndCount({
         where: whereCondition,
-        order: { Id: "ASC" },
+        order: { id: "ASC" },
         skip: offset,
         take: limit,
       });
@@ -128,10 +128,10 @@ export class BadgeService {
     try {
       const queryBuilder = this.badgeRepository
         .createQueryBuilder("badge")
-        .leftJoinAndSelect("badge.user", "user", "user.Id = badge.userId")
+        .leftJoinAndSelect("badge.user", "user", "user.id = badge.userId")
         .where("badge.idUsine = :idUsine", { idUsine })
         .andWhere("badge.userId IS NOT NULL")
-        .orderBy("badge.Id", "ASC");
+        .orderBy("badge.id", "ASC");
 
       if (!pagination) {
         return queryBuilder.getMany();
@@ -166,10 +166,10 @@ export class BadgeService {
     try {
       const queryBuilder = this.badgeRepository
         .createQueryBuilder("badge")
-        .leftJoinAndSelect("badge.zone", "zone", "zone.Id = badge.zoneId")
+        .leftJoinAndSelect("badge.zone", "zone", "zone.id = badge.zoneId")
         .where("badge.idUsine = :idUsine", { idUsine })
         .andWhere("badge.zoneId IS NOT NULL")
-        .orderBy("badge.Id", "ASC");
+        .orderBy("badge.id", "ASC");
 
       if (!pagination) {
         return queryBuilder.getMany();
@@ -211,7 +211,7 @@ export class BadgeService {
       if (!pagination) {
         return this.badgeRepository.find({
           where: whereCondition,
-          order: { Id: "ASC" },
+          order: { id: "ASC" },
         });
       }
 
@@ -220,7 +220,7 @@ export class BadgeService {
 
       const [badges, total] = await this.badgeRepository.findAndCount({
         where: whereCondition,
-        order: { Id: "ASC" },
+        order: { id: "ASC" },
         skip: offset,
         take: limit,
       });
@@ -270,11 +270,11 @@ export class BadgeService {
       const saved = await this.badgeRepository.save(badge);
 
       this.logger.log(
-        `Badge créé: ${saved.uid} (ID: ${saved.Id})`,
+        `Badge créé: ${saved.uid} (ID: ${saved.id})`,
         "BadgeService"
       );
 
-      return { id: saved.Id };
+      return { id: saved.id };
     } catch (error) {
       if (
         error instanceof ConflictException ||
@@ -297,7 +297,7 @@ export class BadgeService {
   async assignToUser(id: number, dto: AssignBadgeToUserDto): Promise<void> {
     try {
       const badge = await this.badgeRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!badge) {
@@ -338,7 +338,7 @@ export class BadgeService {
   async assignToZone(id: number, dto: AssignBadgeToZoneDto): Promise<void> {
     try {
       const badge = await this.badgeRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!badge) {
@@ -379,7 +379,7 @@ export class BadgeService {
   async unassign(id: number): Promise<void> {
     try {
       const badge = await this.badgeRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!badge) {
@@ -411,7 +411,7 @@ export class BadgeService {
   async changeEnable(id: number): Promise<void> {
     try {
       const badge = await this.badgeRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!badge) {
@@ -445,7 +445,7 @@ export class BadgeService {
   async delete(id: number): Promise<void> {
     try {
       const badge = await this.badgeRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!badge) {
@@ -481,10 +481,10 @@ export class BadgeService {
         .leftJoin(
           Badge,
           "badge",
-          "badge.zoneId = zone.Id AND badge.isEnabled = 1"
+          "badge.zoneId = zone.id AND badge.isEnabled = 1"
         )
         .where("zone.idUsine = :idUsine", { idUsine })
-        .andWhere("badge.Id IS NULL")
+        .andWhere("badge.id IS NULL")
         .orderBy("zone.nom", "ASC");
 
       if (!pagination) {
@@ -521,9 +521,9 @@ export class BadgeService {
       const queryBuilder = this.userRepository
         .createQueryBuilder("user")
         .select([
-          "user.Id",
-          "user.Nom",
-          "user.Prenom",
+          "user.id",
+          "user.nom",
+          "user.prenom",
           "user.login",
           "user.email",
           "user.isActif",
@@ -531,12 +531,12 @@ export class BadgeService {
         .leftJoin(
           Badge,
           "badge",
-          "badge.userId = user.Id AND badge.isEnabled = 1"
+          "badge.userId = user.id AND badge.isEnabled = 1"
         )
         .where("user.idUsine = :idUsine", { idUsine })
         .andWhere("user.isActif = 1")
-        .andWhere("badge.Id IS NULL")
-        .orderBy("user.Nom", "ASC");
+        .andWhere("badge.id IS NULL")
+        .orderBy("user.nom", "ASC");
 
       if (!pagination) {
         const users = await queryBuilder.getMany();

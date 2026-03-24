@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { ImportTonnageReactif } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -55,10 +62,7 @@ export class ImportTonnageReactifController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des imports tonnage réactifs récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ImportTonnageReactif)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -76,10 +80,7 @@ export class ImportTonnageReactifController {
   @ApiOperation({
     summary: "Créer un nouvel import tonnage réactif",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Import tonnage réactif créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ImportTonnageReactif)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateImportTonnageReactifDto) {
     return this.importTonnageReactifService.create(createDto);
@@ -95,10 +96,7 @@ export class ImportTonnageReactifController {
     type: "number",
     description: "ID de l'import tonnage réactif",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage réactif mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Import tonnage réactif non trouvé",
@@ -121,10 +119,7 @@ export class ImportTonnageReactifController {
     type: "number",
     description: "ID de l'import tonnage réactif",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage réactif supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Import tonnage réactif non trouvé",

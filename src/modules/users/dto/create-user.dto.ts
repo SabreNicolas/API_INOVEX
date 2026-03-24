@@ -40,13 +40,13 @@ export class CreateUserDto {
   @IsString()
   @IsNotEmpty({ message: "Le nom est requis" })
   @MaxLength(255, { message: "Le nom ne peut pas dépasser 255 caractères" })
-  Nom: string;
+  nom: string;
 
   @ApiProperty({ example: "Jean", description: "Prénom" })
   @IsString()
   @IsNotEmpty({ message: "Le prénom est requis" })
   @MaxLength(255, { message: "Le prénom ne peut pas dépasser 255 caractères" })
-  Prenom: string;
+  prenom: string;
 
   @ApiPropertyOptional({
     example: "jean.dupont@example.com",

@@ -17,7 +17,12 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { Site } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard } from "@/common/guards/auth.guard";
 
@@ -48,10 +53,7 @@ export class SiteController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des sites récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(Site)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(@Query() pagination: PaginationDto) {
@@ -64,7 +66,7 @@ export class SiteController {
     summary: "Mettre à jour un site",
   })
   @ApiParam({ name: "id", type: "number", description: "ID du site" })
-  @ApiResponse({ status: 200, description: "Site mis à jour avec succès" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Site non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,

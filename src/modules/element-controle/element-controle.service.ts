@@ -31,9 +31,9 @@ export class ElementControleService {
       // Récupérer les zones de l'usine
       const zones = await this.zoneControleRepository.find({
         where: { idUsine },
-        select: ["Id"],
+        select: ["id"],
       });
-      const zoneIds = zones.map(z => z.Id);
+      const zoneIds = zones.map(z => z.id);
 
       if (zoneIds.length === 0) {
         return pagination
@@ -83,7 +83,7 @@ export class ElementControleService {
     try {
       // Vérifier que la zone appartient à l'usine de l'utilisateur
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: zoneId, idUsine },
+        where: { id: zoneId, idUsine },
       });
 
       if (!zone) {
@@ -145,7 +145,7 @@ export class ElementControleService {
 
       // Vérifier que la zone du groupement appartient à l'usine
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: groupement.zoneId, idUsine },
+        where: { id: groupement.zoneId, idUsine },
       });
 
       if (!zone) {
@@ -191,7 +191,7 @@ export class ElementControleService {
   async findOne(id: number, idUsine: number): Promise<ElementControle> {
     try {
       const element = await this.elementControleRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!element) {
@@ -208,7 +208,7 @@ export class ElementControleService {
       }
 
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: element.zoneId, idUsine },
+        where: { id: element.zoneId, idUsine },
       });
 
       if (!zone) {
@@ -253,11 +253,11 @@ export class ElementControleService {
       const saved = await this.elementControleRepository.save(element);
 
       this.logger.log(
-        `Élément de contrôle créé: ${saved.nom} (ID: ${saved.Id})`,
+        `Élément de contrôle créé: ${saved.nom} (ID: ${saved.id})`,
         "ElementControleService"
       );
 
-      return { id: saved.Id };
+      return { id: saved.id };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création de l'élément de contrôle",
@@ -275,7 +275,7 @@ export class ElementControleService {
   ): Promise<void> {
     try {
       const existing = await this.elementControleRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {
@@ -292,7 +292,7 @@ export class ElementControleService {
       }
 
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: existing.zoneId, idUsine },
+        where: { id: existing.zoneId, idUsine },
       });
 
       if (!zone) {
@@ -352,7 +352,7 @@ export class ElementControleService {
   async delete(id: number, idUsine: number): Promise<void> {
     try {
       const existing = await this.elementControleRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {
@@ -369,7 +369,7 @@ export class ElementControleService {
       }
 
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: existing.zoneId, idUsine },
+        where: { id: existing.zoneId, idUsine },
       });
 
       if (!zone) {

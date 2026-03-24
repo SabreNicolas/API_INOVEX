@@ -2,8 +2,8 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("categories_new")
 export class CategorieNew {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "datetime", nullable: true })
   CreateDate: Date | null;

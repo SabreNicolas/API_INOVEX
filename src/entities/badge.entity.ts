@@ -11,8 +11,8 @@ import { ZoneControle } from "./zone-controle.entity";
 
 @Entity("badge")
 export class Badge {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "bit", nullable: true, default: true })
   isEnabled: boolean | null;
@@ -30,10 +30,10 @@ export class Badge {
   idUsine: number;
 
   @ManyToOne(() => User)
-  @JoinColumn({ name: "userId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "userId", referencedColumnName: "id" })
   user: User;
 
   @ManyToOne(() => ZoneControle)
-  @JoinColumn({ name: "zoneId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "zoneId", referencedColumnName: "id" })
   zone: ZoneControle;
 }

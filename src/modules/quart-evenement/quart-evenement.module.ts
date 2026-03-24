@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { FileUploadService } from "../../common/services/file-upload.service";
+import { FileUploadModule } from "../../common/modules/file-upload.module";
 import { LoggerService } from "../../common/services/logger.service";
-import { QuartEvenement, QuartEvenementCause, Site } from "../../entities";
+import { QuartEvenement, QuartEvenementCause } from "../../entities";
 import { AuthModule } from "../auth/auth.module";
 import { QuartEvenementController } from "./quart-evenement.controller";
 import { QuartEvenementService } from "./quart-evenement.service";
@@ -13,15 +13,11 @@ import { QuartEvenementCauseService } from "./quart-evenement-cause.service";
 @Module({
   imports: [
     AuthModule,
-    TypeOrmModule.forFeature([QuartEvenement, QuartEvenementCause, Site]),
+    FileUploadModule,
+    TypeOrmModule.forFeature([QuartEvenement, QuartEvenementCause]),
   ],
   controllers: [QuartEvenementController, QuartEvenementCauseController],
-  providers: [
-    QuartEvenementService,
-    QuartEvenementCauseService,
-    FileUploadService,
-    LoggerService,
-  ],
+  providers: [QuartEvenementService, QuartEvenementCauseService, LoggerService],
   exports: [QuartEvenementService, QuartEvenementCauseService],
 })
 export class QuartEvenementModule {}

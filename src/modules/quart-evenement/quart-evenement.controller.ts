@@ -24,7 +24,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { QuartEvenement } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
@@ -58,7 +66,7 @@ export class QuartEvenementController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des événements" })
+  @ApiPaginatedResponseWrapped(QuartEvenement)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -69,10 +77,7 @@ export class QuartEvenementController {
   @Get("by-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les événements par plage de dates" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des événements dans la plage de dates",
-  })
+  @ApiOkArrayResponseWrapped(QuartEvenement)
   async findByDateRange(
     @Query() query: DateRangeQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -109,7 +114,7 @@ export class QuartEvenementController {
       required: ["titre", "date_heure_debut", "date_heure_fin"],
     },
   })
-  @ApiResponse({ status: 201, description: "Événement créé avec succès" })
+  @ApiCreatedResponseWrapped(QuartEvenement)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateQuartEvenementDto,
@@ -142,7 +147,7 @@ export class QuartEvenementController {
     type: "number",
     description: "ID de l'événement",
   })
-  @ApiResponse({ status: 200, description: "Événement mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Événement non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -161,7 +166,7 @@ export class QuartEvenementController {
     type: "number",
     description: "ID de l'événement",
   })
-  @ApiResponse({ status: 200, description: "Événement supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Événement non trouvé" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

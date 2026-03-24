@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { QuartActualite } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
@@ -53,7 +60,7 @@ export class QuartActualiteController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des actualités" })
+  @ApiPaginatedResponseWrapped(QuartActualite)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -64,10 +71,7 @@ export class QuartActualiteController {
   @Get("active-on-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les actualités actives sur une date" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actualités actives sur la date",
-  })
+  @ApiPaginatedResponseWrapped(QuartActualite)
   async findActiveOnDate(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -82,10 +86,7 @@ export class QuartActualiteController {
   @Get("by-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les actualités par plage de dates" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actualités dans la plage de dates",
-  })
+  @ApiPaginatedResponseWrapped(QuartActualite)
   async findByDateRange(
     @Query() query: DateRangeQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -103,10 +104,7 @@ export class QuartActualiteController {
   @ApiOperation({
     summary: "Récupérer les actualités inactives sur une date",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actualités inactives sur la date",
-  })
+  @ApiPaginatedResponseWrapped(QuartActualite)
   async findInactive(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -123,10 +121,7 @@ export class QuartActualiteController {
   @ApiOperation({
     summary: "Récupérer les actualités à venir après une date",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actualités à venir",
-  })
+  @ApiPaginatedResponseWrapped(QuartActualite)
   async findFuture(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -141,7 +136,7 @@ export class QuartActualiteController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle actualité" })
-  @ApiResponse({ status: 201, description: "Actualité créée avec succès" })
+  @ApiCreatedResponseWrapped(QuartActualite)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateQuartActualiteDto,
@@ -158,7 +153,7 @@ export class QuartActualiteController {
     type: "number",
     description: "ID de l'actualité",
   })
-  @ApiResponse({ status: 200, description: "Actualité mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Actualité non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -177,7 +172,7 @@ export class QuartActualiteController {
     type: "number",
     description: "ID de l'actualité",
   })
-  @ApiResponse({ status: 200, description: "Actualité supprimée" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Actualité non trouvée" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

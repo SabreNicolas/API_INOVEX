@@ -2,8 +2,8 @@ import { Column, Entity, PrimaryGeneratedColumn } from "typeorm";
 
 @Entity("elementcontrole")
 export class ElementControle {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "int", nullable: true })
   zoneId: number | null;

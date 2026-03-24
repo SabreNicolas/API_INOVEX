@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireRondier,
+} from "../../common/decorators";
+import { ActionEnregistrement, QuartAction } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -40,10 +47,7 @@ export class QuartActionsController {
   @Get("enregistrements")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les actions enregistrement du site" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des actions enregistrement",
-  })
+  @ApiOkArrayResponseWrapped(ActionEnregistrement)
   async findAllEnregistrements(@CurrentUser() currentUser: RequestUser) {
     return this.quartActionsService.findAllEnregistrements(currentUser.idUsine);
   }
@@ -63,7 +67,7 @@ export class QuartActionsController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des actions" })
+  @ApiPaginatedResponseWrapped(QuartAction)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -74,7 +78,7 @@ export class QuartActionsController {
   @Post()
   @RequireRondier()
   @ApiOperation({ summary: "Créer une action" })
-  @ApiResponse({ status: 201, description: "Action créée avec succès" })
+  @ApiCreatedResponseWrapped(QuartAction)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateQuartActionDto,
@@ -88,10 +92,7 @@ export class QuartActionsController {
   @Post("enregistrements")
   @RequireRondier()
   @ApiOperation({ summary: "Créer une action enregistrement" })
-  @ApiResponse({
-    status: 201,
-    description: "Action enregistrement créée avec succès",
-  })
+  @ApiCreatedResponseWrapped(ActionEnregistrement)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async createEnregistrement(
     @Body() createDto: CreateActionEnregistrementDto,
@@ -111,10 +112,7 @@ export class QuartActionsController {
     type: "number",
     description: "ID de l'action enregistrement",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Action enregistrement mise à jour",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Action enregistrement non trouvée",
@@ -140,10 +138,7 @@ export class QuartActionsController {
     type: "number",
     description: "ID de l'action enregistrement",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Action enregistrement supprimée",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Action enregistrement non trouvée",

@@ -35,7 +35,7 @@ export class ModeOperatoireService {
       const zones = await this.zoneControleRepository.find({
         where: { idUsine },
       });
-      const zoneIds = zones.map(z => z.Id);
+      const zoneIds = zones.map(z => z.id);
 
       if (zoneIds.length === 0) {
         return pagination
@@ -57,7 +57,7 @@ export class ModeOperatoireService {
         const modesOperatoires = await queryBuilder.getMany();
         return modesOperatoires.map(mo => ({
           ...mo,
-          zone: zones.find(z => z.Id === mo.zoneId) || null,
+          zone: zones.find(z => z.id === mo.zoneId) || null,
         }));
       }
 
@@ -71,7 +71,7 @@ export class ModeOperatoireService {
 
       const modesWithZone = modesOperatoires.map(mo => ({
         ...mo,
-        zone: zones.find(z => z.Id === mo.zoneId) || null,
+        zone: zones.find(z => z.id === mo.zoneId) || null,
       }));
 
       return createPaginatedResult(modesWithZone, total, page, limit);
@@ -94,7 +94,7 @@ export class ModeOperatoireService {
   > {
     try {
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: zoneId },
+        where: { id: zoneId },
       });
 
       const whereCondition = { zoneId };
@@ -139,7 +139,7 @@ export class ModeOperatoireService {
   ): Promise<ModeOperatoire & { zone: ZoneControle | null }> {
     try {
       const modeOperatoire = await this.modeOperatoireRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!modeOperatoire) {
@@ -150,7 +150,7 @@ export class ModeOperatoireService {
 
       const zone = modeOperatoire.zoneId
         ? await this.zoneControleRepository.findOne({
-            where: { Id: modeOperatoire.zoneId },
+            where: { id: modeOperatoire.zoneId },
           })
         : null;
 
@@ -188,11 +188,11 @@ export class ModeOperatoireService {
       const saved = await this.modeOperatoireRepository.save(modeOperatoire);
 
       this.logger.log(
-        `Mode opératoire créé: ${saved.nom} (ID: ${saved.Id})`,
+        `Mode opératoire créé: ${saved.nom} (ID: ${saved.id})`,
         "ModeOperatoireService"
       );
 
-      return { id: saved.Id };
+      return { id: saved.id };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création du mode opératoire",
@@ -211,7 +211,7 @@ export class ModeOperatoireService {
   ): Promise<void> {
     try {
       const existing = await this.modeOperatoireRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {
@@ -261,7 +261,7 @@ export class ModeOperatoireService {
   async delete(id: number): Promise<void> {
     try {
       const existing = await this.modeOperatoireRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {

@@ -168,8 +168,6 @@ export class ArretsService {
         skip: offset,
         take: limit,
       });
-      console.log("Total arrets:", total);
-      console.log("Arrets récupérés:", this.groupByLigne(arrets));
       return createPaginatedResult(
         this.groupByLigne(arrets),
         total,

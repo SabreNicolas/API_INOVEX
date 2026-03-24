@@ -25,7 +25,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { ModeOperatoire } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -54,7 +61,7 @@ export class ModeOperatoireController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des modes opératoires" })
+  @ApiPaginatedResponseWrapped(ModeOperatoire)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -82,10 +89,7 @@ export class ModeOperatoireController {
       },
     },
   })
-  @ApiResponse({
-    status: 201,
-    description: "Mode opératoire créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ModeOperatoire)
   @ApiResponse({
     status: 400,
     description: "Données invalides ou fichier manquant",
@@ -129,7 +133,7 @@ export class ModeOperatoireController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: "Mode opératoire mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Mode opératoire non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -154,7 +158,7 @@ export class ModeOperatoireController {
     type: "number",
     description: "ID du mode opératoire",
   })
-  @ApiResponse({ status: 200, description: "Mode opératoire supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Mode opératoire non trouvé" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.modeOperatoireService.delete(id);

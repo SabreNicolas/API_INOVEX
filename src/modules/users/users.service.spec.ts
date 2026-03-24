@@ -13,11 +13,11 @@ describe("UsersService", () => {
   let service: UsersService;
 
   const mockUser = {
-    Id: 1,
+    id: 1,
     login: "testuser",
     pwd: "hashedPassword",
-    Nom: "Doe",
-    Prenom: "John",
+    nom: "Doe",
+    prenom: "John",
     email: "test@test.com",
     loginGMAO: "",
     posteUser: "",
@@ -116,7 +116,7 @@ describe("UsersService", () => {
 
       const result = await service.findOne(1);
 
-      expect(result.Id).toBe(1);
+      expect(result.id).toBe(1);
       expect(result.login).toBe("testuser");
     });
 
@@ -130,8 +130,8 @@ describe("UsersService", () => {
   describe("create", () => {
     it("should create a new user", async () => {
       mockUserRepository.findOne.mockResolvedValue(null); // No existing login
-      mockUserRepository.create.mockReturnValue({ ...mockUser, Id: 5 });
-      mockUserRepository.save.mockResolvedValue({ ...mockUser, Id: 5 });
+      mockUserRepository.create.mockReturnValue({ ...mockUser, id: 5 });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, id: 5 });
 
       (argon2.hash as jest.Mock).mockResolvedValue("hashedPassword");
 
@@ -143,14 +143,14 @@ describe("UsersService", () => {
         isRondier: true,
       };
 
-      const result = await service.create(createDto);
+      const result = await service.create(createDto, 1);
 
       expect(result.id).toBe(5);
       expect(argon2.hash).toHaveBeenCalledWith("password123");
     });
 
     it("should throw BadRequestException when login already exists", async () => {
-      mockUserRepository.findOne.mockResolvedValue({ Id: 1 }); // Existing user
+      mockUserRepository.findOne.mockResolvedValue({ id: 1 }); // Existing user
 
       const createDto = {
         login: "existinguser",
@@ -216,7 +216,7 @@ describe("UsersService", () => {
       await expect(service.delete(1, 2)).resolves.not.toThrow(); // currentUserId = 2
 
       expect(mockUserRepository.update).toHaveBeenCalledWith(
-        { Id: 1 },
+        { id: 1 },
         { isActif: false }
       );
     });

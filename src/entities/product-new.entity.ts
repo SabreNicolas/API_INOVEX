@@ -11,8 +11,8 @@ import { ElementControle } from "./element-controle.entity";
 
 @Entity("products_new")
 export class ProductNew {
-  @PrimaryGeneratedColumn()
-  Id: number;
+  @PrimaryGeneratedColumn({ name: "Id" })
+  id: number;
 
   @Column({ type: "datetime2", nullable: true })
   CreateDate: Date | null;

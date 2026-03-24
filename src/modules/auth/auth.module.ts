@@ -6,13 +6,13 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AUTH_CONSTANTS } from "../../common/constants";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { LoggerService } from "../../common/services/logger.service";
-import { Site, User } from "../../entities";
+import { Site, Token, User } from "../../entities";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Site]),
+    TypeOrmModule.forFeature([User, Site, Token]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

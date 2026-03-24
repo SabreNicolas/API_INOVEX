@@ -23,7 +23,13 @@ import { AUTH_CONSTANTS } from "../../common/constants";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { CsrfGuard } from "../../common/guards/csrf.guard";
 import { AuthService } from "./auth.service";
-import { LoginDto, RefreshDto } from "./dto";
+import {
+  LoginDto,
+  LoginResponseDto,
+  LogoutResponseDto,
+  RefreshDto,
+  RefreshResponseDto,
+} from "./dto";
 
 @ApiTags("Authentification")
 @Controller("auth")
@@ -87,6 +93,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: "Connexion réussie (cookies posés)",
+    type: LoginResponseDto,
   })
   @ApiResponse({ status: 401, description: "Identifiants invalides" })
   @ApiResponse({
@@ -117,10 +124,10 @@ export class AuthController {
       message: "Connexion réussie",
       data: {
         user: {
-          id: user.Id,
+          id: user.id,
           login: user.login,
-          nom: user.Nom,
-          prenom: user.Prenom,
+          nom: user.nom,
+          prenom: user.prenom,
           isAdmin: Boolean(user.isAdmin),
           isRondier: Boolean(user.isRondier),
           isSaisie: Boolean(user.isSaisie),
@@ -154,6 +161,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: "Tokens rafraîchis (nouveaux cookies posés)",
+    type: RefreshResponseDto,
   })
   @ApiResponse({ status: 401, description: "Refresh token invalide ou expiré" })
   @ApiResponse({
@@ -203,9 +211,20 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Déconnexion utilisateur" })
   @ApiCookieAuth()
-  @ApiResponse({ status: 200, description: "Déconnexion réussie" })
+  @ApiResponse({
+    status: 200,
+    description: "Déconnexion réussie",
+    type: LogoutResponseDto,
+  })
   @ApiResponse({ status: 401, description: "Non authentifié" })
-  logout(@Res({ passthrough: true }) res: Response) {
+  async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    // Révoquer le refresh token en DB
+    const refreshToken =
+      req.cookies?.[AUTH_CONSTANTS.REFRESH_TOKEN_COOKIE_NAME];
+    if (refreshToken) {
+      await this.authService.revokeRefreshToken(refreshToken);
+    }
+
     this.clearAuthCookies(res);
 
     return {

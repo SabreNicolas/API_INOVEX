@@ -25,7 +25,7 @@ export class ImportTonnageReactif {
 
   // Relations
   @ManyToOne(() => ProductNew)
-  @JoinColumn({ name: "ProductId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "ProductId", referencedColumnName: "id" })
   product: ProductNew;
 
   @ManyToOne(() => Site)

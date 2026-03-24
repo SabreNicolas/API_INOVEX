@@ -19,7 +19,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { ImportTonnageParametreSens } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard } from "@/common/guards/auth.guard";
 
@@ -55,11 +61,7 @@ export class ImportTonnageParametreSensController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description:
-      "Liste des paramètres sens d'import tonnage récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ImportTonnageParametreSens)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(@Query() pagination: PaginationDto) {
@@ -71,10 +73,7 @@ export class ImportTonnageParametreSensController {
   @ApiOperation({
     summary: "Créer un nouveau paramètre sens d'import tonnage",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Paramètre sens d'import tonnage créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ImportTonnageParametreSens)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateImportTonnageParametreSensDto) {
     return this.importTonnageParametreSensService.create(createDto);
@@ -90,10 +89,7 @@ export class ImportTonnageParametreSensController {
     type: "number",
     description: "ID du paramètre sens d'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Paramètre sens d'import tonnage mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Paramètre sens d'import tonnage non trouvé",
@@ -118,10 +114,7 @@ export class ImportTonnageParametreSensController {
     type: "number",
     description: "ID du paramètre sens d'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Paramètre sens d'import tonnage supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Paramètre sens d'import tonnage non trouvé",

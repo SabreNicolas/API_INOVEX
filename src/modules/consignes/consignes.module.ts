@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { FileUploadService } from "../../common/services/file-upload.service";
+import { FileUploadModule } from "../../common/modules/file-upload.module";
 import { LoggerService } from "../../common/services/logger.service";
-import { Consigne, ConsigneType, Site } from "../../entities";
+import { Consigne, ConsigneType } from "../../entities";
 import { AuthModule } from "../auth/auth.module";
 import { ConsignesController } from "./consignes.controller";
 import { ConsignesService } from "./consignes.service";
@@ -11,10 +11,11 @@ import { ConsignesService } from "./consignes.service";
 @Module({
   imports: [
     AuthModule,
-    TypeOrmModule.forFeature([Consigne, ConsigneType, Site]),
+    FileUploadModule,
+    TypeOrmModule.forFeature([Consigne, ConsigneType]),
   ],
   controllers: [ConsignesController],
-  providers: [ConsignesService, LoggerService, FileUploadService],
+  providers: [ConsignesService, LoggerService],
   exports: [ConsignesService],
 })
 export class ConsignesModule {}

@@ -18,8 +18,19 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin } from "../../common/decorators";
-import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "../../common/decorators";
+import {
+  IdResponseDto,
+  MessageResponseDto,
+} from "../../common/dto/response.dto";
+import { User } from "../../entities";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { CreateUserDto, UpdateUserDto } from "./dto";
@@ -37,10 +48,7 @@ export class UsersController {
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs rondiers",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des utilisateurs rondiers récupérée avec succès",
-  })
+  @ApiOkArrayResponseWrapped(User)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findRondiers(@CurrentUser() currentUser: RequestUser) {
@@ -52,10 +60,7 @@ export class UsersController {
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs ayant un email",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des utilisateurs avec email récupérée",
-  })
+  @ApiOkArrayResponseWrapped(User)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findWithEmail(@CurrentUser() currentUser: RequestUser) {
@@ -79,10 +84,7 @@ export class UsersController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des utilisateurs récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(User)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -95,7 +97,11 @@ export class UsersController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouvel utilisateur" })
-  @ApiResponse({ status: 201, description: "Utilisateur créé avec succès" })
+  @ApiResponse({
+    status: 201,
+    description: "Utilisateur créé avec succès",
+    type: IdResponseDto,
+  })
   @ApiResponse({
     status: 400,
     description: "Données invalides ou login déjà utilisé",
@@ -114,6 +120,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: "Utilisateur mis à jour avec succès",
+    type: MessageResponseDto,
   })
   @ApiResponse({ status: 404, description: "Utilisateur non trouvé" })
   async update(

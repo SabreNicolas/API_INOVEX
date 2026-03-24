@@ -22,9 +22,16 @@ import {
 } from "@nestjs/swagger";
 import { Response } from "express";
 
-import { RequireRondier } from "../../common/decorators";
-import { CurrentUser } from "../../common/decorators/current-user.decorator";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiOkResponseWrapped,
+  CurrentUser,
+  RequireRondier,
+} from "../../common/decorators";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { MesureRondier, RepriseRonde, Ronde } from "../../entities";
 import { ZoneControleService } from "../zone-controle/zone-controle.service";
 import {
   CreateRepriseRondeDto,
@@ -94,10 +101,7 @@ export class RondierController {
     description:
       "Crée une nouvelle ronde avec toutes ses mesures rondier associées",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Ronde créée avec succès",
-  })
+  @ApiCreatedResponseWrapped(Ronde)
   @ApiResponse({
     status: 400,
     description: "Données invalides",
@@ -167,10 +171,7 @@ export class RondierController {
     type: "number",
     description: "ID de la mesure rondier",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Mesure mise à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Mesure non trouvée",
@@ -191,10 +192,7 @@ export class RondierController {
     description:
       "Récupère toutes les reprises de ronde pour le site de l'utilisateur connecté",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des reprises de ronde",
-  })
+  @ApiOkArrayResponseWrapped(RepriseRonde)
   async findAllRepriseRonde(@CurrentUser() currentUser: RequestUser) {
     return this.rondeService.findAllRepriseRonde(currentUser.idUsine);
   }
@@ -220,10 +218,7 @@ export class RondierController {
     description: "Numéro du quart (1 = matin, 2 = après-midi, 3 = nuit)",
     example: 1,
   })
-  @ApiResponse({
-    status: 200,
-    description: "Reprise de ronde trouvée ou null",
-  })
+  @ApiOkResponseWrapped(RepriseRonde)
   async findRepriseRondeByDateAndQuart(
     @Query() query: GetRondesByDateQuartDto,
     @CurrentUser() currentUser: RequestUser
@@ -242,10 +237,7 @@ export class RondierController {
     description:
       "Crée une nouvelle reprise de ronde pour le site de l'utilisateur connecté",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Reprise de ronde créée avec succès",
-  })
+  @ApiCreatedResponseWrapped(RepriseRonde)
   @ApiResponse({
     status: 400,
     description: "Données invalides ou reprise existante",
@@ -268,10 +260,7 @@ export class RondierController {
     type: "number",
     description: "ID de la reprise de ronde",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Reprise de ronde mise à jour",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Reprise de ronde non trouvée",
@@ -299,10 +288,7 @@ export class RondierController {
     type: "number",
     description: "ID de la reprise de ronde",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Reprise de ronde supprimée",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Reprise de ronde non trouvée",

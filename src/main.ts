@@ -9,7 +9,6 @@ import * as cookieParser from "cookie-parser";
 import * as express from "express";
 import { readFileSync } from "fs";
 import helmet from "helmet";
-import { join } from "path";
 
 import { AppModule } from "./app.module";
 import { HttpExceptionFilter } from "./common/filters/http-exception.filter";
@@ -77,11 +76,8 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Limit request body size (protection DoS)
-  app.use(express.json({ limit: "100mb" }));
-  app.use(express.urlencoded({ limit: "100mb", extended: true }));
-
-  // Serve static files from uploads directory
-  app.use("/uploads", express.static(join(process.cwd(), "uploads")));
+  app.use(express.json({ limit: "5mb" }));
+  app.use(express.urlencoded({ limit: "5mb", extended: true }));
 
   // CORS configuration
   const allowedOrigins = configService
@@ -149,8 +145,8 @@ async function bootstrap() {
     new ClassSerializerInterceptor(app.get(Reflector)) // Pour class-transformer
   );
 
-  // Swagger documentation (disabled in production)
-  if (nodeEnv !== "prod") {
+  // Swagger documentation
+  {
     const swaggerDescription = [
       "API pour l'outil de gestion INOVEX",
       "",
@@ -213,12 +209,10 @@ async function bootstrap() {
     `✅ API Inovex NestJS opérationnelle sur le port ${port} (${protocol.toUpperCase()})`,
     "Bootstrap"
   );
-  if (nodeEnv !== "prod") {
-    logger.log(
-      `📚 Documentation Swagger: http://localhost:${port}/api-docs`,
-      "Bootstrap"
-    );
-  }
+  logger.log(
+    `📚 Documentation Swagger: ${protocol}://localhost:${port}/api-docs`,
+    "Bootstrap"
+  );
 }
 
 bootstrap();

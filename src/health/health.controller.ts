@@ -1,4 +1,10 @@
-import { Controller, Get } from "@nestjs/common";
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  ServiceUnavailableException,
+} from "@nestjs/common";
 import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { DataSource } from "typeorm";
@@ -90,6 +96,7 @@ export class HealthController {
   }
 
   @Get("ready")
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: "Vérifier que l'API est prête (readiness probe)",
   })
@@ -100,7 +107,10 @@ export class HealthController {
       await this.dataSource.query("SELECT 1");
       return { status: "ready", database: "connected" };
     } catch {
-      return { status: "not_ready", database: "disconnected" };
+      throw new ServiceUnavailableException({
+        status: "not_ready",
+        database: "disconnected",
+      });
     }
   }
 }

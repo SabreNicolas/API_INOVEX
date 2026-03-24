@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from "fs";
-import { join } from "path";
+import { join, resolve } from "path";
 import { Repository } from "typeorm";
 import { v4 as uuidv4 } from "uuid";
 
@@ -90,53 +90,39 @@ export class FileUploadService {
     idUsine: number,
     date?: Date
   ): Promise<UploadedFileInfo> {
-    this.validateFile(file);
-
-    const usineFolderName = await this.getUsineFolderName(idUsine);
-    const refDate = date || new Date();
-    const annee = refDate.getFullYear().toString();
-    const mois = (refDate.getMonth() + 1).toString().padStart(2, "0");
-    const extension = file.originalname.split(".").pop() || "";
-    const filename = `${uuidv4()}.${extension}`;
-    const dirPath = join(
-      this.uploadPath,
-      "consignes",
-      usineFolderName,
-      annee,
-      mois
-    );
-    this.ensureSubDirExists(dirPath);
-    const filePath = join(dirPath, filename);
-
-    try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      writeFileSync(filePath, file.buffer);
-
-      this.logger.log(
-        `Fichier uploadé: ${filename} (original: ${file.originalname})`,
-        "FileUploadService"
-      );
-
-      return {
-        filename,
-        originalname: file.originalname,
-        path: filePath,
-        url: `/uploads/consignes/${usineFolderName}/${annee}/${mois}/${filename}`,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de l'upload du fichier: ${file.originalname}`,
-        error instanceof Error ? error.stack : String(error),
-        "FileUploadService"
-      );
-      throw new BadRequestException(
-        "Erreur lors de l'enregistrement du fichier"
-      );
-    }
+    return this.saveFile(file, "consignes", idUsine, date);
   }
 
   async saveQuartEvenementFile(
     file: Express.Multer.File,
+    idUsine: number,
+    date?: Date
+  ): Promise<UploadedFileInfo> {
+    return this.saveFile(file, "quart-evenements", idUsine, date);
+  }
+
+  async saveModeOperatoireFile(
+    file: Express.Multer.File,
+    idUsine: number
+  ): Promise<UploadedFileInfo> {
+    return this.saveFile(file, "mode-operatoire", idUsine);
+  }
+
+  deleteFile(url: string): void {
+    this.deleteFileFromFolder(url, "/uploads/consignes/", "consignes");
+  }
+
+  deleteModeOperatoireFile(url: string): void {
+    this.deleteFileFromFolder(
+      url,
+      "/uploads/mode-operatoire/",
+      "mode-operatoire"
+    );
+  }
+
+  private async saveFile(
+    file: Express.Multer.File,
+    subFolder: string,
     idUsine: number,
     date?: Date
   ): Promise<UploadedFileInfo> {
@@ -150,7 +136,7 @@ export class FileUploadService {
     const filename = `${uuidv4()}.${extension}`;
     const dirPath = join(
       this.uploadPath,
-      "quart-evenements",
+      subFolder,
       usineFolderName,
       annee,
       mois
@@ -171,7 +157,7 @@ export class FileUploadService {
         filename,
         originalname: file.originalname,
         path: filePath,
-        url: `/uploads/quart-evenements/${usineFolderName}/${annee}/${mois}/${filename}`,
+        url: `/uploads/${subFolder}/${usineFolderName}/${annee}/${mois}/${filename}`,
       };
     } catch (error) {
       this.logger.error(
@@ -185,100 +171,38 @@ export class FileUploadService {
     }
   }
 
-  deleteFile(url: string): void {
-    if (!url || !url.startsWith("/uploads/consignes/")) {
+  private deleteFileFromFolder(
+    url: string,
+    expectedPrefix: string,
+    subFolder: string
+  ): void {
+    if (!url || !url.startsWith(expectedPrefix)) {
       return;
     }
 
-    const filename = url.replace("/uploads/consignes/", "");
-    const filePath = join(this.uploadPath, "consignes", filename);
+    const filename = url.replace(expectedPrefix, "");
+    const filePath = join(this.uploadPath, subFolder, filename);
+    const resolvedPath = resolve(filePath);
+    const allowedRoot = resolve(this.uploadPath, subFolder);
+
+    if (!resolvedPath.startsWith(allowedRoot)) {
+      this.logger.warn(
+        `Tentative de path traversal détectée: ${url}`,
+        "FileUploadService"
+      );
+      return;
+    }
 
     try {
       // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (existsSync(filePath)) {
+      if (existsSync(resolvedPath)) {
         // eslint-disable-next-line security/detect-non-literal-fs-filename
-        unlinkSync(filePath);
+        unlinkSync(resolvedPath);
         this.logger.log(`Fichier supprimé: ${filename}`, "FileUploadService");
       }
     } catch (error) {
       this.logger.error(
         `Erreur lors de la suppression du fichier: ${filename}`,
-        error instanceof Error ? error.stack : String(error),
-        "FileUploadService"
-      );
-    }
-  }
-
-  async saveModeOperatoireFile(
-    file: Express.Multer.File,
-    idUsine: number
-  ): Promise<UploadedFileInfo> {
-    this.validateFile(file);
-
-    const usineFolderName = await this.getUsineFolderName(idUsine);
-    const now = new Date();
-    const annee = now.getFullYear().toString();
-    const mois = (now.getMonth() + 1).toString().padStart(2, "0");
-    const extension = file.originalname.split(".").pop() || "";
-    const filename = `${uuidv4()}.${extension}`;
-    const dirPath = join(
-      this.uploadPath,
-      "mode-operatoire",
-      usineFolderName,
-      annee,
-      mois
-    );
-    this.ensureSubDirExists(dirPath);
-    const filePath = join(dirPath, filename);
-
-    try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      writeFileSync(filePath, file.buffer);
-
-      this.logger.log(
-        `Fichier mode opératoire uploadé: ${filename} (original: ${file.originalname})`,
-        "FileUploadService"
-      );
-
-      return {
-        filename,
-        originalname: file.originalname,
-        path: filePath,
-        url: `/uploads/mode-operatoire/${usineFolderName}/${annee}/${mois}/${filename}`,
-      };
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de l'upload du fichier mode opératoire: ${file.originalname}`,
-        error instanceof Error ? error.stack : String(error),
-        "FileUploadService"
-      );
-      throw new BadRequestException(
-        "Erreur lors de l'enregistrement du fichier"
-      );
-    }
-  }
-
-  deleteModeOperatoireFile(url: string): void {
-    if (!url || !url.startsWith("/uploads/mode-operatoire/")) {
-      return;
-    }
-
-    const filename = url.replace("/uploads/mode-operatoire/", "");
-    const filePath = join(this.uploadPath, "mode-operatoire", filename);
-
-    try {
-      // eslint-disable-next-line security/detect-non-literal-fs-filename
-      if (existsSync(filePath)) {
-        // eslint-disable-next-line security/detect-non-literal-fs-filename
-        unlinkSync(filePath);
-        this.logger.log(
-          `Fichier mode opératoire supprimé: ${filename}`,
-          "FileUploadService"
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        `Erreur lors de la suppression du fichier mode opératoire: ${filename}`,
         error instanceof Error ? error.stack : String(error),
         "FileUploadService"
       );

@@ -44,6 +44,6 @@ export class Arret {
 
   @ApiHideProperty()
   @ManyToOne(() => ProductNew, { nullable: true })
-  @JoinColumn({ name: "productId", referencedColumnName: "Id" })
+  @JoinColumn({ name: "productId", referencedColumnName: "id" })
   product: ProductNew | null;
 }

@@ -19,7 +19,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+} from "../../common/decorators";
+import { Badge, User, ZoneControle } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -54,10 +60,7 @@ export class BadgeController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des badges affectés à des utilisateurs",
-  })
+  @ApiPaginatedResponseWrapped(Badge)
   async findAllAssignedToUsers(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -83,10 +86,7 @@ export class BadgeController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des badges affectés à des zones",
-  })
+  @ApiPaginatedResponseWrapped(Badge)
   async findAllAssignedToZones(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -112,7 +112,7 @@ export class BadgeController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des badges non affectés" })
+  @ApiPaginatedResponseWrapped(Badge)
   async findUnassigned(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -123,7 +123,7 @@ export class BadgeController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouveau badge" })
-  @ApiResponse({ status: 201, description: "Badge créé avec succès" })
+  @ApiCreatedResponseWrapped(Badge)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 409, description: "UID déjà existant" })
   async create(@Body() createDto: CreateBadgeDto) {
@@ -134,7 +134,7 @@ export class BadgeController {
   @RequireAdmin()
   @ApiOperation({ summary: "Affecter un badge à un utilisateur" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
-  @ApiResponse({ status: 200, description: "Badge affecté à l'utilisateur" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 400, description: "Badge déjà affecté à une zone" })
   @ApiResponse({ status: 404, description: "Badge non trouvé" })
   async assignToUser(
@@ -149,7 +149,7 @@ export class BadgeController {
   @RequireAdmin()
   @ApiOperation({ summary: "Affecter un badge à une zone" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
-  @ApiResponse({ status: 200, description: "Badge affecté à la zone" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 400,
     description: "Badge déjà affecté à un utilisateur",
@@ -178,10 +178,7 @@ export class BadgeController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des zones sans badge",
-  })
+  @ApiPaginatedResponseWrapped(ZoneControle)
   async findZonesWithoutBadge(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -209,10 +206,7 @@ export class BadgeController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des utilisateurs sans badge",
-  })
+  @ApiPaginatedResponseWrapped(User)
   async findUsersWithoutBadge(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -227,7 +221,7 @@ export class BadgeController {
   @RequireAdmin()
   @ApiOperation({ summary: "Retirer l'affectation d'un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
-  @ApiResponse({ status: 200, description: "Affectation retirée" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Badge non trouvé" })
   async unassign(@Param("id", ParseIntPipe) id: number) {
     await this.badgeService.unassign(id);
@@ -238,7 +232,7 @@ export class BadgeController {
   @RequireAdmin()
   @ApiOperation({ summary: "Désactiver ou activer un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
-  @ApiResponse({ status: 200, description: "Badge désactivé/activé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Badge non trouvé" })
   async disable(@Param("id", ParseIntPipe) id: number) {
     await this.badgeService.changeEnable(id);
@@ -249,7 +243,7 @@ export class BadgeController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
-  @ApiResponse({ status: 200, description: "Badge supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Badge non trouvé" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.badgeService.delete(id);

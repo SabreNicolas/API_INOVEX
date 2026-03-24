@@ -56,7 +56,7 @@ export class ProductsService {
         .createQueryBuilder("product")
         .where("product.idUsine = :idUsine", { idUsine })
         .andWhere("product.typeId = :typeId", { typeId: 4 })
-        .andWhere("product.Enabled = :enabled", { enabled: 1 })
+        .andWhere("product.enabled = :enabled", { enabled: 1 })
         .andWhere("product.Name NOT LIKE :pattern", { pattern: "Temps%" })
         .andWhere("product.Code Like :codePattern", { codePattern: "30302%" })
         .orderBy("product.Name", "ASC")
@@ -135,7 +135,7 @@ export class ProductsService {
    */
   async findOne(id: number, idUsine?: number): Promise<ProductNew> {
     try {
-      const whereCondition = idUsine ? { Id: id, idUsine } : { Id: id };
+      const whereCondition = idUsine ? { id: id, idUsine } : { id: id };
 
       const product = await this.productsRepository.findOne({
         where: whereCondition,
@@ -176,7 +176,7 @@ export class ProductsService {
       const savedProduct = await this.productsRepository.save(product);
 
       this.logger.log(
-        `Produit créé avec succès: ${savedProduct.Id}`,
+        `Produit créé avec succès: ${savedProduct.id}`,
         "ProductsService"
       );
 
@@ -219,7 +219,7 @@ export class ProductsService {
       const savedProduct = await this.productsRepository.save(updatedProduct);
 
       this.logger.log(
-        `Produit mis à jour avec succès: ${savedProduct.Id}`,
+        `Produit mis à jour avec succès: ${savedProduct.id}`,
         "ProductsService"
       );
 
@@ -242,7 +242,7 @@ export class ProductsService {
    */
   async toggleVisibility(id: number, idUsine?: number): Promise<ProductNew> {
     try {
-      const whereCondition = idUsine ? { Id: id, idUsine } : { Id: id };
+      const whereCondition = idUsine ? { id: id, idUsine } : { id: id };
 
       const product = await this.productsRepository.findOne({
         where: whereCondition,
@@ -323,13 +323,12 @@ export class ProductsService {
     idUsine?: number
   ): Promise<PaginatedResult<ProductNew> | ProductNew[]> {
     try {
-      console.log("ID Usine pour findAllSortants:", idUsine); // Log de debug pour vérifier l'ID usine
       if (!pagination) {
         const imports = await this.productsRepository.find({
           where: idUsine
             ? { idUsine, Enabled: 1, typeId: 5 }
             : { Enabled: 1, typeId: 5 },
-          order: { Id: "ASC" },
+          order: { id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
           relations: ["elementRondier"],
         });
@@ -340,7 +339,7 @@ export class ProductsService {
       const offset = (page - 1) * limit;
 
       const [imports, total] = await this.productsRepository.findAndCount({
-        order: { Id: "ASC" },
+        order: { id: "ASC" },
         skip: offset,
         take: limit,
         where: idUsine
@@ -370,7 +369,7 @@ export class ProductsService {
           where: idUsine
             ? { idUsine, Enabled: 1, Name: Like(`%livraison%`) }
             : { Enabled: 1, Name: Like(`%livraison%`) },
-          order: { Id: "ASC" },
+          order: { id: "ASC" },
           take: PAGINATION_DEFAULTS.MAX_LIMIT,
           relations: ["elementRondier"],
         });
@@ -381,7 +380,7 @@ export class ProductsService {
       const offset = (page - 1) * limit;
 
       const [imports, total] = await this.productsRepository.findAndCount({
-        order: { Id: "ASC" },
+        order: { id: "ASC" },
         skip: offset,
         take: limit,
         where: idUsine
@@ -416,7 +415,7 @@ export class ProductsService {
       const savedMeasure = await this.measureNewRepository.save(measure);
 
       this.logger.log(
-        `Mesure créée avec succès: ${savedMeasure.Id}`,
+        `Mesure créée avec succès: ${savedMeasure.id}`,
         "ProductsService"
       );
 
@@ -490,7 +489,7 @@ export class ProductsService {
   ): Promise<MeasureNew> {
     try {
       const measure = await this.measureNewRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!measure) {
@@ -505,7 +504,7 @@ export class ProductsService {
       const savedMeasure = await this.measureNewRepository.save(updatedMeasure);
 
       this.logger.log(
-        `Mesure mise à jour avec succès: ${savedMeasure.Id}`,
+        `Mesure mise à jour avec succès: ${savedMeasure.id}`,
         "ProductsService"
       );
 
@@ -541,14 +540,14 @@ export class ProductsService {
           "me.measures",
           MeasureNew,
           "m",
-          "m.ProducerId = me.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProducerId = me.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
         .orderBy("me.Name", "ASC")
         .addOrderBy("m.EntryDate", "ASC");
 
       if (idUsine) {
-        qb.where("me.idUsine = :idUsine and me.Enabled = 1", { idUsine });
+        qb.where("me.idUsine = :idUsine and me.enabled = 1", { idUsine });
       }
 
       const moralEntities = await qb.getMany();
@@ -601,10 +600,10 @@ export class ProductsService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
+        .where("p.enabled = 1")
         .andWhere("p.typeId = :typeId", { typeId })
         .orderBy("p.Name", "ASC")
         .addOrderBy("m.EntryDate", "ASC");
@@ -647,10 +646,10 @@ export class ProductsService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
+        .where("p.enabled = 1")
         .andWhere("p.Name LIKE :name", { name: `%${name}%` })
         .orderBy("p.Name", "ASC")
         .addOrderBy("m.EntryDate", "ASC");
@@ -689,10 +688,10 @@ export class ProductsService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
+        .where("p.enabled = 1")
         .andWhere("p.typeId = :typeId", { typeId: 4 }) // Supposons que le typeId 4 correspond aux compteurs
         .andWhere("p.Name NOT LIKE :name", { name: `%Arret%` }) // Exclure les produits contenant "Arret"
         .andWhere("p.Name NOT LIKE :name2", { name2: `%HEURES D'ARRET%` }) // Exclure les produits contenant "HEURES D'ARRET"
@@ -735,10 +734,10 @@ export class ProductsService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
+        .where("p.enabled = 1")
         .andWhere("p.typeId = :typeId", { typeId: 2 })
         .andWhere("p.Code NOT LIKE :code", { code: `801%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
         .orderBy("p.Name", "ASC")
@@ -778,10 +777,10 @@ export class ProductsService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
+        .where("p.enabled = 1")
         .andWhere("p.typeId = :typeId", { typeId: 6 })
         .andWhere("p.Name NOT LIKE :name", { name: `%1/2%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
         .andWhere("p.Name NOT LIKE :name2", { name2: `%DEPASSEMENT%` }) // Exclure les produits contenant "LIvRAISON" (avec I majuscule pour éviter de confondre avec les produits contenant "livraison" qui sont des réactifs)
@@ -905,10 +904,10 @@ export class ProductsService {
             Enabled: 1,
             typeId: 5,
           },
-          select: ["Id"],
+          select: ["id"],
         });
 
-        const productIds = products.map(p => p.Id);
+        const productIds = products.map(p => p.id);
 
         if (productIds.length === 0) {
           return { deleted: 0 };
@@ -995,10 +994,10 @@ export class ProductsService {
             Enabled: 1,
             Name: Like(`%livraison%`),
           },
-          select: ["Id"],
+          select: ["id"],
         });
 
-        const productIds = products.map(p => p.Id);
+        const productIds = products.map(p => p.id);
 
         if (productIds.length === 0) {
           return { deleted: 0 };

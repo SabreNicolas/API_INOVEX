@@ -31,9 +31,9 @@ export class GroupementService {
       // Récupérer les zones de l'usine
       const zones = await this.zoneControleRepository.find({
         where: { idUsine },
-        select: ["Id"],
+        select: ["id"],
       });
-      const zoneIds = zones.map(z => z.Id);
+      const zoneIds = zones.map(z => z.id);
 
       if (zoneIds.length === 0) {
         return pagination

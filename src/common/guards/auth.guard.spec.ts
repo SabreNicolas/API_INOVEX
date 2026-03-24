@@ -61,6 +61,7 @@ describe("AuthGuard", () => {
     isRapport: false,
     isChefQuart: false,
     isSuperAdmin: false,
+    idUsine: 1,
     ...overrides,
   });
 

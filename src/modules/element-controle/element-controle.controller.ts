@@ -19,10 +19,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { ElementControle } from "../../entities";
 import { CreateElementControleDto, UpdateElementControleDto } from "./dto";
 import { ElementControleService } from "./element-controle.service";
 
@@ -50,7 +57,7 @@ export class ElementControleController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des éléments de contrôle" })
+  @ApiPaginatedResponseWrapped(ElementControle)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -74,10 +81,7 @@ export class ElementControleController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des éléments de la zone",
-  })
+  @ApiPaginatedResponseWrapped(ElementControle)
   async findByZone(
     @Param("zoneId", ParseIntPipe) zoneId: number,
     @Query() pagination: PaginationDto,
@@ -93,10 +97,7 @@ export class ElementControleController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouvel élément de contrôle" })
-  @ApiResponse({
-    status: 201,
-    description: "Élément de contrôle créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ElementControle)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateElementControleDto) {
     return this.elementControleService.create(createDto);
@@ -106,7 +107,7 @@ export class ElementControleController {
   @RequireAdmin()
   @ApiOperation({ summary: "Mettre à jour un élément de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
-  @ApiResponse({ status: 200, description: "Élément de contrôle mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -125,7 +126,7 @@ export class ElementControleController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un élément de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
-  @ApiResponse({ status: 200, description: "Élément de contrôle supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Élément de contrôle non trouvé" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

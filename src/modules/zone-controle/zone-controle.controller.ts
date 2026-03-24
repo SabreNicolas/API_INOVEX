@@ -19,7 +19,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { ZoneControle } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -48,7 +56,7 @@ export class ZoneControleController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des zones de contrôle" })
+  @ApiPaginatedResponseWrapped(ZoneControle)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -62,10 +70,7 @@ export class ZoneControleController {
     summary:
       "Récupérer toutes les zones avec leurs groupements et éléments de contrôle",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des zones avec groupements et éléments de contrôle",
-  })
+  @ApiOkArrayResponseWrapped(ZoneControle)
   async findAllWithGroupementsAndElements(
     @CurrentUser() currentUser: RequestUser
   ) {
@@ -77,10 +82,7 @@ export class ZoneControleController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle zone de contrôle" })
-  @ApiResponse({
-    status: 201,
-    description: "Zone de contrôle créée avec succès",
-  })
+  @ApiCreatedResponseWrapped(ZoneControle)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateZoneControleDto) {
     return this.zoneControleService.create(createDto);
@@ -90,7 +92,7 @@ export class ZoneControleController {
   @RequireAdmin()
   @ApiOperation({ summary: "Mettre à jour une zone de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de la zone" })
-  @ApiResponse({ status: 200, description: "Zone de contrôle mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Zone de contrôle non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -104,7 +106,7 @@ export class ZoneControleController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer une zone de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de la zone" })
-  @ApiResponse({ status: 200, description: "Zone de contrôle supprimée" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Zone de contrôle non trouvée" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.zoneControleService.delete(id);

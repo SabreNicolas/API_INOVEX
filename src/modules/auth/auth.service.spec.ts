@@ -6,7 +6,7 @@ import { getRepositoryToken } from "@nestjs/typeorm";
 import * as argon2 from "argon2";
 
 import { LoggerService } from "../../common/services/logger.service";
-import { User } from "../../entities";
+import { Site, Token, User } from "../../entities";
 import { AuthService } from "./auth.service";
 
 describe("AuthService", () => {
@@ -26,6 +26,17 @@ describe("AuthService", () => {
 
   const mockUserRepository = {
     findOne: jest.fn(),
+  };
+
+  const mockSiteRepository = {
+    findOne: jest.fn(),
+  };
+
+  const mockTokenRepository = {
+    find: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn().mockImplementation(dto => dto),
+    update: jest.fn(),
   };
 
   const mockJwtService = {
@@ -51,6 +62,8 @@ describe("AuthService", () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: getRepositoryToken(User), useValue: mockUserRepository },
+        { provide: getRepositoryToken(Site), useValue: mockSiteRepository },
+        { provide: getRepositoryToken(Token), useValue: mockTokenRepository },
         { provide: LoggerService, useValue: mockLogger },
       ],
     }).compile();
@@ -84,9 +97,11 @@ describe("AuthService", () => {
     it("should return tokens and user on successful login", async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
       jest.spyOn(argon2, "verify").mockResolvedValue(true);
+      jest.spyOn(argon2, "hash").mockResolvedValue("hashedRefreshToken");
       mockJwtService.sign
         .mockReturnValueOnce("accessToken123")
         .mockReturnValueOnce("refreshToken123");
+      mockTokenRepository.save.mockResolvedValue({});
 
       const result = await service.login({
         login: "admin",
@@ -97,6 +112,7 @@ describe("AuthService", () => {
       expect(result).toHaveProperty("refreshToken", "refreshToken123");
       expect(result).toHaveProperty("user");
       expect(result.user).not.toHaveProperty("pwd");
+      expect(mockTokenRepository.save).toHaveBeenCalled();
     });
   });
 
@@ -134,12 +150,36 @@ describe("AuthService", () => {
       );
     });
 
+    it("should throw if refresh token is not found in DB", async () => {
+      mockJwtService.verify.mockReturnValue({
+        id: 1,
+        type: "refresh",
+      });
+      mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockTokenRepository.find.mockResolvedValue([]);
+
+      await expect(service.refreshTokens("validRefreshToken")).rejects.toThrow(
+        UnauthorizedException
+      );
+    });
+
     it("should return new token pair when refresh token is valid", async () => {
       mockJwtService.verify.mockReturnValue({
         id: 1,
         type: "refresh",
       });
       mockUserRepository.findOne.mockResolvedValue(mockUser);
+      mockTokenRepository.find.mockResolvedValue([
+        {
+          Id: 1,
+          token: "hashedToken",
+          affectation: "refresh:1",
+          enabled: true,
+        },
+      ]);
+      jest.spyOn(argon2, "verify").mockResolvedValue(true);
+      jest.spyOn(argon2, "hash").mockResolvedValue("newHashedToken");
+      mockTokenRepository.save.mockResolvedValue({});
       mockJwtService.sign
         .mockReturnValueOnce("newAccessToken")
         .mockReturnValueOnce("newRefreshToken");
@@ -148,6 +188,30 @@ describe("AuthService", () => {
 
       expect(result).toHaveProperty("accessToken", "newAccessToken");
       expect(result).toHaveProperty("refreshToken", "newRefreshToken");
+    });
+  });
+
+  describe("revokeRefreshToken", () => {
+    it("should disable all refresh tokens for the user", async () => {
+      mockJwtService.verify.mockReturnValue({ id: 1 });
+      mockTokenRepository.update.mockResolvedValue({});
+
+      await service.revokeRefreshToken("someToken");
+
+      expect(mockTokenRepository.update).toHaveBeenCalledWith(
+        { affectation: "refresh:1", enabled: true },
+        { enabled: false }
+      );
+    });
+
+    it("should not throw when token is expired", async () => {
+      mockJwtService.verify.mockImplementation(() => {
+        throw new Error("expired");
+      });
+
+      await expect(
+        service.revokeRefreshToken("expiredToken")
+      ).resolves.toBeUndefined();
     });
   });
 });

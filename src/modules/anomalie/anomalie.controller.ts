@@ -18,10 +18,13 @@ import {
 } from "@nestjs/swagger";
 
 import {
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
   CurrentUser,
   RequireAdmin,
   RequireRondier,
 } from "../../common/decorators";
+import { Anomalie } from "../../entities";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { AnomalieService } from "./anomalie.service";
@@ -49,7 +52,7 @@ export class AnomalieController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des anomalies" })
+  @ApiPaginatedResponseWrapped(Anomalie)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -65,7 +68,7 @@ export class AnomalieController {
     type: "number",
     description: "ID de l'anomalie",
   })
-  @ApiResponse({ status: 200, description: "Anomalie mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Anomalie non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,

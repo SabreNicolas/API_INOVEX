@@ -19,7 +19,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "@/common/decorators";
+import { Formulaire } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -50,10 +58,7 @@ export class FormulaireController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des formulaires avec produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(Formulaire)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllWithProducts(
@@ -72,10 +77,7 @@ export class FormulaireController {
     summary: "Récupérer un formulaire par ID avec ses produits",
   })
   @ApiParam({ name: "id", type: Number, description: "ID du formulaire" })
-  @ApiResponse({
-    status: 200,
-    description: "Formulaire récupéré avec succès",
-  })
+  @ApiOkResponseWrapped(Formulaire)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   @ApiResponse({ status: 404, description: "Formulaire non trouvé" })
@@ -128,10 +130,7 @@ export class FormulaireController {
   @ApiOperation({
     summary: "Créer un nouveau formulaire avec ses produits",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Formulaire créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(Formulaire)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -151,10 +150,7 @@ export class FormulaireController {
     summary: "Mettre à jour un formulaire avec ses produits",
   })
   @ApiParam({ name: "id", type: Number, description: "ID du formulaire" })
-  @ApiResponse({
-    status: 200,
-    description: "Formulaire mis à jour avec succès",
-  })
+  @ApiOkResponseWrapped(Formulaire)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -177,10 +173,7 @@ export class FormulaireController {
     summary: "Supprimer un formulaire et ses affectations",
   })
   @ApiParam({ name: "id", type: Number, description: "ID du formulaire" })
-  @ApiResponse({
-    status: 200,
-    description: "Formulaire supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   @ApiResponse({ status: 404, description: "Formulaire non trouvé" })

@@ -6,7 +6,11 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin } from "../../common/decorators";
+import {
+  ApiOkArrayResponseWrapped,
+  RequireAdmin,
+} from "../../common/decorators";
+import { PosteRondier } from "../../entities";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { PostesRondierService } from "./postesRondier.service";
 
@@ -22,10 +26,7 @@ export class PostesRondierController {
   @ApiOperation({
     summary: "Récupérer tous les postes rondier (avec pagination optionnelle)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des postes rondier récupérée avec succès",
-  })
+  @ApiOkArrayResponseWrapped(PosteRondier)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll() {

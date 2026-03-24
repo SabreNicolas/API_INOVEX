@@ -42,6 +42,36 @@ export class FormulaireService {
   ) {}
 
   /**
+   * Enrichir une liste d'affectations avec leurs produits en batch (évite N+1)
+   */
+  private async enrichAffectationsWithProducts(
+    affectations: FormulaireAffectation[]
+  ): Promise<(FormulaireAffectation & { product?: ProductNew })[]> {
+    if (affectations.length === 0) return [];
+
+    const uniqueProductIds = [...new Set(affectations.map(a => a.idProduct))];
+
+    const products =
+      uniqueProductIds.length > 0
+        ? await this.productsRepository
+            .createQueryBuilder("p")
+            .leftJoinAndSelect("p.elementRondier", "er")
+            .where("p.id IN (:...ids)", { ids: uniqueProductIds })
+            .getMany()
+        : [];
+
+    const productMap = new Map<number, ProductNew>();
+    for (const p of products) {
+      productMap.set(p.id, p);
+    }
+
+    return affectations.map(aff => ({
+      ...aff,
+      product: productMap.get(aff.idProduct) || undefined,
+    }));
+  }
+
+  /**
    * Récupérer tous les formulaires par usine
    */
   async findAll(
@@ -99,19 +129,9 @@ export class FormulaireService {
         where: { idFormulaire: id },
       });
 
-      // Récupérer les produits associés
-      const produitsAvecDetails = await Promise.all(
-        affectations.map(async affectation => {
-          const product = await this.productsRepository.findOne({
-            where: { Id: affectation.idProduct },
-            relations: ["elementRondier"],
-          });
-          return {
-            ...affectation,
-            product: product || undefined,
-          };
-        })
-      );
+      // Récupérer les produits associés en batch
+      const produitsAvecDetails =
+        await this.enrichAffectationsWithProducts(affectations);
 
       return {
         ...formulaire,
@@ -164,32 +184,37 @@ export class FormulaireService {
         });
       }
 
-      // Récupérer les produits pour chaque formulaire
-      const formulairesWithProducts = await Promise.all(
-        formulaires.map(async formulaire => {
-          const affectations = await this.formulaireAffectationRepository.find({
-            where: { idFormulaire: formulaire.idFormulaire },
-          });
+      // Récupérer les produits pour chaque formulaire en batch
+      const formulaireIds = formulaires.map(f => f.idFormulaire);
 
-          const produitsAvecDetails = await Promise.all(
-            affectations.map(async affectation => {
-              const product = await this.productsRepository.findOne({
-                where: { Id: affectation.idProduct },
-                relations: ["elementRondier"],
-              });
-              return {
-                ...affectation,
-                product: product || undefined,
-              };
-            })
-          );
+      // Une seule requête pour toutes les affectations
+      const allAffectations =
+        formulaireIds.length > 0
+          ? await this.formulaireAffectationRepository
+              .createQueryBuilder("fa")
+              .where("fa.idFormulaire IN (:...ids)", { ids: formulaireIds })
+              .getMany()
+          : [];
 
-          return {
-            ...formulaire,
-            produits: produitsAvecDetails,
-          };
-        })
-      );
+      // Enrichir toutes les affectations avec leurs produits en batch
+      const allAffectationsWithProducts =
+        await this.enrichAffectationsWithProducts(allAffectations);
+
+      // Grouper par idFormulaire
+      const affectationsByFormulaire = new Map<
+        number,
+        (FormulaireAffectation & { product?: ProductNew })[]
+      >();
+      for (const aff of allAffectationsWithProducts) {
+        const list = affectationsByFormulaire.get(aff.idFormulaire) || [];
+        list.push(aff);
+        affectationsByFormulaire.set(aff.idFormulaire, list);
+      }
+
+      const formulairesWithProducts = formulaires.map(formulaire => ({
+        ...formulaire,
+        produits: affectationsByFormulaire.get(formulaire.idFormulaire) || [],
+      }));
 
       if (!pagination) {
         return formulairesWithProducts;
@@ -255,11 +280,11 @@ export class FormulaireService {
           "p.measures",
           MeasureNew,
           "m",
-          "m.ProductId = p.Id AND m.EntryDate BETWEEN :startDate AND :endDate",
+          "m.ProductId = p.id AND m.EntryDate BETWEEN :startDate AND :endDate",
           { startDate, endDate }
         )
-        .where("p.Enabled = 1")
-        .andWhere("p.Id IN (:...uniqueProductIds)", { uniqueProductIds })
+        .where("p.enabled = 1")
+        .andWhere("p.id IN (:...uniqueProductIds)", { uniqueProductIds })
         .orderBy("p.Name", "ASC")
         .addOrderBy("m.EntryDate", "ASC");
 
@@ -271,7 +296,7 @@ export class FormulaireService {
         ProductNew & { measures?: MeasureNew[] }
       >();
       products.forEach(p => {
-        productMap.set(p.Id, p as ProductNew & { measures?: MeasureNew[] });
+        productMap.set(p.id, p as ProductNew & { measures?: MeasureNew[] });
       });
 
       // Itérer sur les affectations pour conserver les doublons avec alias différents
@@ -334,19 +359,9 @@ export class FormulaireService {
         }
       }
 
-      // Récupérer les produits associés
-      const produitsAvecDetails = await Promise.all(
-        affectations.map(async affectation => {
-          const product = await this.productsRepository.findOne({
-            where: { Id: affectation.idProduct },
-            relations: ["elementRondier"],
-          });
-          return {
-            ...affectation,
-            product: product || undefined,
-          };
-        })
-      );
+      // Récupérer les produits associés en batch
+      const produitsAvecDetails =
+        await this.enrichAffectationsWithProducts(affectations);
 
       return {
         ...savedFormulaire,

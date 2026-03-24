@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "@/common/decorators";
+import { Arret } from "@/entities";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
 import { ArretsService } from "./arrets.service";
@@ -94,10 +101,7 @@ export class ArretsController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des arrêts filtrés par date",
-  })
+  @ApiPaginatedResponseWrapped(Arret)
   async findByDateRange(
     @Query() query: GetArretsByDateDto,
     @CurrentUser() currentUser: RequestUser
@@ -113,7 +117,7 @@ export class ArretsController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouvel arrêt" })
-  @ApiResponse({ status: 201, description: "Arrêt créé avec succès" })
+  @ApiCreatedResponseWrapped(Arret)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateArretDto,
@@ -126,7 +130,7 @@ export class ArretsController {
   @RequireAdmin()
   @ApiOperation({ summary: "Mettre à jour un arrêt" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
-  @ApiResponse({ status: 200, description: "Arrêt mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Arrêt non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -141,7 +145,7 @@ export class ArretsController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un arrêt" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
-  @ApiResponse({ status: 200, description: "Arrêt supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Arrêt non trouvé" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

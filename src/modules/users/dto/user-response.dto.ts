@@ -8,7 +8,7 @@ import { Exclude, Expose } from "class-transformer";
 export class UserResponseDto {
   @ApiProperty({ example: 1, description: "ID de l'utilisateur" })
   @Expose()
-  Id: number;
+  id: number;
 
   @ApiProperty({ example: "johndoe", description: "Login de l'utilisateur" })
   @Expose()
@@ -16,11 +16,11 @@ export class UserResponseDto {
 
   @ApiProperty({ example: "Doe", description: "Nom de famille" })
   @Expose()
-  Nom: string;
+  nom: string;
 
   @ApiProperty({ example: "John", description: "Prénom" })
   @Expose()
-  Prenom: string;
+  prenom: string;
 
   @ApiProperty({ example: "john@example.com", description: "Email" })
   @Expose()

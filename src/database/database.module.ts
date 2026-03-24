@@ -174,11 +174,12 @@ const entities = [
           type: "mssql" as const,
           ...dbConfig,
           entities,
-          synchronize: false, // Ne pas synchroniser en prod, utiliser les migrations
+          migrations: [__dirname + "/migrations/*{.ts,.js}"],
+          synchronize: false,
           logging: nodeEnv === "dev",
           options: {
-            encrypt: false, // true si connexion Azure
-            trustServerCertificate: true, // pour le développement local
+            encrypt: nodeEnv === "prod" || nodeEnv === "preprod",
+            trustServerCertificate: nodeEnv !== "prod" && nodeEnv !== "preprod",
           },
           extra: {
             connectionLimit: 10,

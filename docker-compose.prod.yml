@@ -24,7 +24,7 @@ services:
       - /home/github-runner/cert.cer:/app/certs/cert.cer:ro
       - /home/github-runner/cert.key:/app/certs/cert.key:ro
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--no-check-certificate", "--spider", "https://localhost:${PORT:-3100}/api/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--no-check-certificate", "--spider", "https://localhost:${PORT:-3100}/api/health/live"]
       interval: 30s
       timeout: 5s
       retries: 3

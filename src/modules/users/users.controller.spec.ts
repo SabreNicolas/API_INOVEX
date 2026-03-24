@@ -149,8 +149,8 @@ describe("UsersController", () => {
       const createUserDto = {
         login: "newuser",
         password: "password123",
-        Nom: "New",
-        Prenom: "User",
+        nom: "New",
+        prenom: "User",
       };
       mockUsersService.create.mockResolvedValue({ id: 2 });
 
@@ -163,7 +163,7 @@ describe("UsersController", () => {
 
   describe("update", () => {
     it("should update a user", async () => {
-      const updateUserDto = { Nom: "Updated", Prenom: "Name" };
+      const updateUserDto = { nom: "Updated", prenom: "Name" };
       mockUsersService.update.mockResolvedValue(undefined);
 
       const result = await controller.update(1, updateUserDto, mockCurrentUser);

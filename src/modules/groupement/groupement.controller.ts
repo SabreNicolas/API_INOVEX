@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { Groupement } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -48,7 +55,7 @@ export class GroupementController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des groupements" })
+  @ApiPaginatedResponseWrapped(Groupement)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -72,7 +79,7 @@ export class GroupementController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des groupements de la zone" })
+  @ApiPaginatedResponseWrapped(Groupement)
   async findByZone(
     @Param("zoneId", ParseIntPipe) zoneId: number,
     @Query() pagination: PaginationDto
@@ -83,7 +90,7 @@ export class GroupementController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer un nouveau groupement" })
-  @ApiResponse({ status: 201, description: "Groupement créé avec succès" })
+  @ApiCreatedResponseWrapped(Groupement)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateGroupementDto) {
     return this.groupementService.create(createDto);
@@ -93,7 +100,7 @@ export class GroupementController {
   @RequireAdmin()
   @ApiOperation({ summary: "Mettre à jour un groupement" })
   @ApiParam({ name: "id", type: "number", description: "ID du groupement" })
-  @ApiResponse({ status: 200, description: "Groupement mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Groupement non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -107,7 +114,7 @@ export class GroupementController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer un groupement" })
   @ApiParam({ name: "id", type: "number", description: "ID du groupement" })
-  @ApiResponse({ status: 200, description: "Groupement supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Groupement non trouvé" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.groupementService.delete(id);

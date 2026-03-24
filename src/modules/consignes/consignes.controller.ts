@@ -24,7 +24,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireAdmin, RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  RequireAdmin,
+  RequireRondier,
+} from "../../common/decorators";
+import { Consigne, ConsigneType } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
@@ -62,7 +70,7 @@ export class ConsignesController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des consignes" })
+  @ApiPaginatedResponseWrapped(Consigne)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -73,10 +81,7 @@ export class ConsignesController {
   @Get("active-on-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les consignes actives sur une date" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des consignes actives sur la date",
-  })
+  @ApiPaginatedResponseWrapped(Consigne)
   async findActiveOnDate(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -91,10 +96,7 @@ export class ConsignesController {
   @Get("by-date")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les consignes par plage de dates" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des consignes dans la plage de dates",
-  })
+  @ApiPaginatedResponseWrapped(Consigne)
   async findByDateRange(
     @Query() query: DateRangeQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -110,10 +112,7 @@ export class ConsignesController {
   @Get("inactive")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les consignes inactives sur une date" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des consignes inactives sur la date",
-  })
+  @ApiPaginatedResponseWrapped(Consigne)
   async findInactive(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -128,10 +127,7 @@ export class ConsignesController {
   @Get("futur")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les consignes à venir après une date" })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des consignes à venir",
-  })
+  @ApiPaginatedResponseWrapped(Consigne)
   async findFuture(
     @Query() query: ActiveOnDateQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -146,7 +142,7 @@ export class ConsignesController {
   @Get("types")
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les types de consignes" })
-  @ApiResponse({ status: 200, description: "Liste des types de consignes" })
+  @ApiOkArrayResponseWrapped(ConsigneType)
   async findTypes() {
     return this.consignesService.findTypes();
   }
@@ -171,7 +167,7 @@ export class ConsignesController {
       required: ["titre"],
     },
   })
-  @ApiResponse({ status: 201, description: "Consigne créée avec succès" })
+  @ApiCreatedResponseWrapped(Consigne)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateConsigneDto,
@@ -217,7 +213,7 @@ export class ConsignesController {
       },
     },
   })
-  @ApiResponse({ status: 200, description: "Consigne mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Consigne non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -249,7 +245,7 @@ export class ConsignesController {
   @RequireAdmin()
   @ApiOperation({ summary: "Supprimer une consigne" })
   @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
-  @ApiResponse({ status: 200, description: "Consigne supprimée" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Consigne non trouvée" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.consignesService.delete(id);

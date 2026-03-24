@@ -95,7 +95,6 @@ export class RondeService {
       )
         .toString()
         .padStart(2, "0")}/${startOfDay.getFullYear()}`;
-      console.log("dateFormat", dateFormat);
       const rondes = await this.rondeRepository
         .createQueryBuilder("ronde")
         .leftJoinAndSelect("ronde.user", "user")
@@ -124,14 +123,13 @@ export class RondeService {
       const calendrierZoneIds = calendrierZones
         .map(row => row.idZone)
         .filter((id): id is number => id !== null);
-      console.log("calendrierZoneIds", calendrierZoneIds);
 
       // 3. Si des zones sont définies dans le calendrier, les utiliser, sinon toutes les zones du site
       let zones: ZoneControle[];
       if (calendrierZoneIds.length > 0) {
         zones = await this.zoneControleRepository
           .createQueryBuilder("z")
-          .where("z.Id IN (:...zoneIds)", { zoneIds: calendrierZoneIds })
+          .where("z.id IN (:...zoneIds)", { zoneIds: calendrierZoneIds })
           .andWhere("z.idUsine = :idUsine", { idUsine })
           .orderBy("z.nom", "ASC")
           .getMany();
@@ -142,7 +140,7 @@ export class RondeService {
         });
       }
 
-      const zoneIds = zones.map(z => z.Id);
+      const zoneIds = zones.map(z => z.id);
 
       // 4. Récupérer les groupements pour les zones
       const groupements =
@@ -168,17 +166,41 @@ export class RondeService {
       // Construire la réponse pour chaque ronde
       const result: RondeWithDetails[] = [];
 
-      for (const ronde of rondes) {
-        // 6. Récupérer les mesures pour cette ronde
-        const mesures = await this.mesureRondierRepository.find({
-          where: { rondeId: ronde.Id },
-        });
+      // 6. Récupérer toutes les mesures et anomalies en batch pour toutes les rondes
+      const rondeIds = rondes.map(r => r.id);
 
-        // 7. Récupérer les anomalies pour cette ronde
-        const anomalies = await this.anomalieRepository.find({
-          where: { rondeId: ronde.Id },
-          relations: ["zone"],
-        });
+      const [allMesures, allAnomalies] = await Promise.all([
+        this.mesureRondierRepository
+          .createQueryBuilder("m")
+          .where("m.rondeId IN (:...rondeIds)", { rondeIds })
+          .getMany(),
+        this.anomalieRepository
+          .createQueryBuilder("a")
+          .leftJoinAndSelect("a.zone", "zone")
+          .where("a.rondeId IN (:...rondeIds)", { rondeIds })
+          .getMany(),
+      ]);
+
+      // Grouper par rondeId
+      const mesuresByRondeId = new Map<number, MesureRondier[]>();
+      for (const mesure of allMesures) {
+        if (mesure.rondeId === null) continue;
+        const list = mesuresByRondeId.get(mesure.rondeId) || [];
+        list.push(mesure);
+        mesuresByRondeId.set(mesure.rondeId, list);
+      }
+
+      const anomaliesByRondeId = new Map<number, Anomalie[]>();
+      for (const anomalie of allAnomalies) {
+        if (anomalie.rondeId === null) continue;
+        const list = anomaliesByRondeId.get(anomalie.rondeId) || [];
+        list.push(anomalie);
+        anomaliesByRondeId.set(anomalie.rondeId, list);
+      }
+
+      for (const ronde of rondes) {
+        const mesures = mesuresByRondeId.get(ronde.id) || [];
+        const anomalies = anomaliesByRondeId.get(ronde.id) || [];
 
         // Créer un map des mesures par elementId pour un accès rapide
         const mesuresByElementId = new Map<number, MesureRondier>();
@@ -193,13 +215,13 @@ export class RondeService {
 
         for (const zone of zones) {
           // Groupements de cette zone
-          const zoneGroupements = groupements.filter(g => g.zoneId === zone.Id);
+          const zoneGroupements = groupements.filter(g => g.zoneId === zone.id);
 
           // Éléments de cette zone
-          const zoneElements = elements.filter(e => e.zoneId === zone.Id);
+          const zoneElements = elements.filter(e => e.zoneId === zone.id);
 
           // Anomalies de cette zone pour cette ronde
-          const zoneAnomalies = anomalies.filter(a => a.zoneId === zone.Id);
+          const zoneAnomalies = anomalies.filter(a => a.zoneId === zone.id);
 
           // Grouper les éléments par groupement
           const groupementsWithElements: GroupementWithElements[] = [];
@@ -214,7 +236,7 @@ export class RondeService {
               groupement: null,
               elements: elementsWithoutGroupement.map(element => ({
                 element,
-                mesure: mesuresByElementId.get(element.Id) || null,
+                mesure: mesuresByElementId.get(element.id) || null,
               })),
             });
           }
@@ -230,7 +252,7 @@ export class RondeService {
                 groupement,
                 elements: groupementElements.map(element => ({
                   element,
-                  mesure: mesuresByElementId.get(element.Id) || null,
+                  mesure: mesuresByElementId.get(element.id) || null,
                 })),
               });
             }
@@ -399,7 +421,7 @@ export class RondeService {
       if (calendrierZoneIds.length > 0) {
         zones = await this.zoneControleRepository
           .createQueryBuilder("z")
-          .where("z.Id IN (:...zoneIds)", { zoneIds: calendrierZoneIds })
+          .where("z.id IN (:...zoneIds)", { zoneIds: calendrierZoneIds })
           .andWhere("z.idUsine = :idUsine", { idUsine })
           .orderBy("z.nom", "ASC")
           .getMany();
@@ -410,7 +432,7 @@ export class RondeService {
         });
       }
 
-      const zoneIds = zones.map(z => z.Id);
+      const zoneIds = zones.map(z => z.id);
 
       // 4. Récupérer les groupements pour les zones
       const groupements =
@@ -437,8 +459,8 @@ export class RondeService {
       const zonesWithGroupements: ZoneWithGroupements[] = [];
 
       for (const zone of zones) {
-        const zoneGroupements = groupements.filter(g => g.zoneId === zone.Id);
-        const zoneElements = elements.filter(e => e.zoneId === zone.Id);
+        const zoneGroupements = groupements.filter(g => g.zoneId === zone.id);
+        const zoneElements = elements.filter(e => e.zoneId === zone.id);
 
         const groupementsWithElements: GroupementWithElementsSimple[] = [];
 
@@ -669,7 +691,7 @@ export class RondeService {
           elementId: mesureData.elementId,
           modeRegulateur: mesureData.modeRegulateur || null,
           value: mesureData.value || null,
-          rondeId: savedRonde.Id,
+          rondeId: savedRonde.id,
           dateHeure: now,
         });
         const savedMesure = await this.mesureRondierRepository.save(mesure);
@@ -692,7 +714,7 @@ export class RondeService {
       }
 
       this.logger.log(
-        `Ronde créée (ID: ${savedRonde.Id}) avec ${mesures.length} mesures`,
+        `Ronde créée (ID: ${savedRonde.id}) avec ${mesures.length} mesures`,
         "RondeService"
       );
 

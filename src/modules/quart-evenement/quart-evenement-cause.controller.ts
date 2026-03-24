@@ -6,7 +6,11 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireRondier } from "../../common/decorators";
+import {
+  ApiOkArrayResponseWrapped,
+  RequireRondier,
+} from "../../common/decorators";
+import { QuartEvenementCause } from "../../entities";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { QuartEvenementCauseService } from "./quart-evenement-cause.service";
 
@@ -20,7 +24,7 @@ export class QuartEvenementCauseController {
   @Get()
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer toutes les causes d'événements" })
-  @ApiResponse({ status: 200, description: "Liste des causes d'événements" })
+  @ApiOkArrayResponseWrapped(QuartEvenementCause)
   async findAll() {
     return this.causeService.findAll();
   }

@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { ImportTonnageSortant } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -55,10 +62,7 @@ export class ImportTonnageSortantController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des imports tonnage sortants récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ImportTonnageSortant)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -76,10 +80,7 @@ export class ImportTonnageSortantController {
   @ApiOperation({
     summary: "Créer un nouvel import tonnage sortant",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Import tonnage sortant créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ImportTonnageSortant)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateImportTonnageSortantDto) {
     return this.importTonnageSortantService.create(createDto);
@@ -95,10 +96,7 @@ export class ImportTonnageSortantController {
     type: "number",
     description: "ID de l'import tonnage sortant",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage sortant mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Import tonnage sortant non trouvé",
@@ -121,10 +119,7 @@ export class ImportTonnageSortantController {
     type: "number",
     description: "ID de l'import tonnage sortant",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage sortant supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({
     status: 404,
     description: "Import tonnage sortant non trouvé",

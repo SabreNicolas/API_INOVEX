@@ -17,7 +17,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { RequireRondier } from "../../common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  RequireRondier,
+} from "../../common/decorators";
+import { QuartLienExterne } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { CreateQuartLienExterneDto, UpdateQuartLienExterneDto } from "./dto";
@@ -35,7 +41,7 @@ export class QuartLiensExternesController {
   @Get()
   @RequireRondier()
   @ApiOperation({ summary: "Récupérer les liens externes du site" })
-  @ApiResponse({ status: 200, description: "Liste des liens externes" })
+  @ApiOkArrayResponseWrapped(QuartLienExterne)
   async findAll(@CurrentUser() currentUser: RequestUser) {
     return this.quartLiensExternesService.findAll(currentUser.idUsine);
   }
@@ -43,7 +49,7 @@ export class QuartLiensExternesController {
   @Post()
   @RequireRondier()
   @ApiOperation({ summary: "Créer un lien externe" })
-  @ApiResponse({ status: 201, description: "Lien externe créé avec succès" })
+  @ApiCreatedResponseWrapped(QuartLienExterne)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateQuartLienExterneDto,
@@ -63,7 +69,7 @@ export class QuartLiensExternesController {
     type: "number",
     description: "ID du lien externe",
   })
-  @ApiResponse({ status: 200, description: "Lien externe mis à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Lien externe non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -86,7 +92,7 @@ export class QuartLiensExternesController {
     type: "number",
     description: "ID du lien externe",
   })
-  @ApiResponse({ status: 200, description: "Lien externe supprimé" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Lien externe non trouvé" })
   async delete(
     @Param("id", ParseIntPipe) id: number,

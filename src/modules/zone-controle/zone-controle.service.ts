@@ -61,7 +61,7 @@ export class ZoneControleService {
   async findOne(id: number, idUsine: number): Promise<ZoneControle> {
     try {
       const zone = await this.zoneControleRepository.findOne({
-        where: { Id: id, idUsine },
+        where: { id: id, idUsine },
       });
 
       if (!zone) {
@@ -96,11 +96,11 @@ export class ZoneControleService {
       const saved = await this.zoneControleRepository.save(zone);
 
       this.logger.log(
-        `Zone de contrôle créée: ${saved.nom} (ID: ${saved.Id})`,
+        `Zone de contrôle créée: ${saved.nom} (ID: ${saved.id})`,
         "ZoneControleService"
       );
 
-      return { id: saved.Id };
+      return { id: saved.id };
     } catch (error) {
       this.logger.error(
         "Erreur lors de la création de la zone de contrôle",
@@ -114,7 +114,7 @@ export class ZoneControleService {
   async update(id: number, updateDto: UpdateZoneControleDto): Promise<void> {
     try {
       const existing = await this.zoneControleRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {
@@ -154,7 +154,7 @@ export class ZoneControleService {
   async delete(id: number): Promise<void> {
     try {
       const existing = await this.zoneControleRepository.findOne({
-        where: { Id: id },
+        where: { id: id },
       });
 
       if (!existing) {
@@ -195,7 +195,7 @@ export class ZoneControleService {
 
       const zonesWithGroupements = zones.map(zone => ({
         ...zone,
-        groupements: groupements.filter(g => g.zoneId === zone.Id),
+        groupements: groupements.filter(g => g.zoneId === zone.id),
       }));
 
       return zonesWithGroupements;
@@ -224,13 +224,13 @@ export class ZoneControleService {
       const groupements = await this.groupementRepository.find();
 
       const elements = await this.elementControleRepository.find({
-        where: zones.map(z => ({ zoneId: z.Id })),
+        where: zones.map(z => ({ zoneId: z.id })),
         order: { ordre: "ASC" },
       });
 
       const zonesWithGroupementsAndElements = zones.map(zone => {
-        const zoneGroupements = groupements.filter(g => g.zoneId === zone.Id);
-        const zoneElements = elements.filter(e => e.zoneId === zone.Id);
+        const zoneGroupements = groupements.filter(g => g.zoneId === zone.id);
+        const zoneElements = elements.filter(e => e.zoneId === zone.id);
 
         const groupementsWithElements = zoneGroupements.map(groupement => ({
           ...groupement,

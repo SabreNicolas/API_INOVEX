@@ -19,7 +19,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireSuperAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireSuperAdmin,
+} from "@/common/decorators";
+import { ImportTonnage } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -50,10 +57,7 @@ export class ImportTonnageController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des imports tonnage récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ImportTonnage)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -68,7 +72,7 @@ export class ImportTonnageController {
   @ApiOperation({
     summary: "Créer un nouvel import tonnage",
   })
-  @ApiResponse({ status: 201, description: "Import tonnage créé avec succès" })
+  @ApiCreatedResponseWrapped(ImportTonnage)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(@Body() createDto: CreateImportTonnageDto) {
     return this.importTonnageService.create(createDto);
@@ -84,10 +88,7 @@ export class ImportTonnageController {
     type: "number",
     description: "ID de l'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Import tonnage non trouvé" })
   async update(
     @Param("id", ParseIntPipe) id: number,
@@ -107,10 +108,7 @@ export class ImportTonnageController {
     type: "number",
     description: "ID de l'import tonnage",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Import tonnage supprimé avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Import tonnage non trouvé" })
   async delete(@Param("id", ParseIntPipe) id: number) {
     await this.importTonnageService.delete(id);

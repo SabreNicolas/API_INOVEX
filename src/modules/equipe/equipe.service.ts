@@ -100,8 +100,6 @@ export class EquipeService {
         .where("e.date = :date", { date })
         .andWhere("e.quart = :quart", { quart })
         .getOne();
-      console.log("Équipe trouvée:", equipe);
-      console.log("Date recherchée:", date, "Quart recherché:", quart);
       if (!equipe) {
         return null;
       }

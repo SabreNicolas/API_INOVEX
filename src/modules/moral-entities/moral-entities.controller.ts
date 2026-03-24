@@ -18,7 +18,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "@/common/decorators";
+import { MoralEntityNew } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -49,7 +56,7 @@ export class MoralEntitiesController {
     type: Number,
     description: "Éléments par page",
   })
-  @ApiResponse({ status: 200, description: "Liste des entités morales" })
+  @ApiPaginatedResponseWrapped(MoralEntityNew)
   async findAll(
     @Query() pagination: PaginationDto,
     @CurrentUser() currentUser: RequestUser
@@ -60,7 +67,7 @@ export class MoralEntitiesController {
   @Post()
   @RequireAdmin()
   @ApiOperation({ summary: "Créer une nouvelle entité morale" })
-  @ApiResponse({ status: 201, description: "Entité morale créée avec succès" })
+  @ApiCreatedResponseWrapped(MoralEntityNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
   async create(
     @Body() createDto: CreateMoralEntityDto,
@@ -73,7 +80,7 @@ export class MoralEntitiesController {
   @RequireAdmin()
   @ApiOperation({ summary: "Mettre à jour une entité morale" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'entité morale" })
-  @ApiResponse({ status: 200, description: "Entité morale mise à jour" })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Entité morale non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,

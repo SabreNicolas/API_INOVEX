@@ -18,10 +18,14 @@ import {
 } from "@nestjs/swagger";
 
 import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkResponseWrapped,
   CurrentUser,
   RequireAdmin,
   RequireRondier,
 } from "../../common/decorators";
+import { Equipe } from "../../entities";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { CreateEquipeDto, EquipeQueryDto, UpdateEquipeDto } from "./dto";
 import { EquipeService } from "./equipe.service";
@@ -38,10 +42,7 @@ export class EquipeController {
   @ApiOperation({
     summary: "Récupérer l'équipe sur une date et un quart",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe avec affectations et utilisateurs",
-  })
+  @ApiOkResponseWrapped(Equipe)
   async findByDateAndQuart(
     @Query() query: EquipeQueryDto,
     @CurrentUser() currentUser: RequestUser
@@ -58,10 +59,7 @@ export class EquipeController {
   @ApiOperation({
     summary: "Créer une équipe avec ses affectations",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Équipe et affectations créées avec succès",
-  })
+  @ApiCreatedResponseWrapped(Equipe)
   @ApiResponse({
     status: 400,
     description: "Données invalides ou nom déjà utilisé",
@@ -81,10 +79,7 @@ export class EquipeController {
     type: "number",
     description: "ID de l'équipe",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Équipe et affectations mises à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 404, description: "Équipe non trouvée" })
   async update(
     @Param("id", ParseIntPipe) id: number,

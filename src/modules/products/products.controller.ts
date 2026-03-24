@@ -19,7 +19,16 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
-import { CurrentUser, RequireAdmin } from "@/common/decorators";
+import {
+  ApiCreatedResponseWrapped,
+  ApiMessageResponseWrapped,
+  ApiOkArrayResponseWrapped,
+  ApiOkResponseWrapped,
+  ApiPaginatedResponseWrapped,
+  CurrentUser,
+  RequireAdmin,
+} from "@/common/decorators";
+import { MeasureNew, ProductCategorieNew, ProductNew } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
 
@@ -45,10 +54,7 @@ export class ProductsController {
     summary:
       "Récupérer les produits arrêts (typeId=4, enabled=1, exclut 'temps')",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits arrêts",
-  })
+  @ApiOkArrayResponseWrapped(ProductNew)
   async findArrets(@CurrentUser() currentUser: RequestUser) {
     return this.productsService.findArrets(currentUser.idUsine);
   }
@@ -70,10 +76,7 @@ export class ProductsController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAll(
@@ -88,10 +91,7 @@ export class ProductsController {
   @ApiOperation({
     summary: "Récupérer tous les types de produits",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des types de produits récupérée avec succès",
-  })
+  @ApiOkArrayResponseWrapped(ProductCategorieNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllTypes() {
@@ -115,10 +115,7 @@ export class ProductsController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllSortants(
@@ -149,10 +146,7 @@ export class ProductsController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllTypeDechets(
@@ -179,10 +173,7 @@ export class ProductsController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findAllReactifs(
@@ -393,10 +384,7 @@ export class ProductsController {
   @ApiOperation({
     summary: "Créer une nouvelle mesure",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Mesure créée avec succès",
-  })
+  @ApiCreatedResponseWrapped(MeasureNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -409,10 +397,7 @@ export class ProductsController {
   @ApiOperation({
     summary: "Créer plusieurs mesures en batch",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Mesures créées avec succès",
-  })
+  @ApiCreatedResponseWrapped(MeasureNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -444,10 +429,7 @@ export class ProductsController {
       "Si true, supprime toutes les mesures avec ProducerId != 0 ou != null",
     required: false,
   })
-  @ApiResponse({
-    status: 200,
-    description: "Mesures entrants supprimées avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async deleteMeasuresEntrants(
@@ -488,10 +470,7 @@ export class ProductsController {
       "Si true, supprime toutes les mesures de produits avec Enabled=1 et typeId=5",
     required: false,
   })
-  @ApiResponse({
-    status: 200,
-    description: "Mesures sortants supprimées avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async deleteMeasuresSortants(
@@ -532,10 +511,7 @@ export class ProductsController {
       "Si true, supprime toutes les mesures de produits avec Enabled=1 et Name LIKE '%livraison%'",
     required: false,
   })
-  @ApiResponse({
-    status: 200,
-    description: "Mesures réactifs supprimées avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async deleteMeasuresReactifs(
@@ -562,10 +538,7 @@ export class ProductsController {
     type: "number",
     description: "ID de la mesure",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Mesure mise à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -599,10 +572,7 @@ export class ProductsController {
     type: Number,
     description: "Éléments par page (défaut: 20, max: 100)",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Liste des produits récupérée avec succès",
-  })
+  @ApiPaginatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   async findByType(
@@ -627,10 +597,7 @@ export class ProductsController {
     type: "number",
     description: "ID du produit",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Produit récupéré avec succès",
-  })
+  @ApiOkResponseWrapped(ProductNew)
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   @ApiResponse({ status: 404, description: "Produit non trouvé" })
@@ -646,10 +613,7 @@ export class ProductsController {
   @ApiOperation({
     summary: "Créer un nouveau produit",
   })
-  @ApiResponse({
-    status: 201,
-    description: "Produit créé avec succès",
-  })
+  @ApiCreatedResponseWrapped(ProductNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -667,10 +631,7 @@ export class ProductsController {
     type: "number",
     description: "ID du produit",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Produit mis à jour avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 400, description: "Données invalides" })
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
@@ -693,10 +654,7 @@ export class ProductsController {
     type: "number",
     description: "ID du produit",
   })
-  @ApiResponse({
-    status: 200,
-    description: "Visibilité du produit modifiée avec succès",
-  })
+  @ApiMessageResponseWrapped()
   @ApiResponse({ status: 401, description: "Non autorisé" })
   @ApiResponse({ status: 403, description: "Accès interdit" })
   @ApiResponse({ status: 404, description: "Produit non trouvé" })

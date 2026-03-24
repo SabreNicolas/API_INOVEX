@@ -31,6 +31,7 @@ import { QuartEvenementModule } from "./modules/quart-evenement/quart-evenement.
 import { QuartLiensExternesModule } from "./modules/quart-liens-externes/quart-liens-externes.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
+import { UploadsModule } from "./modules/upload/uploads.module";
 import { UsersModule } from "./modules/users/users.module";
 import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
@@ -47,17 +48,17 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
       {
         name: "short",
         ttl: 1000,
-        limit: 1000,
+        limit: 50,
       },
       {
         name: "medium",
         ttl: 10000,
-        limit: 1000,
+        limit: 100,
       },
       {
         name: "long",
         ttl: 60000,
-        limit: 1000,
+        limit: 200,
       },
     ]),
 
@@ -93,6 +94,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     QuartEvenementModule,
     QuartLiensExternesModule,
     AnomalieModule,
+    UploadsModule,
   ],
   providers: [
     LoggerService,

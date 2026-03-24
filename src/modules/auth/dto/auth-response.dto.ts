@@ -58,6 +58,16 @@ export class AuthUserResponseDto {
   }
 }
 
+class LoginResponseDataDto {
+  @ApiProperty({ type: AuthUserResponseDto })
+  @Expose()
+  user: AuthUserResponseDto;
+
+  @ApiProperty({ example: "abc123", description: "Token CSRF" })
+  @Expose()
+  csrfToken: string;
+}
+
 /**
  * DTO de réponse pour le login réussi
  */
@@ -70,11 +80,59 @@ export class LoginResponseDto {
   @Expose()
   message: string;
 
-  @ApiProperty({ type: AuthUserResponseDto })
+  @ApiProperty({ type: LoginResponseDataDto })
   @Expose()
-  user: AuthUserResponseDto;
+  data: LoginResponseDataDto;
 
-  constructor(partial: Partial<LoginResponseDto>) {
-    Object.assign(this, partial);
-  }
+  @ApiProperty({ example: "2025-01-01T00:00:00.000Z" })
+  @Expose()
+  timestamp: string;
+}
+
+class RefreshResponseDataDto {
+  @ApiProperty({ example: "abc123", description: "Token CSRF" })
+  @Expose()
+  csrfToken: string;
+
+  @ApiProperty({ example: 1, description: "ID du site" })
+  @Expose()
+  idUsine: number;
+}
+
+/**
+ * DTO de réponse pour le refresh
+ */
+export class RefreshResponseDto {
+  @ApiProperty({ example: true })
+  @Expose()
+  success: boolean;
+
+  @ApiProperty({ example: "Tokens rafraîchis avec succès" })
+  @Expose()
+  message: string;
+
+  @ApiProperty({ type: RefreshResponseDataDto })
+  @Expose()
+  data: RefreshResponseDataDto;
+
+  @ApiProperty({ example: "2025-01-01T00:00:00.000Z" })
+  @Expose()
+  timestamp: string;
+}
+
+/**
+ * DTO de réponse pour le logout
+ */
+export class LogoutResponseDto {
+  @ApiProperty({ example: true })
+  @Expose()
+  success: boolean;
+
+  @ApiProperty({ example: "Déconnexion réussie" })
+  @Expose()
+  message: string;
+
+  @ApiProperty({ example: "2025-01-01T00:00:00.000Z" })
+  @Expose()
+  timestamp: string;
 }
