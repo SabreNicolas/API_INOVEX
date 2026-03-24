@@ -49,6 +49,10 @@ export class AuthUserResponseDto {
   @Expose()
   isSuperAdmin: boolean;
 
+  @ApiProperty({ example: false, description: "Est Kerlan" })
+  @Expose()
+  isKerlan: boolean;
+
   // Le mot de passe ne sera jamais inclus dans les réponses
   @Exclude()
   password?: string;

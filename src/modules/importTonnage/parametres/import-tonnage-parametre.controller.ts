@@ -19,16 +19,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireSuperAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { ImportTonnageParametre } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { ImportTonnageParametre } from "@/entities";
 
 import {
   CreateImportTonnageParametreDto,
@@ -46,7 +47,7 @@ export class ImportTonnageParametreController {
   ) {}
 
   @Get()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN, UserRole.IS_SAISIE, UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les paramètres d'import tonnage",
   })
@@ -76,7 +77,7 @@ export class ImportTonnageParametreController {
   }
 
   @Post()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer un nouveau paramètre d'import tonnage",
   })
@@ -93,7 +94,7 @@ export class ImportTonnageParametreController {
   }
 
   @Put(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un paramètre d'import tonnage",
   })
@@ -116,7 +117,7 @@ export class ImportTonnageParametreController {
   }
 
   @Delete(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer un paramètre d'import tonnage",
   })

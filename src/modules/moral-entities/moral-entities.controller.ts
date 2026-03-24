@@ -18,16 +18,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { MoralEntityNew } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { MoralEntityNew } from "@/entities";
 
 import { CreateMoralEntityDto, UpdateMoralEntityDto } from "./dto";
 import { MoralEntitiesService } from "./moral-entities.service";
@@ -40,7 +41,7 @@ export class MoralEntitiesController {
   constructor(private readonly moralEntitiesService: MoralEntitiesService) {}
 
   @Get()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_SAISIE])
   @ApiOperation({
     summary: "Récupérer toutes les entités morales avec leur type de déchet",
   })
@@ -65,7 +66,7 @@ export class MoralEntitiesController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer une nouvelle entité morale" })
   @ApiCreatedResponseWrapped(MoralEntityNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -77,7 +78,7 @@ export class MoralEntitiesController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Mettre à jour une entité morale" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'entité morale" })
   @ApiMessageResponseWrapped()

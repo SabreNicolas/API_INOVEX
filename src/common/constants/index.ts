@@ -7,22 +7,22 @@
 export enum UserRole {
   IS_RONDIER = 1,
   IS_SAISIE = 2,
-  IS_QSE = 3,
-  IS_RAPPORT = 4,
+  IS_RAPPORT = 3,
+  IS_CHEF_QUART = 4,
   IS_ADMIN = 5,
-  IS_CHEF_QUART = 6,
-  IS_SUPER_ADMIN = 7,
+  IS_SUPER_ADMIN = 6,
+  IS_KERLAN = 7,
 }
 
 // Mapping des noms de rôles
 export const ROLE_NAMES: Record<UserRole, string> = {
   [UserRole.IS_RONDIER]: "Rondier",
   [UserRole.IS_SAISIE]: "Saisie",
-  [UserRole.IS_QSE]: "QSE",
   [UserRole.IS_RAPPORT]: "Rapport",
   [UserRole.IS_ADMIN]: "Administrateur",
   [UserRole.IS_CHEF_QUART]: "Chef de quart",
   [UserRole.IS_SUPER_ADMIN]: "Super Administrateur",
+  [UserRole.IS_KERLAN]: "Kerlan",
 };
 
 // Constantes d'authentification

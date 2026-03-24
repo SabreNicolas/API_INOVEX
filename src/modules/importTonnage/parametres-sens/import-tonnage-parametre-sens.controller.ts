@@ -19,15 +19,16 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireSuperAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { ImportTonnageParametreSens } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard } from "@/common/guards/auth.guard";
+import { ImportTonnageParametreSens } from "@/entities";
 
 import {
   CreateImportTonnageParametreSensDto,
@@ -45,7 +46,7 @@ export class ImportTonnageParametreSensController {
   ) {}
 
   @Get()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN, UserRole.IS_SAISIE, UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les paramètres sens d'import tonnage",
   })
@@ -69,7 +70,7 @@ export class ImportTonnageParametreSensController {
   }
 
   @Post()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer un nouveau paramètre sens d'import tonnage",
   })
@@ -80,7 +81,7 @@ export class ImportTonnageParametreSensController {
   }
 
   @Put(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un paramètre sens d'import tonnage",
   })
@@ -105,7 +106,7 @@ export class ImportTonnageParametreSensController {
   }
 
   @Delete(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer un paramètre sens d'import tonnage",
   })

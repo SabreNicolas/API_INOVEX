@@ -55,6 +55,9 @@ export class User {
   @Column({ type: "bit", default: true })
   isActif: boolean;
 
+  @Column({ type: "bit", default: false })
+  isKerlan: boolean;
+
   @Column({ type: "int", default: 1 })
   idUsine: number;
 }

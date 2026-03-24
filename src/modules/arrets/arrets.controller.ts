@@ -19,15 +19,16 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { Arret } from "@/entities";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { Arret } from "@/entities";
 
 import { ArretsService } from "./arrets.service";
 import { CreateArretDto, UpdateArretDto } from "./dto";
@@ -41,7 +42,7 @@ export class ArretsController {
   constructor(private readonly arretsService: ArretsService) {}
 
   @Get("total-by-date")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les totaux des arrêts entre deux dates par description et par ligne",
@@ -75,7 +76,7 @@ export class ArretsController {
   }
 
   @Get("by-date")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({ summary: "Récupérer les arrêts entre deux dates" })
   @ApiQuery({
     name: "startDate",
@@ -115,7 +116,7 @@ export class ArretsController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({ summary: "Créer un nouvel arrêt" })
   @ApiCreatedResponseWrapped(Arret)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -127,7 +128,7 @@ export class ArretsController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({ summary: "Mettre à jour un arrêt" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
   @ApiMessageResponseWrapped()
@@ -142,7 +143,7 @@ export class ArretsController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({ summary: "Supprimer un arrêt" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
   @ApiMessageResponseWrapped()

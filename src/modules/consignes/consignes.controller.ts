@@ -24,20 +24,21 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { Consigne, ConsigneType } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { FileUploadService } from "../../common/services/file-upload.service";
+import { Consigne, ConsigneType } from "../../entities";
 import { ConsignesService } from "./consignes.service";
 import {
   ActiveOnDateQueryDto,
@@ -56,7 +57,7 @@ export class ConsignesController {
   ) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer toutes les consignes" })
   @ApiQuery({
     name: "page",
@@ -79,7 +80,7 @@ export class ConsignesController {
   }
 
   @Get("active-on-date")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les consignes actives sur une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findActiveOnDate(
@@ -94,7 +95,7 @@ export class ConsignesController {
   }
 
   @Get("by-date")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les consignes par plage de dates" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findByDateRange(
@@ -110,7 +111,7 @@ export class ConsignesController {
   }
 
   @Get("inactive")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les consignes inactives sur une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findInactive(
@@ -125,7 +126,7 @@ export class ConsignesController {
   }
 
   @Get("futur")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les consignes à venir après une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findFuture(
@@ -140,7 +141,7 @@ export class ConsignesController {
   }
 
   @Get("types")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les types de consignes" })
   @ApiOkArrayResponseWrapped(ConsigneType)
   async findTypes() {
@@ -148,7 +149,7 @@ export class ConsignesController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @UseInterceptors(FileInterceptor("file"))
   @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Créer une nouvelle consigne" })
@@ -193,7 +194,7 @@ export class ConsignesController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @UseInterceptors(FileInterceptor("file"))
   @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Mettre à jour une consigne" })
@@ -242,7 +243,7 @@ export class ConsignesController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer une consigne" })
   @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
   @ApiMessageResponseWrapped()

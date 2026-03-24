@@ -19,12 +19,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
@@ -43,7 +44,7 @@ export class ElementControleController {
   ) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer tous les éléments de contrôle" })
   @ApiQuery({
     name: "page",
@@ -66,7 +67,7 @@ export class ElementControleController {
   }
 
   @Get("zone/:zoneId")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les éléments d'une zone" })
   @ApiParam({ name: "zoneId", type: "number", description: "ID de la zone" })
   @ApiQuery({
@@ -95,7 +96,7 @@ export class ElementControleController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer un nouvel élément de contrôle" })
   @ApiCreatedResponseWrapped(ElementControle)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -104,7 +105,7 @@ export class ElementControleController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Mettre à jour un élément de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
   @ApiMessageResponseWrapped()
@@ -123,7 +124,7 @@ export class ElementControleController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer un élément de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'élément" })
   @ApiMessageResponseWrapped()

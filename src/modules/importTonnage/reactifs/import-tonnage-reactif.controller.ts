@@ -19,16 +19,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireSuperAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { ImportTonnageReactif } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { ImportTonnageReactif } from "@/entities";
 
 import {
   CreateImportTonnageReactifDto,
@@ -46,7 +47,7 @@ export class ImportTonnageReactifController {
   ) {}
 
   @Get()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les imports tonnage réactifs",
   })
@@ -76,7 +77,7 @@ export class ImportTonnageReactifController {
   }
 
   @Post()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Créer un nouvel import tonnage réactif",
   })
@@ -87,7 +88,7 @@ export class ImportTonnageReactifController {
   }
 
   @Put(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un import tonnage réactif",
   })
@@ -110,7 +111,7 @@ export class ImportTonnageReactifController {
   }
 
   @Delete(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Supprimer un import tonnage réactif",
   })

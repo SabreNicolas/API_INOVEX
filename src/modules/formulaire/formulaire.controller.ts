@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
@@ -26,10 +27,11 @@ import {
   ApiPaginatedResponseWrapped,
   CurrentUser,
   RequireAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { Formulaire } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { Formulaire } from "@/entities";
 
 import { CreateFormulaireDto, UpdateFormulaireDto } from "./dto";
 import { FormulaireService } from "./formulaire.service";
@@ -42,7 +44,7 @@ export class FormulaireController {
   constructor(private readonly formulaireService: FormulaireService) {}
 
   @Get("with-products")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les formulaires avec leurs produits",
   })
@@ -72,7 +74,7 @@ export class FormulaireController {
   }
 
   @Get(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer un formulaire par ID avec ses produits",
   })
@@ -86,7 +88,7 @@ export class FormulaireController {
   }
 
   @Get(":id/products/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les produits d'un formulaire avec leurs mesures entre deux dates",
@@ -126,7 +128,7 @@ export class FormulaireController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer un nouveau formulaire avec ses produits",
   })
@@ -145,7 +147,7 @@ export class FormulaireController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un formulaire avec ses produits",
   })
@@ -168,7 +170,7 @@ export class FormulaireController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer un formulaire et ses affectations",
   })

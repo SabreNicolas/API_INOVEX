@@ -53,6 +53,7 @@ export class AuthService {
           "isChefQuart",
           "isSuperAdmin",
           "idUsine",
+          "isKerlan",
         ],
       });
 
@@ -79,6 +80,7 @@ export class AuthService {
         isRapport: Boolean(user.isRapport),
         isChefQuart: Boolean(user.isChefQuart),
         isSuperAdmin: Boolean(user.isSuperAdmin),
+        isKerlan: Boolean(user.isKerlan),
         idUsine: user.idUsine,
       };
 
@@ -154,6 +156,7 @@ export class AuthService {
           "isChefQuart",
           "isSuperAdmin",
           "idUsine",
+          "isKerlan",
         ],
       });
 
@@ -223,6 +226,7 @@ export class AuthService {
         isRapport: Boolean(user.isRapport),
         isChefQuart: Boolean(user.isChefQuart),
         isSuperAdmin: Boolean(user.isSuperAdmin),
+        isKerlan: Boolean(user.isKerlan),
         idUsine: idUsineToUse,
       };
 

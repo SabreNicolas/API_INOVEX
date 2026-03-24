@@ -25,10 +25,10 @@ import {
   ApiPaginatedResponseWrapped,
   RequireAdmin,
 } from "../../common/decorators";
-import { Badge, User, ZoneControle } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { Badge, User, ZoneControle } from "../../entities";
 import { BadgeService } from "./badge.service";
 import {
   AssignBadgeToUserDto,

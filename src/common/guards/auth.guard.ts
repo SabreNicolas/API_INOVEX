@@ -33,7 +33,7 @@ export interface JwtPayload {
 }
 
 export interface RequestUser extends JwtPayload {
-  role: UserRole;
+  roles: UserRole[];
   roleName: string;
 }
 
@@ -47,10 +47,11 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredRole = this.reflector.getAllAndOverride<UserRole>(ROLES_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
+    //Récupérer des rôles requis pour la route
+    const requiredRole = this.reflector.getAllAndOverride<UserRole[]>(
+      ROLES_KEY,
+      [context.getHandler(), context.getClass()]
+    );
 
     // Si aucun rôle requis, la route est publique
     if (requiredRole === undefined) {
@@ -76,21 +77,24 @@ export class AuthGuard implements CanActivate {
       }
 
       // Détermination du rôle
-      const userRole = this.getUserRole(decoded);
+      const userRole = this.getUserRoles(decoded);
 
       // Vérification des permissions
-      if (userRole < requiredRole) {
+      if (!requiredRole.some(role => userRole.includes(role))) {
+        const requiredRolesNames = requiredRole
+          .map(r => ROLE_NAMES[r])
+          .join(", ");
+        const userRoleName = userRole.map(r => ROLE_NAMES[r]).join(", ");
         throw new ForbiddenException(
-          // eslint-disable-next-line security/detect-object-injection
-          `${ERROR_MESSAGES.FORBIDDEN}. Rôle requis: ${ROLE_NAMES[requiredRole]}`
+          `${ERROR_MESSAGES.FORBIDDEN}. Rôle requis: ${requiredRolesNames}, votre rôle: ${userRoleName}`
         );
       }
 
       // Enrichir la requête avec les informations utilisateur
       request.user = {
         ...decoded,
-        role: userRole,
-        roleName: ROLE_NAMES[userRole], // eslint-disable-line security/detect-object-injection
+        roles: userRole,
+        roleName: userRole.map(r => ROLE_NAMES[r]).join(", "), // eslint-disable-line security/detect-object-injection
       };
 
       return true;
@@ -121,14 +125,14 @@ export class AuthGuard implements CanActivate {
     }
   }
 
-  private getUserRole(user: JwtPayload): UserRole {
-    if (user.isSuperAdmin) return UserRole.IS_SUPER_ADMIN;
-    if (user.isAdmin) return UserRole.IS_ADMIN;
-    if (user.isChefQuart) return UserRole.IS_CHEF_QUART;
-    if (user.isRapport) return UserRole.IS_RAPPORT;
-    if (user.isQSE) return UserRole.IS_QSE;
-    if (user.isSaisie) return UserRole.IS_SAISIE;
-    if (user.isRondier) return UserRole.IS_RONDIER;
-    return UserRole.IS_RONDIER;
+  private getUserRoles(user: JwtPayload): UserRole[] {
+    const roles: UserRole[] = [];
+    if (user.isSuperAdmin) roles.push(UserRole.IS_SUPER_ADMIN);
+    if (user.isAdmin) roles.push(UserRole.IS_ADMIN);
+    if (user.isChefQuart) roles.push(UserRole.IS_CHEF_QUART);
+    if (user.isRapport) roles.push(UserRole.IS_RAPPORT);
+    if (user.isSaisie) roles.push(UserRole.IS_SAISIE);
+    if (user.isRondier) roles.push(UserRole.IS_RONDIER);
+    return roles;
   }
 }

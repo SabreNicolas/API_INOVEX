@@ -19,18 +19,19 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { ZoneControle } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { ZoneControle } from "../../entities";
 import { CreateZoneControleDto, UpdateZoneControleDto } from "./dto";
 import { ZoneControleService } from "./zone-controle.service";
 
@@ -42,7 +43,7 @@ export class ZoneControleController {
   constructor(private readonly zoneControleService: ZoneControleService) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer toutes les zones de contrôle" })
   @ApiQuery({
     name: "page",
@@ -65,7 +66,7 @@ export class ZoneControleController {
   }
 
   @Get("groupements/elements-controle")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer toutes les zones avec leurs groupements et éléments de contrôle",
@@ -80,7 +81,7 @@ export class ZoneControleController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer une nouvelle zone de contrôle" })
   @ApiCreatedResponseWrapped(ZoneControle)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -89,7 +90,7 @@ export class ZoneControleController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Mettre à jour une zone de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de la zone" })
   @ApiMessageResponseWrapped()
@@ -103,7 +104,7 @@ export class ZoneControleController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer une zone de contrôle" })
   @ApiParam({ name: "id", type: "number", description: "ID de la zone" })
   @ApiMessageResponseWrapped()

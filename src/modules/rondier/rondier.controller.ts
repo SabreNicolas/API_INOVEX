@@ -22,16 +22,18 @@ import {
 } from "@nestjs/swagger";
 import { Response } from "express";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiOkResponseWrapped,
   CurrentUser,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
-import { MesureRondier, RepriseRonde, Ronde } from "../../entities";
+import { RepriseRonde, Ronde } from "../../entities";
 import { ZoneControleService } from "../zone-controle/zone-controle.service";
 import {
   CreateRepriseRondeDto,
@@ -55,7 +57,7 @@ export class RondierController {
   ) {}
 
   @Get("rondes")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Récupérer les rondes par date et quart",
     description:
@@ -95,7 +97,7 @@ export class RondierController {
   }
 
   @Post("rondes")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Créer une nouvelle ronde avec ses mesures",
     description:
@@ -118,7 +120,7 @@ export class RondierController {
   }
 
   @Get("generate-pdf-reprise")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Générer le PDF de reprise de ronde",
     description:
@@ -161,7 +163,7 @@ export class RondierController {
   }
 
   @Patch("mesures/:id")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Mettre à jour une mesure rondier",
     description: "Met à jour les valeurs d'une mesure rondier existante",
@@ -186,7 +188,7 @@ export class RondierController {
   // ==================== RepriseRonde Routes ====================
 
   @Get("reprises-rondes")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Récupérer toutes les reprises de ronde",
     description:
@@ -198,7 +200,7 @@ export class RondierController {
   }
 
   @Get("reprises-rondes/by-date-quart")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Récupérer une reprise de ronde par date et quart",
     description:
@@ -231,7 +233,7 @@ export class RondierController {
   }
 
   @Post("reprises-rondes")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Créer une nouvelle reprise de ronde",
     description:
@@ -250,7 +252,7 @@ export class RondierController {
   }
 
   @Patch("reprises-rondes/:id")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Mettre à jour une reprise de ronde",
     description: "Met à jour le statut de terminaison d'une reprise de ronde",
@@ -278,7 +280,7 @@ export class RondierController {
   }
 
   @Delete("reprises-rondes/:id")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Supprimer une reprise de ronde",
     description: "Supprime une reprise de ronde existante",

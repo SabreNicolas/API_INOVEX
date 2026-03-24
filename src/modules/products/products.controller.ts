@@ -19,6 +19,7 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
@@ -26,11 +27,11 @@ import {
   ApiOkResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { MeasureNew, ProductCategorieNew, ProductNew } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "@/common/guards/auth.guard";
+import { MeasureNew, ProductCategorieNew, ProductNew } from "@/entities";
 
 import {
   CreateMeasureDto,
@@ -48,19 +49,8 @@ import { ProductsService } from "./products.service";
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
-  @Get("arrets")
-  @RequireAdmin()
-  @ApiOperation({
-    summary:
-      "Récupérer les produits arrêts (typeId=4, enabled=1, exclut 'temps')",
-  })
-  @ApiOkArrayResponseWrapped(ProductNew)
-  async findArrets(@CurrentUser() currentUser: RequestUser) {
-    return this.productsService.findArrets(currentUser.idUsine);
-  }
-
   @Get()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les produits",
   })
@@ -86,8 +76,19 @@ export class ProductsController {
     return this.productsService.findAll(pagination, currentUser.idUsine);
   }
 
+  @Get("arrets")
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary:
+      "Récupérer les produits arrêts (typeId=4, enabled=1, exclut 'temps')",
+  })
+  @ApiOkArrayResponseWrapped(ProductNew)
+  async findArrets(@CurrentUser() currentUser: RequestUser) {
+    return this.productsService.findArrets(currentUser.idUsine);
+  }
+
   @Get("types")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les types de produits",
   })
@@ -99,7 +100,7 @@ export class ProductsController {
   }
 
   @Get("sortants")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les produits sortants",
   })
@@ -129,7 +130,7 @@ export class ProductsController {
   }
 
   @Get("typeDechets")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer tous les produits correspondants à des types de déchets",
@@ -157,7 +158,7 @@ export class ProductsController {
   }
 
   @Get("reactifs")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les produits réactifs",
   })
@@ -187,7 +188,7 @@ export class ProductsController {
   }
 
   @Get("entrants/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les moral entities avec leurs mesures et produits entre deux dates",
@@ -221,7 +222,7 @@ export class ProductsController {
   }
 
   @Get("sortants/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les produits sortants (typeId=5) avec mesures entre deux dates",
@@ -253,7 +254,7 @@ export class ProductsController {
   }
 
   @Get("reactifs-livraison/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les produits réactifs et livraison (typeId=7) avec mesures entre deux dates",
@@ -288,7 +289,7 @@ export class ProductsController {
   }
 
   @Get("compteurs/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les produits compteur (typeId=4) avec mesures entre deux dates",
@@ -319,7 +320,7 @@ export class ProductsController {
   }
 
   @Get("analyses/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary:
       "Récupérer les produits analyses (typeId=6) avec mesures entre deux dates",
@@ -350,7 +351,7 @@ export class ProductsController {
   }
 
   @Get("consommables/measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer les produits typeId=2 avec mesures entre deux dates",
   })
@@ -380,7 +381,7 @@ export class ProductsController {
   }
 
   @Post("measures")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer une nouvelle mesure",
   })
@@ -393,7 +394,7 @@ export class ProductsController {
   }
 
   @Post("measures-batch")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer plusieurs mesures en batch",
   })
@@ -406,7 +407,7 @@ export class ProductsController {
   }
 
   @Delete("measures/entrants")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer les mesures entrants entre deux dates",
   })
@@ -447,7 +448,7 @@ export class ProductsController {
   }
 
   @Delete("measures/sortants")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer les mesures sortants entre deux dates",
   })
@@ -488,7 +489,7 @@ export class ProductsController {
   }
 
   @Delete("measures/reactifs")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Supprimer les mesures réactifs entre deux dates",
   })
@@ -529,7 +530,7 @@ export class ProductsController {
   }
 
   @Patch("measures/:id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour une mesure",
   })
@@ -551,7 +552,7 @@ export class ProductsController {
   }
 
   @Get("type/:typeId")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer les produits par type",
   })
@@ -588,7 +589,7 @@ export class ProductsController {
   }
 
   @Get(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer un produit par ID",
   })
@@ -609,7 +610,7 @@ export class ProductsController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Créer un nouveau produit",
   })
@@ -622,7 +623,7 @@ export class ProductsController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un produit",
   })
@@ -645,7 +646,7 @@ export class ProductsController {
   }
 
   @Patch(":id/toggle-visibility")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Activer/désactiver un produit",
   })

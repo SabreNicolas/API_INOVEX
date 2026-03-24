@@ -135,6 +135,7 @@ export class AuthController {
           isRapport: Boolean(user.isRapport),
           isChefQuart: Boolean(user.isChefQuart),
           isSuperAdmin: Boolean(user.isSuperAdmin),
+          isKerlan: Boolean(user.isKerlan),
           idUsine: user.idUsine,
         },
         csrfToken,

@@ -18,21 +18,21 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
-  ApiCreatedResponseWrapped,
-  ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
+  RequireRole,
 } from "../../common/decorators";
+import { PaginationDto } from "../../common/dto/pagination.dto";
 import {
   IdResponseDto,
   MessageResponseDto,
 } from "../../common/dto/response.dto";
-import { User } from "../../entities";
-import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { User } from "../../entities";
 import { CreateUserDto, UpdateUserDto } from "./dto";
 import { UsersService } from "./users.service";
 
@@ -44,7 +44,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get("rondier")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs rondiers",
   })
@@ -56,7 +56,7 @@ export class UsersController {
   }
 
   @Get("email")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs ayant un email",
   })
@@ -68,7 +68,7 @@ export class UsersController {
   }
 
   @Get()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs (avec pagination optionnelle)",
   })
@@ -95,7 +95,7 @@ export class UsersController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer un nouvel utilisateur" })
   @ApiResponse({
     status: 201,
@@ -114,7 +114,7 @@ export class UsersController {
   }
 
   @Put(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Mettre à jour un utilisateur" })
   @ApiParam({ name: "id", type: "number", description: "ID de l'utilisateur" })
   @ApiResponse({

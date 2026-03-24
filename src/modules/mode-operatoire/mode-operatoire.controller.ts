@@ -25,17 +25,18 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { ModeOperatoire } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { ModeOperatoire } from "../../entities";
 import { CreateModeOperatoireDto, UpdateModeOperatoireDto } from "./dto";
 import { ModeOperatoireService } from "./mode-operatoire.service";
 
@@ -47,7 +48,7 @@ export class ModeOperatoireController {
   constructor(private readonly modeOperatoireService: ModeOperatoireService) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer tous les modes opératoires" })
   @ApiQuery({
     name: "page",
@@ -70,7 +71,7 @@ export class ModeOperatoireController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @UseInterceptors(FileInterceptor("fichier"))
   @ApiOperation({ summary: "Créer un nouveau mode opératoire avec fichier" })
   @ApiConsumes("multipart/form-data")
@@ -110,7 +111,7 @@ export class ModeOperatoireController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @UseInterceptors(FileInterceptor("fichier"))
   @ApiOperation({ summary: "Mettre à jour un mode opératoire" })
   @ApiParam({
@@ -151,7 +152,7 @@ export class ModeOperatoireController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer un mode opératoire" })
   @ApiParam({
     name: "id",
