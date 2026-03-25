@@ -57,7 +57,11 @@ export class ConsignesController {
   ) {}
 
   @Get()
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer toutes les consignes" })
   @ApiQuery({
     name: "page",
@@ -80,7 +84,11 @@ export class ConsignesController {
   }
 
   @Get("active-on-date")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les consignes actives sur une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findActiveOnDate(
@@ -95,7 +103,11 @@ export class ConsignesController {
   }
 
   @Get("by-date")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les consignes par plage de dates" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findByDateRange(
@@ -111,7 +123,11 @@ export class ConsignesController {
   }
 
   @Get("inactive")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les consignes inactives sur une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findInactive(
@@ -126,7 +142,11 @@ export class ConsignesController {
   }
 
   @Get("futur")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les consignes à venir après une date" })
   @ApiPaginatedResponseWrapped(Consigne)
   async findFuture(
@@ -141,7 +161,11 @@ export class ConsignesController {
   }
 
   @Get("types")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les types de consignes" })
   @ApiOkArrayResponseWrapped(ConsigneType)
   async findTypes() {
@@ -149,7 +173,11 @@ export class ConsignesController {
   }
 
   @Post()
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @UseInterceptors(FileInterceptor("file"))
   @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Créer une nouvelle consigne" })
@@ -194,7 +222,11 @@ export class ConsignesController {
   }
 
   @Patch(":id")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @UseInterceptors(FileInterceptor("file"))
   @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Mettre à jour une consigne" })
@@ -243,7 +275,11 @@ export class ConsignesController {
   }
 
   @Delete(":id")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer une consigne" })
   @ApiParam({ name: "id", type: "number", description: "ID de la consigne" })
   @ApiMessageResponseWrapped()

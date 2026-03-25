@@ -18,11 +18,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
@@ -45,7 +47,11 @@ export class QuartCalendrierController {
   ) {}
 
   @Get("horaires")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary:
       "Récupérer les heures de début et de fin de quart par date et numéro de quart",
@@ -67,7 +73,11 @@ export class QuartCalendrierController {
   }
 
   @Get("occurrences")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary:
       "Lister les séries d'occurrences récurrentes (zones/actions groupées)",
@@ -81,7 +91,11 @@ export class QuartCalendrierController {
   }
 
   @Get("zones")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer les zones du calendrier entre 2 dates",
   })
@@ -98,7 +112,11 @@ export class QuartCalendrierController {
   }
 
   @Get("actions")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer les actions du calendrier entre 2 dates",
   })
@@ -115,7 +133,11 @@ export class QuartCalendrierController {
   }
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer les entrées du calendrier entre 2 dates",
   })
@@ -132,7 +154,11 @@ export class QuartCalendrierController {
   }
 
   @Post("batch")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Créer plusieurs entrées dans le calendrier en une fois",
   })
@@ -149,7 +175,11 @@ export class QuartCalendrierController {
   }
 
   @Patch(":id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour une entrée du calendrier" })
   @ApiParam({
     name: "id",
@@ -172,7 +202,11 @@ export class QuartCalendrierController {
   }
 
   @Delete(":id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer une entrée du calendrier" })
   @ApiParam({
     name: "id",

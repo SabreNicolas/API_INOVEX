@@ -19,11 +19,13 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
+  RequireRole,
 } from "../../common/decorators";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
@@ -44,7 +46,7 @@ export class BadgeController {
   constructor(private readonly badgeService: BadgeService) {}
 
   @Get("assigned-users")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les badges affectés à des utilisateurs",
   })
@@ -72,7 +74,7 @@ export class BadgeController {
   }
 
   @Get("assigned-zones")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer tous les badges affectés à des zones" })
   @ApiQuery({
     name: "page",
@@ -98,7 +100,7 @@ export class BadgeController {
   }
 
   @Get("unassigned")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les badges non affectés" })
   @ApiQuery({
     name: "page",
@@ -121,7 +123,7 @@ export class BadgeController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer un nouveau badge" })
   @ApiCreatedResponseWrapped(Badge)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -131,7 +133,7 @@ export class BadgeController {
   }
 
   @Patch(":id/assign-user")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Affecter un badge à un utilisateur" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
   @ApiMessageResponseWrapped()
@@ -146,7 +148,7 @@ export class BadgeController {
   }
 
   @Patch(":id/assign-zone")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Affecter un badge à une zone" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
   @ApiMessageResponseWrapped()
@@ -164,7 +166,7 @@ export class BadgeController {
   }
 
   @Get("zones-without-badge")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Récupérer les zones non affectées à un badge" })
   @ApiQuery({
     name: "page",
@@ -190,7 +192,7 @@ export class BadgeController {
   }
 
   @Get("users-without-badge")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({
     summary: "Récupérer les utilisateurs non affectés à un badge",
   })
@@ -218,7 +220,7 @@ export class BadgeController {
   }
 
   @Patch(":id/unassign")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Retirer l'affectation d'un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
   @ApiMessageResponseWrapped()
@@ -229,7 +231,7 @@ export class BadgeController {
   }
 
   @Patch(":id/change-status")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Désactiver ou activer un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
   @ApiMessageResponseWrapped()
@@ -240,7 +242,7 @@ export class BadgeController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer un badge" })
   @ApiParam({ name: "id", type: "number", description: "ID du badge" })
   @ApiMessageResponseWrapped()

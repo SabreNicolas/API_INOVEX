@@ -44,7 +44,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get("rondier")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART])
   @ApiOperation({
     summary: "Récupérer tous les utilisateurs rondiers",
   })

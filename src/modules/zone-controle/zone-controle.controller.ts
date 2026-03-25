@@ -43,7 +43,11 @@ export class ZoneControleController {
   constructor(private readonly zoneControleService: ZoneControleService) {}
 
   @Get()
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer toutes les zones de contrôle" })
   @ApiQuery({
     name: "page",
@@ -66,7 +70,11 @@ export class ZoneControleController {
   }
 
   @Get("groupements/elements-controle")
-  @RequireRole([UserRole.IS_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary:
       "Récupérer toutes les zones avec leurs groupements et éléments de contrôle",

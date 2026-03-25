@@ -42,7 +42,12 @@ export class ArretsController {
   constructor(private readonly arretsService: ArretsService) {}
 
   @Get("total-by-date")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary:
       "Récupérer les totaux des arrêts entre deux dates par description et par ligne",
@@ -76,7 +81,12 @@ export class ArretsController {
   }
 
   @Get("by-date")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Récupérer les arrêts entre deux dates" })
   @ApiQuery({
     name: "startDate",
@@ -116,7 +126,12 @@ export class ArretsController {
   }
 
   @Post()
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Créer un nouvel arrêt" })
   @ApiCreatedResponseWrapped(Arret)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -143,7 +158,12 @@ export class ArretsController {
   }
 
   @Delete(":id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Supprimer un arrêt" })
   @ApiParam({ name: "id", type: Number, description: "ID de l'arrêt" })
   @ApiMessageResponseWrapped()

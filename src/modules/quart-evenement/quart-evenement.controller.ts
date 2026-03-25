@@ -24,20 +24,21 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { QuartEvenement } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { FileUploadService } from "../../common/services/file-upload.service";
+import { QuartEvenement } from "../../entities";
 import { CreateQuartEvenementDto, UpdateQuartEvenementDto } from "./dto";
 import { QuartEvenementService } from "./quart-evenement.service";
 
@@ -52,7 +53,11 @@ export class QuartEvenementController {
   ) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer tous les événements" })
   @ApiQuery({
     name: "page",
@@ -75,7 +80,11 @@ export class QuartEvenementController {
   }
 
   @Get("by-date")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les événements par plage de dates" })
   @ApiOkArrayResponseWrapped(QuartEvenement)
   async findByDateRange(
@@ -90,7 +99,11 @@ export class QuartEvenementController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @UseInterceptors(FileInterceptor("file"))
   @ApiConsumes("multipart/form-data")
   @ApiOperation({ summary: "Créer un nouvel événement" })
@@ -140,7 +153,11 @@ export class QuartEvenementController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour un événement" })
   @ApiParam({
     name: "id",
@@ -159,7 +176,11 @@ export class QuartEvenementController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer un événement" })
   @ApiParam({
     name: "id",

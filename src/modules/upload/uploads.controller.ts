@@ -16,7 +16,9 @@ import { Response } from "express";
 import { existsSync } from "fs";
 import { resolve } from "path";
 
-import { RequireRondier } from "../../common/decorators";
+import { UserRole } from "@/common/constants";
+
+import { RequireRole } from "../../common/decorators";
 import { AuthGuard } from "../../common/guards/auth.guard";
 
 @ApiTags("Uploads")
@@ -27,7 +29,13 @@ export class UploadsController {
   private readonly uploadsRoot = resolve(process.cwd(), "uploads");
 
   @Get("*path")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_RONDIER,
+    UserRole.IS_SAISIE,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Télécharger un fichier uploadé (authentifié)" })
   @ApiParam({
     name: "path",

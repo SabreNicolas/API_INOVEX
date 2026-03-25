@@ -19,17 +19,19 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { ActionEnregistrement, QuartAction } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { ActionEnregistrement, QuartAction } from "../../entities";
 import {
   CreateActionEnregistrementDto,
   CreateQuartActionDto,
@@ -45,7 +47,11 @@ export class QuartActionsController {
   constructor(private readonly quartActionsService: QuartActionsService) {}
 
   @Get("enregistrements")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les actions enregistrement du site" })
   @ApiOkArrayResponseWrapped(ActionEnregistrement)
   async findAllEnregistrements(@CurrentUser() currentUser: RequestUser) {
@@ -53,7 +59,11 @@ export class QuartActionsController {
   }
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les actions du site" })
   @ApiQuery({
     name: "page",
@@ -76,7 +86,11 @@ export class QuartActionsController {
   }
 
   @Post()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Créer une action" })
   @ApiCreatedResponseWrapped(QuartAction)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -90,7 +104,11 @@ export class QuartActionsController {
   // --- Actions Enregistrement ---
 
   @Post("enregistrements")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Créer une action enregistrement" })
   @ApiCreatedResponseWrapped(ActionEnregistrement)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -105,7 +123,11 @@ export class QuartActionsController {
   }
 
   @Patch("enregistrements/:id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour une action enregistrement" })
   @ApiParam({
     name: "id",
@@ -131,7 +153,11 @@ export class QuartActionsController {
   }
 
   @Delete("enregistrements/:id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer une action enregistrement" })
   @ApiParam({
     name: "id",

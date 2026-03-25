@@ -57,7 +57,7 @@ export class RondierController {
   ) {}
 
   @Get("rondes")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Récupérer les rondes par date et quart",
     description:
@@ -163,7 +163,7 @@ export class RondierController {
   }
 
   @Patch("mesures/:id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_RONDIER])
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Mettre à jour une mesure rondier",
     description: "Met à jour les valeurs d'une mesure rondier existante",

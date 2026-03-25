@@ -54,7 +54,12 @@ export class DepassementsController {
   constructor(private readonly depassementsService: DepassementsService) {}
 
   @Get("choix")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary:
       "Récupérer tous les choix de dépassements avec leurs produits associés",
@@ -65,7 +70,12 @@ export class DepassementsController {
   }
 
   @Get("total-by-date")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary:
       "Récupérer les totaux des dépassements entre deux dates par type et par ligne",
@@ -99,7 +109,12 @@ export class DepassementsController {
   }
 
   @Get("by-date")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Récupérer les dépassements entre deux dates" })
   @ApiQuery({
     name: "startDate",
@@ -139,7 +154,12 @@ export class DepassementsController {
   }
 
   @Get("choix-depassements")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Récupérer tous les choix de dépassements" })
   @ApiOkArrayResponseWrapped(ChoixDepassement)
   async findAllChoixDepassement() {
@@ -147,7 +167,12 @@ export class DepassementsController {
   }
 
   @Get("choix-depassements-produits")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Récupérer tous les choix de dépassements produits",
   })
@@ -157,7 +182,12 @@ export class DepassementsController {
   }
 
   @Get("depassements-produits")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Récupérer toutes les liaisons dépassement-produit",
   })
@@ -167,7 +197,12 @@ export class DepassementsController {
   }
 
   @Post()
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Créer un nouveau dépassement" })
   @ApiCreatedResponseWrapped(DepassementNew)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -179,7 +214,12 @@ export class DepassementsController {
   }
 
   @Patch(":id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Mettre à jour un dépassement" })
   @ApiParam({ name: "id", type: Number, description: "ID du dépassement" })
   @ApiMessageResponseWrapped()
@@ -194,7 +234,12 @@ export class DepassementsController {
   }
 
   @Delete(":id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({ summary: "Supprimer un dépassement" })
   @ApiParam({ name: "id", type: Number, description: "ID du dépassement" })
   @ApiMessageResponseWrapped()

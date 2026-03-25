@@ -26,7 +26,6 @@ import {
   ApiOkResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
   RequireRole,
 } from "@/common/decorators";
 import { PaginationDto } from "@/common/dto/pagination.dto";
@@ -44,7 +43,12 @@ export class FormulaireController {
   constructor(private readonly formulaireService: FormulaireService) {}
 
   @Get("with-products")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Récupérer tous les formulaires avec leurs produits",
   })
@@ -74,7 +78,12 @@ export class FormulaireController {
   }
 
   @Get(":id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Récupérer un formulaire par ID avec ses produits",
   })
@@ -88,7 +97,12 @@ export class FormulaireController {
   }
 
   @Get(":id/products/measures")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary:
       "Récupérer les produits d'un formulaire avec leurs mesures entre deux dates",

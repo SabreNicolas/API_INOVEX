@@ -17,16 +17,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkResponseWrapped,
   CurrentUser,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { Equipe } from "../../entities";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { Equipe } from "../../entities";
 import { CreateEquipeDto, EquipeQueryDto, UpdateEquipeDto } from "./dto";
 import { EquipeService } from "./equipe.service";
 
@@ -38,7 +39,11 @@ export class EquipeController {
   constructor(private readonly equipeService: EquipeService) {}
 
   @Get("by-date")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer l'équipe sur une date et un quart",
   })
@@ -55,7 +60,11 @@ export class EquipeController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Créer une équipe avec ses affectations",
   })
@@ -69,7 +78,11 @@ export class EquipeController {
   }
 
   @Put(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary:
       "Mettre à jour une équipe et ses affectations. Les affectations absentes de la liste sont supprimées.",

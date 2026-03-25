@@ -381,7 +381,12 @@ export class ProductsController {
   }
 
   @Post("measures")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Créer une nouvelle mesure",
   })
@@ -530,7 +535,12 @@ export class ProductsController {
   }
 
   @Patch("measures/:id")
-  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SAISIE, UserRole.IS_SUPER_ADMIN])
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SAISIE,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_SUPER_ADMIN,
+  ])
   @ApiOperation({
     summary: "Mettre à jour une mesure",
   })

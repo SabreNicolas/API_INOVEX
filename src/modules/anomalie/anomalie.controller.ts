@@ -17,16 +17,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
   CurrentUser,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { Anomalie } from "../../entities";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { Anomalie } from "../../entities";
 import { AnomalieService } from "./anomalie.service";
 import { UpdateAnomalieDto } from "./dto";
 
@@ -38,7 +39,12 @@ export class AnomalieController {
   constructor(private readonly anomalieService: AnomalieService) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+    UserRole.IS_RONDIER,
+  ])
   @ApiOperation({ summary: "Récupérer toutes les anomalies" })
   @ApiQuery({
     name: "page",
@@ -61,7 +67,11 @@ export class AnomalieController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour une anomalie" })
   @ApiParam({
     name: "id",

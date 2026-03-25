@@ -19,18 +19,19 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { QuartActualite } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { DateRangeQueryDto } from "../../common/dto/date-range-query.dto";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { QuartActualite } from "../../entities";
 import {
   ActiveOnDateQueryDto,
   CreateQuartActualiteDto,
@@ -46,7 +47,11 @@ export class QuartActualiteController {
   constructor(private readonly quartActualiteService: QuartActualiteService) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer toutes les actualités" })
   @ApiQuery({
     name: "page",
@@ -69,7 +74,11 @@ export class QuartActualiteController {
   }
 
   @Get("active-on-date")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les actualités actives sur une date" })
   @ApiPaginatedResponseWrapped(QuartActualite)
   async findActiveOnDate(
@@ -84,7 +93,11 @@ export class QuartActualiteController {
   }
 
   @Get("by-date")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les actualités par plage de dates" })
   @ApiPaginatedResponseWrapped(QuartActualite)
   async findByDateRange(
@@ -100,7 +113,11 @@ export class QuartActualiteController {
   }
 
   @Get("inactive")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer les actualités inactives sur une date",
   })
@@ -117,7 +134,11 @@ export class QuartActualiteController {
   }
 
   @Get("futur")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer les actualités à venir après une date",
   })
@@ -134,7 +155,11 @@ export class QuartActualiteController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Créer une nouvelle actualité" })
   @ApiCreatedResponseWrapped(QuartActualite)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -146,7 +171,11 @@ export class QuartActualiteController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour une actualité" })
   @ApiParam({
     name: "id",
@@ -165,7 +194,11 @@ export class QuartActualiteController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer une actualité" })
   @ApiParam({
     name: "id",

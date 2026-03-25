@@ -17,14 +17,15 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
 import {
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireSuperAdmin,
+  RequireRole,
 } from "@/common/decorators";
-import { Site } from "@/entities";
 import { PaginationDto } from "@/common/dto/pagination.dto";
 import { AuthGuard } from "@/common/guards/auth.guard";
+import { Site } from "@/entities";
 
 import { UpdateSiteDto } from "./dto";
 import { SiteService } from "./site.service";
@@ -37,7 +38,7 @@ export class SiteController {
   constructor(private readonly siteService: SiteService) {}
 
   @Get()
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Récupérer tous les sites",
   })
@@ -60,8 +61,19 @@ export class SiteController {
     return this.siteService.findAll(pagination);
   }
 
+  @Get(":id")
+  @ApiOperation({
+    summary: "Récupérer un site par ID",
+  })
+  @ApiParam({ name: "id", type: "number", description: "ID du site" })
+  @ApiResponse({ status: 200, description: "Site trouvé", type: Site })
+  @ApiResponse({ status: 404, description: "Site non trouvé" })
+  async findOne(@Param("id", ParseIntPipe) id: number) {
+    return this.siteService.findOne(id);
+  }
+
   @Put(":id")
-  @RequireSuperAdmin()
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
   @ApiOperation({
     summary: "Mettre à jour un site",
   })

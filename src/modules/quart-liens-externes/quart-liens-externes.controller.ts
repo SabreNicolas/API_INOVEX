@@ -17,15 +17,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { QuartLienExterne } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { QuartLienExterne } from "../../entities";
 import { CreateQuartLienExterneDto, UpdateQuartLienExterneDto } from "./dto";
 import { QuartLiensExternesService } from "./quart-liens-externes.service";
 
@@ -39,7 +41,11 @@ export class QuartLiensExternesController {
   ) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Récupérer les liens externes du site" })
   @ApiOkArrayResponseWrapped(QuartLienExterne)
   async findAll(@CurrentUser() currentUser: RequestUser) {
@@ -47,7 +53,11 @@ export class QuartLiensExternesController {
   }
 
   @Post()
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Créer un lien externe" })
   @ApiCreatedResponseWrapped(QuartLienExterne)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -62,7 +72,11 @@ export class QuartLiensExternesController {
   }
 
   @Patch(":id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Mettre à jour un lien externe" })
   @ApiParam({
     name: "id",
@@ -85,7 +99,11 @@ export class QuartLiensExternesController {
   }
 
   @Delete(":id")
-  @RequireRondier()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({ summary: "Supprimer un lien externe" })
   @ApiParam({
     name: "id",

@@ -9,7 +9,9 @@ import { ApiOperation, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { SkipThrottle } from "@nestjs/throttler";
 import { DataSource } from "typeorm";
 
-import { RequireAdmin } from "../common/decorators";
+import { UserRole } from "@/common/constants";
+
+import { RequireRole } from "../common/decorators";
 
 interface HealthStatus {
   status: "healthy" | "unhealthy";
@@ -33,7 +35,7 @@ export class HealthController {
   constructor(private readonly dataSource: DataSource) {}
 
   @Get()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Vérifier l'état de santé de l'API (Admin)" })
   @ApiResponse({
     status: 200,

@@ -19,17 +19,18 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiPaginatedResponseWrapped,
-  RequireAdmin,
-  RequireRondier,
+  RequireRole,
 } from "../../common/decorators";
-import { Groupement } from "../../entities";
 import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { PaginationDto } from "../../common/dto/pagination.dto";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { Groupement } from "../../entities";
 import { CreateGroupementDto, UpdateGroupementDto } from "./dto";
 import { GroupementService } from "./groupement.service";
 
@@ -41,7 +42,7 @@ export class GroupementController {
   constructor(private readonly groupementService: GroupementService) {}
 
   @Get()
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART, UserRole.IS_RONDIER])
   @ApiOperation({ summary: "Récupérer tous les groupements" })
   @ApiQuery({
     name: "page",
@@ -64,7 +65,7 @@ export class GroupementController {
   }
 
   @Get("zone/:zoneId")
-  @RequireRondier()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART, UserRole.IS_RONDIER])
   @ApiOperation({ summary: "Récupérer les groupements d'une zone" })
   @ApiParam({ name: "zoneId", type: "number", description: "ID de la zone" })
   @ApiQuery({
@@ -88,7 +89,7 @@ export class GroupementController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Créer un nouveau groupement" })
   @ApiCreatedResponseWrapped(Groupement)
   @ApiResponse({ status: 400, description: "Données invalides" })
@@ -97,7 +98,7 @@ export class GroupementController {
   }
 
   @Patch(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Mettre à jour un groupement" })
   @ApiParam({ name: "id", type: "number", description: "ID du groupement" })
   @ApiMessageResponseWrapped()
@@ -111,7 +112,7 @@ export class GroupementController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN])
   @ApiOperation({ summary: "Supprimer un groupement" })
   @ApiParam({ name: "id", type: "number", description: "ID du groupement" })
   @ApiMessageResponseWrapped()

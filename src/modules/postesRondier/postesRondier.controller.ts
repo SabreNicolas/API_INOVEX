@@ -6,12 +6,14 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiOkArrayResponseWrapped,
-  RequireAdmin,
+  RequireRole,
 } from "../../common/decorators";
-import { PosteRondier } from "../../entities";
 import { AuthGuard } from "../../common/guards/auth.guard";
+import { PosteRondier } from "../../entities";
 import { PostesRondierService } from "./postesRondier.service";
 
 @ApiTags("Postes Rondier")
@@ -22,7 +24,7 @@ export class PostesRondierController {
   constructor(private readonly postesRondierService: PostesRondierService) {}
 
   @Get()
-  @RequireAdmin()
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART, UserRole.IS_RONDIER])
   @ApiOperation({
     summary: "Récupérer tous les postes rondier (avec pagination optionnelle)",
   })

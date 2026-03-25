@@ -17,15 +17,17 @@ import {
   ApiTags,
 } from "@nestjs/swagger";
 
+import { UserRole } from "@/common/constants";
+
 import {
   ApiCreatedResponseWrapped,
   ApiMessageResponseWrapped,
   ApiOkArrayResponseWrapped,
   CurrentUser,
-  RequireAdmin,
+  RequireRole,
 } from "../../common/decorators";
-import { EnregistrementEquipe } from "../../entities";
 import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
+import { EnregistrementEquipe } from "../../entities";
 import { CreateEnregistrementEquipeDto } from "./dto/create-enregistrement-equipe.dto";
 import { UpdateEnregistrementEquipeDto } from "./dto/update-enregistrement-equipe.dto";
 import { EnregistrementEquipeService } from "./enregistrement-equipe.service";
@@ -40,7 +42,11 @@ export class EnregistrementEquipeController {
   ) {}
 
   @Get()
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Récupérer toutes les équipes avec leurs affectations",
   })
@@ -52,7 +58,11 @@ export class EnregistrementEquipeController {
   }
 
   @Post()
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Créer une équipe avec ses affectations",
   })
@@ -72,7 +82,11 @@ export class EnregistrementEquipeController {
   }
 
   @Put(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary:
       "Mettre à jour une équipe et ses affectations. Les affectations absentes de la liste sont supprimées.",
@@ -98,7 +112,11 @@ export class EnregistrementEquipeController {
   }
 
   @Delete(":id")
-  @RequireAdmin()
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
   @ApiOperation({
     summary: "Supprimer une équipe et toutes ses affectations",
   })
