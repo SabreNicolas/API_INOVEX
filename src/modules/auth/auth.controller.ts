@@ -30,6 +30,7 @@ import {
   RefreshDto,
   RefreshResponseDto,
 } from "./dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
 @ApiTags("Authentification")
 @Controller("auth")
@@ -104,8 +105,20 @@ export class AuthController {
     @Body() loginDto: LoginDto,
     @Res({ passthrough: true }) res: Response
   ) {
-    const { accessToken, refreshToken, user } =
-      await this.authService.login(loginDto);
+    const result = await this.authService.login(loginDto);
+
+    // Cas mot de passe temporaire : retourner directement sans cookies
+    if ("requirePasswordChange" in result) {
+      return {
+        success: false,
+        requirePasswordChange: true,
+        login: result.login,
+        message: result.message,
+        timestamp: new Date().toISOString(),
+      };
+    }
+
+    const { accessToken, refreshToken, user } = result;
 
     // Poser les cookies HttpOnly sécurisés
     this.setAuthCookies(res, accessToken, refreshToken);
@@ -233,5 +246,32 @@ export class AuthController {
       message: "Déconnexion réussie",
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Post("change-password")
+  @Throttle({
+    default: {
+      limit: AUTH_CONSTANTS.LOGIN_RATE_LIMIT,
+      ttl: AUTH_CONSTANTS.LOGIN_RATE_LIMIT_TTL,
+    },
+  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Changer le mot de passe de l'utilisateur",
+    description:
+      "Permet de changer le mot de passe. Ne nécessite pas d'authentification pour permettre le changement de mot de passe temporaire.",
+  })
+  @ApiBody({ type: ChangePasswordDto })
+  @ApiResponse({
+    status: 200,
+    description: "Mot de passe changé avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Mot de passe actuel invalide" })
+  @ApiResponse({
+    status: 429,
+    description: "Trop de tentatives - Réessayez plus tard",
+  })
+  async changePassword(@Body() changePasswordDto: ChangePasswordDto) {
+    return this.authService.changePassword(changePasswordDto);
   }
 }

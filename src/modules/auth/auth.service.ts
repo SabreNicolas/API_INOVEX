@@ -14,6 +14,7 @@ import { LoggerService } from "../../common/services/logger.service";
 import { Token, User } from "../../entities";
 import { Site } from "../../entities/site.entity";
 import { LoginDto } from "./dto";
+import { ChangePasswordDto } from "./dto/change-password.dto";
 
 @Injectable()
 export class AuthService {
@@ -29,11 +30,18 @@ export class AuthService {
     private readonly logger: LoggerService
   ) {}
 
-  async login(loginDto: LoginDto): Promise<{
-    accessToken: string;
-    refreshToken: string;
-    user: Omit<User, "pwd">;
-  }> {
+  async login(loginDto: LoginDto): Promise<
+    | {
+        accessToken: string;
+        refreshToken: string;
+        user: Omit<User, "pwd">;
+      }
+    | {
+        requirePasswordChange: true;
+        login: string;
+        message: string;
+      }
+  > {
     const { login, password } = loginDto;
 
     try {
@@ -54,11 +62,29 @@ export class AuthService {
           "isSuperAdmin",
           "idUsine",
           "isKerlan",
+          "isActif",
         ],
       });
 
       if (!user) {
         throw new UnauthorizedException("Identifiants invalides");
+      }
+
+      if (!user.isActif) {
+        throw new UnauthorizedException(
+          "Votre compte est désactivé. Veuillez contacter l'administrateur."
+        );
+      }
+
+      const isPasswordTemp = await argon2.verify(user.pwd, "temporaire");
+      if (isPasswordTemp) {
+        // Retourner un flag pour que le front affiche le formulaire de changement de mot de passe
+        return {
+          requirePasswordChange: true,
+          login: user.login,
+          message:
+            "Votre mot de passe est temporaire. Veuillez le changer avant de vous connecter.",
+        };
       }
 
       const isPasswordValid = await argon2.verify(user.pwd, password);
@@ -296,6 +322,80 @@ export class AuthService {
       }
     } catch {
       // Token expiré ou invalide — on désactive rien, le logout est tout de même effectif côté cookies
+    }
+  }
+
+  async changePassword(changePasswordDto: ChangePasswordDto): Promise<{
+    success: boolean;
+    message: string;
+    timestamp: string;
+  }> {
+    const { login, currentPassword, newPassword } = changePasswordDto;
+
+    try {
+      const user = await this.userRepository.findOne({
+        where: { login },
+        select: ["id", "login", "pwd", "isActif"],
+      });
+
+      if (!user) {
+        throw new UnauthorizedException("Utilisateur non trouvé");
+      }
+
+      if (!user.isActif) {
+        throw new UnauthorizedException(
+          "Votre compte est désactivé. Veuillez contacter l'administrateur."
+        );
+      }
+
+      const isCurrentPasswordValid = await argon2.verify(
+        user.pwd,
+        currentPassword
+      );
+      if (!isCurrentPasswordValid) {
+        throw new UnauthorizedException("Mot de passe actuel invalide");
+      }
+
+      // Vérifier que le nouveau mot de passe est différent de l'ancien
+      const isSamePassword = await argon2.verify(user.pwd, newPassword);
+      if (isSamePassword) {
+        throw new UnauthorizedException(
+          "Le nouveau mot de passe doit être différent de l'ancien"
+        );
+      }
+
+      const hashedNewPassword = await argon2.hash(newPassword);
+      user.pwd = hashedNewPassword;
+      await this.userRepository.save(user);
+
+      // Révoquer tous les refresh tokens existants pour forcer une reconnexion
+      await this.tokenRepository.update(
+        { affectation: `refresh:${user.id}`, enabled: true },
+        { enabled: false }
+      );
+
+      this.logger.log(
+        `Mot de passe changé avec succès pour l'utilisateur: ${login}`,
+        "AuthService"
+      );
+
+      return {
+        success: true,
+        message: "Mot de passe changé avec succès",
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors du changement de mot de passe",
+        error instanceof Error ? error.stack : String(error),
+        "AuthService"
+      );
+      throw new UnauthorizedException(
+        "Erreur lors du changement de mot de passe"
+      );
     }
   }
 }
