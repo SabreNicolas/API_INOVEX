@@ -8,6 +8,7 @@ import { HttpsRedirectMiddleware } from "./common/middlewares/https-redirect.mid
 import { LoggerService } from "./common/services/logger.service";
 import { DatabaseModule } from "./database/database.module";
 import { HealthModule } from "./health/health.module";
+import { AdminKerlanModule } from "./modules/admin-kerlan/admin-kerlan.module";
 import { AnomalieModule } from "./modules/anomalie/anomalie.module";
 import { ArretsModule } from "./modules/arrets/arrets.module";
 import { AuthModule } from "./modules/auth/auth.module";
@@ -95,6 +96,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     QuartLiensExternesModule,
     AnomalieModule,
     UploadsModule,
+    AdminKerlanModule,
   ],
   providers: [
     LoggerService,

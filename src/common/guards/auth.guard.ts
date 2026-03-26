@@ -27,6 +27,7 @@ export interface JwtPayload {
   isAdmin: boolean;
   isChefQuart: boolean;
   isSuperAdmin: boolean;
+  isKerlan: boolean;
   idUsine: number;
   iat?: number;
   exp?: number;
@@ -78,7 +79,7 @@ export class AuthGuard implements CanActivate {
 
       // Détermination du rôle
       const userRole = this.getUserRoles(decoded);
-
+      console.log("Rôles de l'utilisateur:", userRole); // Debug des rôles extraits du token
       // Vérification des permissions
       if (!requiredRole.some(role => userRole.includes(role))) {
         const requiredRolesNames = requiredRole
@@ -133,6 +134,7 @@ export class AuthGuard implements CanActivate {
     if (user.isRapport) roles.push(UserRole.IS_RAPPORT);
     if (user.isSaisie) roles.push(UserRole.IS_SAISIE);
     if (user.isRondier) roles.push(UserRole.IS_RONDIER);
+    if (user.isKerlan) roles.push(UserRole.IS_KERLAN);
     return roles;
   }
 }
