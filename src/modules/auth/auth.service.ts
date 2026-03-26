@@ -398,4 +398,23 @@ export class AuthService {
       );
     }
   }
+
+  async cleanupDisabledTokens(): Promise<{ deletedCount: number }> {
+    try {
+      const result = await this.tokenRepository.delete({ enabled: false });
+      const deletedCount = result.affected ?? 0;
+      this.logger.log(
+        `Nettoyage des tokens : ${deletedCount} tokens désactivés supprimés`,
+        "AuthService"
+      );
+      return { deletedCount };
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors du nettoyage des tokens",
+        error instanceof Error ? error.stack : String(error),
+        "AuthService"
+      );
+      throw error;
+    }
+  }
 }

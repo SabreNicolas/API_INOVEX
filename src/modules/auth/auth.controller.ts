@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   HttpCode,
   HttpStatus,
   Post,
@@ -19,7 +20,8 @@ import {
 import { Throttle } from "@nestjs/throttler";
 import { Request, Response } from "express";
 
-import { AUTH_CONSTANTS } from "../../common/constants";
+import { AUTH_CONSTANTS, UserRole } from "../../common/constants";
+import { RequireRole } from "../../common/decorators";
 import { AuthGuard } from "../../common/guards/auth.guard";
 import { CsrfGuard } from "../../common/guards/csrf.guard";
 import { AuthService } from "./auth.service";
@@ -273,5 +275,31 @@ export class AuthController {
   })
   async changePassword(@Body() changePasswordDto: ChangePasswordDto) {
     return this.authService.changePassword(changePasswordDto);
+  }
+
+  @Delete("cleanup-tokens")
+  @UseGuards(AuthGuard)
+  @RequireRole([UserRole.IS_KERLAN])
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: "Nettoyer les tokens désactivés",
+    description:
+      "Supprime tous les refresh tokens désactivés de la base de données. Réservé aux utilisateurs Kerlan.",
+  })
+  @ApiCookieAuth()
+  @ApiResponse({
+    status: 200,
+    description: "Tokens nettoyés avec succès",
+  })
+  @ApiResponse({ status: 401, description: "Non authentifié" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async cleanupTokens() {
+    const { deletedCount } = await this.authService.cleanupDisabledTokens();
+    return {
+      success: true,
+      message: `${deletedCount} token(s) désactivé(s) supprimé(s)`,
+      deletedCount,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
