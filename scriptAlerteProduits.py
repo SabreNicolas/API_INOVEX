@@ -80,5 +80,6 @@ for site in listeSites['data']:
         alertes_encoded = quote(alertes_str)
         request_alerte = f"https://fr-couvinove301:3100/envoyerMailAlerte?idUsine={site['id']}&alertes={alertes_encoded}"
         print(f"Mail groupé pour le site {site['id']} : {request_alerte}")
-        requests.get(request_alerte, headers=headers, verify=False)
+        response = requests.get(request_alerte, headers=headers, verify=False)
+        print(response.content)
 print("Fin du script alertes produits !")

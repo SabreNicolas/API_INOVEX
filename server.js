@@ -901,8 +901,8 @@ app.get("/envoyerMailAlerte", middleware,(request, response) => {
     const message = {
       from: process.env.USER_SMTP, // Sender address
       to: maillist,
-      subject: "Alerte(s) produit(s) sur le site " + reqQ.idUsine, // Subject line
-      html: `<h3>Bonjour,</h3><br><h3>Des alertes ont été détectées sur le site <b>${reqQ.idUsine}</b> :</h3><br>${htmlDetails}`
+      subject: "CAP Exploitation - Alerte(s) produit(s)",
+      html: `<h3>Bonjour,</h3><br><h3>Des alertes ont été détectées :</h3><br>${htmlDetails}`
     };
 
     transporter.sendMail(message, function(err, info) {

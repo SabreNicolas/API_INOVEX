@@ -1,7 +1,9 @@
+import time
 import requests
 from requests_ntlm import HttpNtlmAuth
 from datetime import datetime, timedelta
 import warnings
+import pytz
 
 #Création d'un fichier de log
 dateActuelle = datetime.now()
@@ -18,19 +20,26 @@ headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tl
 warnings.filterwarnings("ignore")
 
 #Récupération de la date de la veille
-#TODO : Attention il faut gérer les heures UTC
 #UTC+1 => 00h00 et 23h59 correspond UTC => 23h00 la veille et 23h
 #UTC+2 => 00h00 et 23h59 correspond UTC => 22h00 la veille et 22h
+
+#On récupére l'utc
+cop_tz = pytz.timezone('Europe/Copenhagen')
+utcValue = cop_tz.utcoffset(datetime.now()).total_seconds() / (60*60) #Récupération UTC au format nombre
+utc = -utcValue
+
 aujourdhui = datetime.now().date()
 hier = aujourdhui - timedelta (days=1)
 avantHier = aujourdhui - timedelta (days=2)
-hierAvevaDebut = f'{avantHier}' + "T23:01:00Z"
-hierAvevaFin = f'{hier}' + "T23:00:00Z"
+minuitUTC = str(24+utc).split(".")[0]
+hierAvevaDebut = f'{avantHier}' + "T"+minuitUTC+":01:00Z"
+hierAvevaFin = f'{hier}' + "T"+minuitUTC+":00:00Z"
+
 #derniere valeur de la journée
-#Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
-#Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
-dernierAvevaFin = f'{hier}' + "T22:59:59Z"
+minuitUTCDernier = str(24+utc-1).split(".")[0]
+dernierAvevaDebut = f'{hier}' + "T"+minuitUTCDernier+":59:50Z"
+dernierAvevaFin = f'{hier}' + "T"+minuitUTCDernier+":59:59Z"
+
 
 print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
 
@@ -93,10 +102,13 @@ for site in listeSites['data'] :
             #Récupération des données du jour
             try:
                 req = str(site['ipAveva']) +"/Historian/v2/"+product["typeDonneeEMonitoring"]+"?$filter=FQN+eq+'"+product["TAG"]+"'"+date+resolution
-                # print(req)
+                #print(req)
                 response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
                 # print("old response")
-                # print(response)
+                #print(response)
+                # if site['ipAveva'] == "Lasse":
+                #     print(product["TAG"])
+                #     print(response.json())
                 listData = response.json()
                 # print(listData['value'])
                 # #Si on l'api nous retourne une valeur, on créé une mesure
@@ -158,6 +170,8 @@ for site in listeSites['data'] :
 
         except :
                 print("soucis de requête AVEVA pour "+product["TAG"])
+        time.sleep(1)
+
 
 
     ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
@@ -190,5 +204,6 @@ for site in listeSites['data'] :
 
         except :
             print("soucis de requête AVEVA pour "+product["TAG"])
+    time.sleep(1)
 
 print("Fin du script !"  + "\n")

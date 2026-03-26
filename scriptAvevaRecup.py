@@ -1,24 +1,32 @@
+import time
 import requests
 from requests_ntlm import HttpNtlmAuth
 from datetime import datetime, timedelta
 import warnings
+import pytz
 
 headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
 #Disable warnings
 warnings.filterwarnings("ignore")
+
+#On récupére l'utc
+cop_tz = pytz.timezone('Europe/Copenhagen')
+utcValue = cop_tz.utcoffset(datetime.now()).total_seconds() / (60*60) #Récupération UTC au format nombre
+utc = -utcValue
 
 #Récupération de la date de la veille
 aujourdhui = datetime.now().date()
 hier = input("Saisissez la date que vous souhaitez (DD/MM/YYYY)")
 hier = datetime.strptime(hier, "%d/%m/%Y").date()
 avantHier = hier - timedelta (days=1)
-hierAvevaDebut = f'{avantHier}' + "T23:01:00Z"
-hierAvevaFin = f'{hier}' + "T23:00:00Z"
+minuitUTC = str(24+utc).split(".")[0]
+hierAvevaDebut = f'{avantHier}' + "T"+minuitUTC+":01:00Z"
+hierAvevaFin = f'{hier}' + "T"+minuitUTC+":00:00Z"
+
 #derniere valeur de la journée
-#Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
-#Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
-dernierAvevaFin = f'{hier}' + "T22:59:59Z"
+minuitUTCDernier = str(24+utc-1).split(".")[0]
+dernierAvevaDebut = f'{hier}' + "T"+minuitUTCDernier+":59:50Z"
+dernierAvevaFin = f'{hier}' + "T"+minuitUTCDernier+":59:59Z"
 
 print("Debut du script Aveva Le " + str(aujourdhui))
 
@@ -145,6 +153,7 @@ for site in listeSites['data'] :
         
         except :
                 print("soucis de requête AVEVA pour "+product["TAG"])
+        time.sleep(1)
 
 
     ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
@@ -177,5 +186,6 @@ for site in listeSites['data'] :
                     response = requests.put(req, headers = headers, verify=False)
         except :
             print("soucis de requête AVEVA pour "+product["TAG"])
+    time.sleep(1)
 
 print("Fin du script !"  + "\n")
