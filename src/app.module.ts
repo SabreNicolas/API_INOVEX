@@ -35,6 +35,7 @@ import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UploadsModule } from "./modules/upload/uploads.module";
 import { UsersModule } from "./modules/users/users.module";
+import { ValidationDonneesModule } from "./modules/validation-donnees/validation-donnees.module";
 import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module";
 
 @Module({
@@ -99,6 +100,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     UploadsModule,
     AdminKerlanModule,
     ExportModule,
+    ValidationDonneesModule,
   ],
   providers: [
     LoggerService,
