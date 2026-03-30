@@ -5,7 +5,6 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
-  Matches,
   MaxLength,
   MinLength,
 } from "class-validator";
@@ -22,17 +21,12 @@ export class CreateUserDto {
 
   @ApiProperty({
     example: "Password1!",
-    description:
-      "Mot de passe (min 8 caractères, 1 majuscule, 1 minuscule, 1 chiffre)",
+    description: "Mot de passe (min 8 caractères)",
   })
   @IsString()
   @IsNotEmpty({ message: "Le mot de passe est requis" })
   @MinLength(8, {
     message: "Le mot de passe doit contenir au moins 8 caractères",
-  })
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/, {
-    message:
-      "Le mot de passe doit contenir au moins une majuscule, une minuscule et un chiffre",
   })
   password: string;
 

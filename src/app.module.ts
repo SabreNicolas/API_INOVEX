@@ -11,6 +11,7 @@ import { HealthModule } from "./health/health.module";
 import { AdminKerlanModule } from "./modules/admin-kerlan/admin-kerlan.module";
 import { AnomalieModule } from "./modules/anomalie/anomalie.module";
 import { ArretsModule } from "./modules/arrets/arrets.module";
+import { ArretsCategoriesModule } from "./modules/arrets-categories/arrets-categories.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { BadgeModule } from "./modules/badge/badge.module";
 import { ConsignesModule } from "./modules/consignes/consignes.module";
@@ -89,6 +90,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     RondierModule,
     FormulaireModule,
     ArretsModule,
+    ArretsCategoriesModule,
     DepassementsModule,
     MoralEntitiesModule,
     QuartCalendrierModule,
