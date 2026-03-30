@@ -10,6 +10,7 @@ import {
 import {
   ApiBody,
   ApiCookieAuth,
+  ApiExcludeController,
   ApiOperation,
   ApiProduces,
   ApiResponse,
@@ -25,6 +26,7 @@ import { ExportService } from "./export.service";
 
 @ApiTags("Export")
 @ApiCookieAuth()
+@ApiExcludeController()
 @Controller("export")
 @UseGuards(AuthGuard)
 export class ExportController {

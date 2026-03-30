@@ -8,6 +8,7 @@ import {
 } from "@nestjs/common";
 import {
   ApiCookieAuth,
+  ApiExcludeController,
   ApiOperation,
   ApiParam,
   ApiTags,
@@ -23,6 +24,7 @@ import { AuthGuard } from "../../common/guards/auth.guard";
 
 @ApiTags("Uploads")
 @ApiCookieAuth()
+@ApiExcludeController()
 @Controller("uploads")
 @UseGuards(AuthGuard)
 export class UploadsController {
