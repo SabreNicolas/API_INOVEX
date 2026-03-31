@@ -129,6 +129,42 @@ export class CreateQuartCalendrierDto {
   recurrencePhrase?: string;
 }
 
+export class DeleteOccurrenceDto {
+  @ApiPropertyOptional({
+    example: 1,
+    description: "ID de la zone (si type=zone)",
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt({ message: "idZone doit être un entier" })
+  idZone?: number;
+
+  @ApiPropertyOptional({
+    example: "Nom de l'action",
+    description: "Nom de l'action (si type=action)",
+  })
+  @IsOptional()
+  @IsString()
+  actionNom?: string;
+
+  @ApiProperty({
+    example: 1,
+    description: "Quart : 1=matin, 2=après-midi, 3=nuit",
+  })
+  @Type(() => Number)
+  @IsInt({ message: "Le quart doit être un entier" })
+  @IsNotEmpty({ message: "Le quart est requis" })
+  quart: number;
+
+  @ApiProperty({
+    example: "Tous les lundis",
+    description: "Phrase de récurrence",
+  })
+  @IsNotEmpty({ message: "La phrase de récurrence est requise" })
+  @IsString()
+  recurrencePhrase: string;
+}
+
 export class UpdateQuartCalendrierDto {
   @ApiPropertyOptional({
     example: 1,

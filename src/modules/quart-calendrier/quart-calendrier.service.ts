@@ -9,7 +9,11 @@ import {
   QuartCalendrier,
   ZoneControle,
 } from "../../entities";
-import { CreateQuartCalendrierDto, UpdateQuartCalendrierDto } from "./dto";
+import {
+  CreateQuartCalendrierDto,
+  DeleteOccurrenceDto,
+  UpdateQuartCalendrierDto,
+} from "./dto";
 
 @Injectable()
 export class QuartCalendrierService {
@@ -500,6 +504,103 @@ export class QuartCalendrierService {
       }
       this.logger.error(
         "Erreur lors de la suppression de l'entrée calendrier",
+        error instanceof Error ? error.stack : String(error),
+        "QuartCalendrierService"
+      );
+      throw error;
+    }
+  }
+
+  async deleteOccurrence(
+    idUsine: number,
+    dto: DeleteOccurrenceDto
+  ): Promise<{ deleted: number }> {
+    try {
+      const now = new Date();
+
+      const qb = this.quartCalendrierRepository
+        .createQueryBuilder("qc")
+        .delete()
+        .from(QuartCalendrier)
+        .where("idUsine = :idUsine", { idUsine })
+        .andWhere("quart = :quart", { quart: dto.quart })
+        .andWhere("recurrencePhrase = :recurrencePhrase", {
+          recurrencePhrase: dto.recurrencePhrase,
+        })
+        .andWhere("date_heure_debut >= :now", { now });
+
+      if (dto.idZone) {
+        qb.andWhere("idZone = :idZone", { idZone: dto.idZone });
+      } else if (dto.actionNom) {
+        // Pour les actions, il faut matcher via le nom du quart_action lié
+        qb.andWhere(
+          "idAction IN (SELECT qa.id FROM quart_action qa WHERE qa.nom = :actionNom)",
+          { actionNom: dto.actionNom }
+        );
+      } else {
+        throw new NotFoundException(
+          "Vous devez fournir soit idZone soit actionNom"
+        );
+      }
+
+      const result = await qb.execute();
+      const deleted = result.affected ?? 0;
+
+      // Mettre à jour finReccurrence des occurrences restantes
+      if (deleted > 0) {
+        const remainingQb = this.quartCalendrierRepository
+          .createQueryBuilder("qc")
+          .select("MAX(qc.date_heure_debut)", "lastDate")
+          .where("qc.idUsine = :idUsine", { idUsine })
+          .andWhere("qc.quart = :quart", { quart: dto.quart })
+          .andWhere("qc.recurrencePhrase = :recurrencePhrase", {
+            recurrencePhrase: dto.recurrencePhrase,
+          });
+
+        const updateQb = this.quartCalendrierRepository
+          .createQueryBuilder()
+          .update(QuartCalendrier)
+          .where("idUsine = :idUsine", { idUsine })
+          .andWhere("quart = :quart", { quart: dto.quart })
+          .andWhere("recurrencePhrase = :recurrencePhrase", {
+            recurrencePhrase: dto.recurrencePhrase,
+          });
+
+        if (dto.idZone) {
+          remainingQb.andWhere("qc.idZone = :idZone", { idZone: dto.idZone });
+          updateQb.andWhere("idZone = :idZone", { idZone: dto.idZone });
+        } else if (dto.actionNom) {
+          remainingQb.andWhere(
+            "qc.idAction IN (SELECT qa.id FROM quart_action qa WHERE qa.nom = :actionNom)",
+            { actionNom: dto.actionNom }
+          );
+          updateQb.andWhere(
+            "idAction IN (SELECT qa.id FROM quart_action qa WHERE qa.nom = :actionNom)",
+            { actionNom: dto.actionNom }
+          );
+        }
+
+        const remaining = await remainingQb.getRawOne();
+
+        if (remaining?.lastDate) {
+          const lastDate = new Date(remaining.lastDate);
+          const finReccurrence = lastDate.toISOString().split("T")[0];
+          await updateQb.set({ finReccurrence }).execute();
+        }
+      }
+
+      this.logger.log(
+        `${deleted} entrées calendrier supprimées pour l'occurrence (quart=${dto.quart}, recurrencePhrase=${dto.recurrencePhrase})`,
+        "QuartCalendrierService"
+      );
+
+      return { deleted };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        "Erreur lors de la suppression de l'occurrence",
         error instanceof Error ? error.stack : String(error),
         "QuartCalendrierService"
       );

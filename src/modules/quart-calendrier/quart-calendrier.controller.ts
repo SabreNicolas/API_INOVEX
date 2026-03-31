@@ -31,6 +31,7 @@ import { AuthGuard, RequestUser } from "../../common/guards/auth.guard";
 import { QuartCalendrier } from "../../entities";
 import {
   CreateQuartCalendrierDto,
+  DeleteOccurrenceDto,
   QuartCalendrierQueryDto,
   QuartHorairesQueryDto,
   UpdateQuartCalendrierDto,
@@ -199,6 +200,26 @@ export class QuartCalendrierController {
       updateDto
     );
     return { message: "Entrée calendrier mise à jour avec succès" };
+  }
+
+  @Delete("occurrences")
+  @RequireRole([
+    UserRole.IS_ADMIN,
+    UserRole.IS_SUPER_ADMIN,
+    UserRole.IS_CHEF_QUART,
+  ])
+  @ApiOperation({
+    summary: "Supprimer une série d'occurrences récurrentes du calendrier",
+  })
+  @ApiResponse({ status: 200, description: "Nombre d'entrées supprimées" })
+  async deleteOccurrence(
+    @Body() dto: DeleteOccurrenceDto,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    return this.quartCalendrierService.deleteOccurrence(
+      currentUser.idUsine,
+      dto
+    );
   }
 
   @Delete(":id")
