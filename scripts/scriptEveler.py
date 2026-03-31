@@ -1,186 +1,115 @@
-import requests
-import json
-from pprint import pprint
-from datetime import datetime, timedelta
-import pytz
+"""
+Script de récupération des données EVELER et insertion dans CAP Exploitation.
+Fusionne scriptEveler.py et scriptEvelerRecup.py (utiliser --date pour une date spécifique).
+
+Usage:
+    python scriptEveler.py                    # Données de la veille
+    python scriptEveler.py --date 15/03/2026  # Données d'une date spécifique
+"""
 import time
-import warnings
-#Disable warnings
-warnings.filterwarnings("ignore")
+from datetime import datetime, timedelta
 
-#Création d'un fichier de log
-dateActuelle = datetime.now()
-format_date = "%d %B %Y à %Hh%M"
-dateFormatee = dateActuelle.strftime(format_date)
+import pytz
+import requests
 
-# dateHeure = "logEveler" + str(dateFormatee)  + ".txt"
-# dateHeure = dateHeure.replace(" ","_").replace(":","-")
+from _config import (
+    EVELER_SECRET, EVELER_TOKEN, EVELER_URL,
+    create_session, insert_measure, cap_get, logger, parse_date_arg,
+)
 
-# f = open(dateHeure, "x")
 
-URL = "https://api.eveler.pro/api/client"
-#TOKEN = "QrdNdoeyFcTVnrj0zWFR3DsiGuH3POuzIRzOZm2Sezk"
-#SECRET = "6HBSgxtvYRYWHEDgcuhH75v1U8OnkY9RLQwAhCVhQG8"
-TOKEN = "PiCweghvdpYKvCEoFQNfCDfCejaoQH-DJHJvYWmUIA8"
-SECRET = "Cq1RyRyOtRVWXksgsvURIcf_Xm5tPVCLjOgHMCy740w"
-headers = {"accept": "application/json", 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/56.0.2924.76 Safari/537.36'}
+def get_eveler_token(session):
+    """Authentification EVELER et récupération du token (valable 1h)."""
+    if not EVELER_TOKEN or not EVELER_SECRET:
+        logger.error("Variables EVELER_TOKEN / EVELER_SECRET manquantes.")
+        return None
 
-#Connexion : récupération du token pour l'API EVELER
-#Le token est valable 1h donc on le génére à chaque fois
-r = requests.post(URL + "/auth/login", params={"token": TOKEN, "secret": SECRET}, headers=headers, verify=False)
-if r.status_code == 200 and r.json()["success"] is True:
-    api_token = r.json()["data"]["token"]
-    #f.write("Requete HTTP OK : API Token = ", api_token)
-    headers["Authorization"] = api_token
-# else:
-    # f.write("**************************Error : code retour HTTP = {}".format(r.status_code))
-
-#Récupération de la date de la veille
-aujourdhui = datetime.now().date()
-hier = aujourdhui - timedelta (days=1)
-#On ajoute l'utc à la date
-cop_tz = pytz.timezone('Europe/Copenhagen')
-utcValue = cop_tz.utcoffset(datetime.now()).total_seconds() / (60*60) #Récupération UTC au format nombre
-utc = -utcValue
-aujourdhuiUTC =  datetime.now()
-aujourdhuiUTC = aujourdhuiUTC.replace(hour=0, minute=0, second=0, microsecond=0)
-aujourdhuiUTC = aujourdhuiUTC + timedelta (hours=utc)
-hierUTC = aujourdhuiUTC - timedelta (days=1)
-
-print("Debut du script Eveler Le " + str(aujourdhui) + "\n")
-
-#RECUPERATION de la liste des produits CAP Exploitation avec un TAG EVELER
-req = "https://fr-couvinove301:3100/ProductEveler"
-response = requests.get(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
-listeProducts = response.json()
-listeProducts = listeProducts['data']
-#On boucle sur les produits
-for p in listeProducts:
-    #On récupère l'id du produit CAP Exploitation
-    idProduct = p["Id"]
-    #On récupérer l'id du compteur car un TAG est au Format EVELER:id:energie
-    idCompteur = p["TAG"].split(":")[1]
-    #On récupère l'energie et on l'écrit correctement
-    typeEnergie = p["TAG"].split(":")[2]
-    #On initialise la valeur à insérer à 0
-    valueToInsert = 0.0
-
-    if typeEnergie == "ACTIVE":
-        typeEnergie = "active"
+    headers = {
+        "accept": "application/json",
+        "User-Agent": "Mozilla/5.0",
+    }
+    r = session.post(
+        f"{EVELER_URL}/auth/login",
+        params={"token": EVELER_TOKEN, "secret": EVELER_SECRET},
+        headers=headers,
+        verify=False,
+    )
+    if r.status_code == 200 and r.json().get("success"):
+        token = r.json()["data"]["token"]
+        headers["Authorization"] = token
+        return headers
     else:
-        typeEnergie = "reactive+"
-    
-    # if idProduct != "/" :
-        print("**************" + str(idProduct) + p["Name"] + str(idCompteur) + str(typeEnergie)  + "\n")
+        logger.error(f"Erreur authentification EVELER: HTTP {r.status_code}")
+        return None
 
-    #REQ EVELER pour récupérer les points 5 min du compteurs entre 2 points
-    _id_human = idCompteur
-    channel="power:"+typeEnergie
-    #channel="power:reactive+"
-    start=hierUTC # Attention UTC
-    end=aujourdhuiUTC# Attention UTC
-    complete_url = f"{URL}/meter/{_id_human}/data/{channel}/{start}/{end}"
-    r = requests.get(complete_url, headers=headers, verify=False)
-    if r.status_code == 200 and r.json()['success'] is True:
-        json_data = r.json()['data']
-        listValuesPoint5min = json_data['values']
-        unit = json_data['unit']
-        #f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-        #pf.write(json_data)
-        #pf.write(unit)
-        #boucle ici pour avoir la valeur
-        #pf.write(listValuesPoint5min)
-        #On boucle sur les point 5 min pour faire la somme
-        for data in listValuesPoint5min:
-            #valueToInsert = valueToInsert + data['value']
-            #Conversion kw vers khW
-            valueToInsert = valueToInsert + (data['value'] * (5 / 60))
-        #On divise ensuite la valeur par 12 000 pour avoir la conversion en Mwh ou Mvarh
-        #valueToInsert = valueToInsert / 12000
-        #Conversion khW en Mwh
-        valueToInsert = valueToInsert / 1000
-        print("total : " + str(valueToInsert)  + "\n")
 
-    # else:
-        # f.write("***********************Error : code retour HTTP = {}".format(r.status_code) + "\n")
+def compute_utc_range(target_date):
+    """Calcule les bornes UTC pour une date donnée (timezone Europe/Paris)."""
+    paris_tz = pytz.timezone("Europe/Paris")
+    utc_offset_hours = paris_tz.utcoffset(datetime.now()).total_seconds() / 3600
 
-    #On insére la valeur dans CAP Exploitation
-    req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(valueToInsert) + " &ProductId= " + str(idProduct) + "&ProducerId=0"
-    response = requests.put(req, headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}, verify=False)
-    # f.write(str(response)  + "\n")
+    start = datetime.combine(target_date, datetime.min.time()) - timedelta(hours=utc_offset_hours)
+    end = start + timedelta(days=1)
+    return start, end
 
-    time.sleep(2)
-    
-pprint("Fin du script Eveler")
-# 
-## Cette API permet de lister tous les compteurs de votre périmètre
-## l'information meta.computed.last_data indique la date de la dernière
-## données du compteur
-#complete_url = f"{URL}/meters"
-#r = requests.get(complete_url, headers=headers)
-##si retour OK de la req
-#if r.status_code == 200 and r.json()["success"] is True:
-#    json_data = r.json()['data']
-#    f.write("Requete HTTP OK : nombre de compteurs = ", len(json_data))
 
-##On boucle sur les compteurs et on affiche les infos
-#    for m in json_data:
-#        f.write(
-#            "Meter ",
-#            m["_id_human"],
-#            m["name"],
-#            m["rae"] if "rae" in m else "?",
-#            m["meta"]["computed"]["last_data"]
-#            if (
-#                    "meta" in m and
-#                    "computed" in m["meta"] and
-#                    "last_data" in m["meta"]["computed"]
-#            ) else "?"
-#        )
-#else:
-#    f.write("Error : code retour HTTP = {}".format(r.status_code))
+def main():
+    target_date = parse_date_arg("Script EVELER")
+    logger.info(f"Début du script EVELER - date cible: {target_date}")
 
-#f.write("//*********************SAINT SAULVE*************************//")
+    session = create_session()
+    eveler_headers = get_eveler_token(session)
+    if not eveler_headers:
+        return
 
-##Récupérer les compteurs par rapport au RAE du site => Saint Saulve
-#filters = {"actif": True, "rae": "30000120589384"}
-#r = requests.get(URL + "/meters", params={"filter": json.dumps(filters)}, headers=headers)
-#if r.status_code == 200 and r.json()["success"] is True:
-#    json_data = r.json()["data"]
-#    f.write("Requete HTTP OK : nombre de compteurs = ", len(json_data))
+    start_utc, end_utc = compute_utc_range(target_date)
 
-#    for m in json_data:
-#        f.write("Meter ", m["_id_human"], m["name"])
-#else:
-#    f.write("Error : code retour HTTP = {}".format(r.status_code))
+    products = cap_get(session, "/ProductEveler")["data"]
 
-#f.write("//*********************SAINT SAULVE - soutirage*************************//")
+    for p in products:
+        product_id = p["Id"]
+        tag_parts = p["TAG"].split(":")
+        id_compteur = tag_parts[1]
+        type_energie_raw = tag_parts[2]
 
-##Récupérer les attributs d'un compteur par rapport à son id
-#_id_human = 35236
-#r = requests.get(URL + "/meter/" + str(_id_human), headers=headers)
-#if r.status_code == 200 and r.json()["success"] is True:
-#    json_data = r.json()["data"]
-#    f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-#    pf.write(json_data["meta"]["runtime_computed"])
-#else:
-#    f.write("Error : code retour HTTP = {}".format(r.status_code))
+        type_energie = "active" if type_energie_raw == "ACTIVE" else "reactive+"
+        channel = f"power:{type_energie}"
 
-#f.write("//*********************SAINT SAULVE - injection - relevé*************************//")
+        logger.info(f"Produit {product_id} ({p['Name']}) - compteur={id_compteur}, channel={channel}")
 
-## /meter/{meter_id}/data/{channel}/{start_date}/{end_date}
-#Récupérer les valeurs d'un compteur entre 2 dates
-##_id_human=35346
-#_id_human = 35236
-#channel="power:active"
-#channel="power:reactive+"
-#start="2023-07-11" # Attention UTC
-#end="2023-07-12"# Attention UTC
-#complete_url = f"{URL}/meter/{_id_human}/data/{channel}/{start}/{end}"
-#r = requests.get(complete_url, headers=headers, verify=False)
-#if r.status_code == 200 and r.json()['success'] is True:
-#    json_data = r.json()['data']
-#    f.write("Requete HTTP OK : nombre d'attributs = ", len(json_data))
-#    pf.write(json_data)
-#else:
-#    f.write("Error : code retour HTTP = {}".format(r.status_code))
+        complete_url = f"{EVELER_URL}/meter/{id_compteur}/data/{channel}/{start_utc}/{end_utc}"
+
+        try:
+            r = session.get(complete_url, headers=eveler_headers, verify=False)
+        except Exception as e:
+            logger.warning(f"Erreur requête EVELER compteur={id_compteur}: {e}")
+            continue
+
+        value_to_insert = 0.0
+
+        if r.status_code == 200 and r.json().get("success"):
+            json_data = r.json()["data"]
+            values = json_data.get("values", [])
+
+            for data_point in values:
+                # Conversion kW -> kWh (points toutes les 5 min)
+                value_to_insert += data_point["value"] * (5 / 60)
+
+            # Conversion kWh -> MWh
+            value_to_insert /= 1000
+            logger.info(f"Valeur calculée: {value_to_insert} MWh")
+        else:
+            logger.warning(f"Erreur EVELER HTTP {r.status_code} pour compteur={id_compteur}")
+
+        try:
+            insert_measure(session, target_date, value_to_insert, product_id)
+        except Exception as e:
+            logger.error(f"Erreur insertion mesure produit {product_id}: {e}")
+
+        time.sleep(2)
+
+    logger.info("Fin du script EVELER")
+
+
+if __name__ == "__main__":
+    main()

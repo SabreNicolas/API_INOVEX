@@ -1,81 +1,98 @@
-import requests
-import mysql.connector
+"""
+Script d'alertes produits CAP Exploitation.
+Vérifie les seuils (max, min, écart) et envoie un mail groupé par site.
+
+Usage:
+    python scriptAlerteProduits.py
+"""
+import json
 from datetime import datetime, timedelta
-import warnings
-#Disable warnings
-warnings.filterwarnings("ignore")
+from urllib.parse import quote
 
-headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
-
-#Récupération de la date de la veille
-aujourdhui = datetime.now().date()
-hier = aujourdhui - timedelta(days=1)
-avanthier = hier - timedelta(days=1)
+from _config import create_session, cap_get, logger
 
 
-print("Début du script alertes produits le " + str(aujourdhui))
+def check_alerts(session):
+    aujourdhui = datetime.now().date()
+    hier = aujourdhui - timedelta(days=1)
+    avanthier = hier - timedelta(days=1)
 
-#récupération de la liste des sites CAP Exploitation
-req = "https://fr-couvinove301:3100/sites"
-response = requests.get(req, headers = headers, verify=False)
-listeSites = response.json()
+    logger.info(f"Début du script alertes produits le {aujourdhui}")
 
-print("\n\n\nDébut du script alertes produits !")
-for site in listeSites['data']:
-    print(str(site['id']))
-    req = f"https://fr-couvinove301:3100/getProductsWithAlerteActive?idUsine={site['id']}"
-    response = requests.get(req, headers=headers, verify=False)
-    listProducts = response.json()["data"]
-    alertes = []
-    for product in listProducts:
-        req = f"https://fr-couvinove301:3100/ValuesProducts/{product['Id']}/{avanthier}"
-        response = requests.get(req, headers=headers, verify=False)
-        valAvantHier = response.json()['data']
-        req = f"https://fr-couvinove301:3100/ValuesProducts/{product['Id']}/{hier}"
-        response = requests.get(req, headers=headers, verify=False)
-        valHier = response.json()['data']
-        if product['typeAlerte'] == "max":
-            if float(valHier[0]['Value']) > float(product['valeurAlerte']):
-                valeur_max = product['valeurAlerte']
+    sites = cap_get(session, "/sites")["data"]
+
+    for site in sites:
+        site_id = site["id"]
+        logger.info(f"Traitement site {site_id}")
+
+        products = cap_get(session, "/getProductsWithAlerteActive", idUsine=site_id)["data"]
+        alertes = []
+
+        for product in products:
+            product_id = product["Id"]
+            try:
+                val_avant_hier = cap_get(session, f"/ValuesProducts/{product_id}/{avanthier}")["data"]
+                val_hier = cap_get(session, f"/ValuesProducts/{product_id}/{hier}")["data"]
+            except Exception as e:
+                logger.warning(f"Impossible de récupérer les valeurs du produit {product_id}: {e}")
+                continue
+
+            if not val_hier or not val_avant_hier:
+                continue
+
+            valeur_hier = float(val_hier[0]["Value"])
+            valeur_avant_hier = float(val_avant_hier[0]["Value"])
+            seuil = float(product["valeurAlerte"])
+            type_alerte = product["typeAlerte"]
+
+            if type_alerte == "max" and valeur_hier > seuil:
                 alertes.append({
-                    'typeAlerte': 'max',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurMax': valeur_max
+                    "typeAlerte": "max",
+                    "nomProduit": product["Name"],
+                    "idProduct": product_id,
+                    "valeurHier": val_hier[0]["Value"],
+                    "valeurMax": product["valeurAlerte"],
                 })
-                print(f"Alerte max déclenchée pour le produit {product['Id']} sur le site {site['id']}")
-        elif product['typeAlerte'] == "min":
-            if float(valHier[0]['Value']) < float(product['valeurAlerte']):
-                valeur_min = product['valeurAlerte']
+                logger.info(f"Alerte max: produit {product_id}, site {site_id}")
+
+            elif type_alerte == "min" and valeur_hier < seuil:
                 alertes.append({
-                    'typeAlerte': 'min',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurMin': valeur_min
+                    "typeAlerte": "min",
+                    "nomProduit": product["Name"],
+                    "idProduct": product_id,
+                    "valeurHier": val_hier[0]["Value"],
+                    "valeurMin": product["valeurAlerte"],
                 })
-                print(f"Alerte min déclenchée pour le produit {product['Id']} sur le site {site['id']}")
-        elif product['typeAlerte'] == "ecart":
-            ecart = abs(float(valHier[0]['Value']) - float(valAvantHier[0]['Value']))
-            if ecart > float(product['valeurAlerte']):
-                alertes.append({
-                    'typeAlerte': 'ecart',
-                    'nomProduit': product['Name'],
-                    'idProduct': product['Id'],
-                    'valeurHier': valHier[0]['Value'],
-                    'valeurAvantHier': valAvantHier[0]['Value'],
-                    'ecart': ecart
-                })
-                print(f"Alerte écart déclenchée pour le produit {product['Id']} sur le site {site['id']}")
-    # Envoi d'un mail groupé si alertes détectées
-    if alertes:
-        # Construction du paramètre alertes pour l'API (JSON encodé en string)
-        import json
-        alertes_str = json.dumps(alertes)
-        from urllib.parse import quote
-        alertes_encoded = quote(alertes_str)
-        request_alerte = f"https://fr-couvinove301:3100/envoyerMailAlerte?idUsine={site['id']}&alertes={alertes_encoded}"
-        print(f"Mail groupé pour le site {site['id']} : {request_alerte}")
-        requests.get(request_alerte, headers=headers, verify=False)
-print("Fin du script alertes produits !")
+                logger.info(f"Alerte min: produit {product_id}, site {site_id}")
+
+            elif type_alerte == "ecart":
+                ecart = abs(valeur_hier - valeur_avant_hier)
+                if ecart > seuil:
+                    alertes.append({
+                        "typeAlerte": "ecart",
+                        "nomProduit": product["Name"],
+                        "idProduct": product_id,
+                        "valeurHier": val_hier[0]["Value"],
+                        "valeurAvantHier": val_avant_hier[0]["Value"],
+                        "ecart": ecart,
+                    })
+                    logger.info(f"Alerte écart: produit {product_id}, site {site_id}")
+
+        if alertes:
+            alertes_encoded = quote(json.dumps(alertes))
+            try:
+                cap_get(session, "/envoyerMailAlerte", idUsine=site_id, alertes=alertes_encoded)
+                logger.info(f"Mail groupé envoyé pour le site {site_id} ({len(alertes)} alertes)")
+            except Exception as e:
+                logger.error(f"Erreur envoi mail site {site_id}: {e}")
+
+    logger.info("Fin du script alertes produits")
+
+
+def main():
+    session = create_session()
+    check_alerts(session)
+
+
+if __name__ == "__main__":
+    main()

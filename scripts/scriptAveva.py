@@ -1,166 +1,137 @@
-import requests
-from requests_ntlm import HttpNtlmAuth
+"""
+Script de récupération des données AVEVA et insertion dans CAP Exploitation.
+Fusionne scriptAveva.py et scriptAvevaRecup.py (utiliser --date pour une date spécifique).
+
+Usage:
+    python scriptAveva.py                    # Données de la veille
+    python scriptAveva.py --date 15/03/2026  # Données d'une date spécifique
+"""
 from datetime import datetime, timedelta
-import warnings
 
-#Création d'un fichier de log
-dateActuelle = datetime.now()
-format_date = "%d %B %Y à %Hh%M"
-dateFormatee = dateActuelle.strftime(format_date)
+from requests_ntlm import HttpNtlmAuth
 
-# dateHeure = "logAveva" + str(dateFormatee)  + ".txt"
-# dateHeure = dateHeure.replace(" ","_").replace(":","-")
-
-# f = open(dateHeure, "x")
-
-headers = {"Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbiI6ImZmcmV6cXNrejdmIiwiaWF0IjoxNjg2NzM1MTEyfQ.uk7IdzysJioPG3pdV2w99jNPHq5Uj6CWpIDiZ_WGhY0"}
-#Disable warnings
-warnings.filterwarnings("ignore")
-
-#Récupération de la date de la veille
-#TODO : Attention il faut gérer les heures UTC
-#UTC+1 => 00h00 et 23h59 correspond UTC => 23h00 la veille et 23h
-#UTC+2 => 00h00 et 23h59 correspond UTC => 22h00 la veille et 22h
-aujourdhui = datetime.now().date()
-hier = aujourdhui - timedelta (days=1)
-hierAvevaDebut = f'{hier}' + "T00:00:00Z"
-hierAvevaFin = f'{hier}' + "T23:59:59Z"
-#derniere valeur de la journée
-#Attention on a des heures UTC => 22h59 en UTC = 23h59 en UTC+1 (heure française)
-#Prévoir de mettre 21h59 en heure d'été quand on aura UTC+2
-dernierAvevaDebut = f'{hier}' + "T22:59:50Z"
-dernierAvevaFin = f'{hier}' + "T22:59:59Z"
-
-print("Debut du script Aveva Le " + str(aujourdhui)  + "\n")
-
-# récupération de la liste des sites CAP Exploitation
-req = "https://fr-couvinove301:3100/sitesAveva"
-response = requests.get(req, headers = headers, verify=False)
-listeSites = response.json()
-
-#récupération de la liste des conversion dans CAP Exploitation
-req = "https://fr-couvinove301:3100/getConversions"
-response = requests.get(req, headers = headers, verify=False)
-listConversions = response.json()
-listConversions = listConversions["data"]
-
-# #Boucle sur les sites pour insérer les valeur site par site
-for site in listeSites['data'] :
-
-    ############TAG CLASSIQUE
-    #Récupération de la liste des produits avec un TAG dans chaque usine (sauf ceux pour lesquelles ont veut seulement la dernière valeur du jour)
-    req = "https://fr-couvinove301:3100/getProductsWithTagClassique?idUsine=" + str(site['id'])
-    response = requests.get(req, headers = headers, verify=False)
-    listProducts = response.json()
-    listProducts = listProducts["data"]
-
-    for product in listProducts :
-        if product['typeRecupEMonitoring'] == "cumul":
-            req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=600000"
-            response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-            if site['id'] == 13:
-                if product["TAG"] == 'TF-TS-BREF-R-EOT':
-                    print(req)
-                    print(response.json())
-            # print("********************************************new response")
-            # print(response.json())
-            listData = response.json()
-            # print("***************************")
-            # print(liste)
-            recup = 0
-            if len(listData['value']) != 0:
-                for res in listData['value']:
-                    # print(res)
-                    # print("---------------------")
-                    if res["Average"] != 'NaN':
-                        recup=recup + res["Average"]
-                print(recup)
-
-        else :
-            #Récupération des données du jour 
-            req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+ hierAvevaDebut+"+and+EndDateTime+le+"+hierAvevaFin+"&resolution=86400000"
-            # print(req)
-            response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-            # print("old response")
-            # print(response)
-            listData = response.json()
-            # print(listData['value'])
-            # #Si on l'api nous retourne une valeur, on créé une mesure
-            if len(listData['value']) != 0:
-                #if(product["TAG"] == 'P_Active/MESURE.U'): 
-                    #print(listData['value'][0])
-                if product['typeRecupEMonitoring'] == "tafMin" and listData['value'][0]['Minimum'] != 'NaN':
-                    recup = listData['value'][0]['Minimum']
-                else :
-                    if product['typeRecupEMonitoring'] == "tafMax" and listData['value'][0]['Maximum'] != 'NaN' :
-                        recup =listData['value'][0]['Maximum']
-                    else :
-                        if product['typeRecupEMonitoring'] == "cumul" and listData['value'][0]['Maximum'] != 'NaN' and listData['value'][0]['Minimum'] != 'NaN' :
-                            #recup = data[5] - data[4]
-                            recup = listData['value'][0]['Maximum'] - listData['value'][0]['Minimum']
-                        else :
-                            recup = listData['value'][0]['Average']
-        if len(listData['value']) != 0:
-            #Si l'unité Aveva est différente de l'unité CAP Exploitation
-            if "Unit" in listData['value'][0] :
-                if product['Unit'] != listData['value'][0]['Unit'] :
-                    #On parcourt la liste des conversion de CAP Exploitation
-                    for conversion in listConversions :
-                        count = 0
-                        #Si on a une conversion dont l'unité de base est celle d'Aveva et dont l'unité cible est celle de CAP Exploitation
-                        if listData['value'][0]['Unit'].lower() == conversion['uniteBase'].lower() and product['Unit'].lower() == conversion['uniteCible'].lower() :
-                            #On récupère l'opérateur de la conversion qui est le premier caractère
-                            operateur = conversion['conversion'][0]
-                            #On récupère la valeur en int du calcul
-                            valeur = int(conversion['conversion'][1:])
-                            count = count + 1
-                            #print(str(recup)  + "\n")
-                            #On regarde quel opérateur est utilisé et on fait le calcul
-                            if operateur == "*" :
-                                recup = recup * valeur
-                            else :
-                                if operateur == "/" :
-                                    recup = recup / valeur
-                            #print(str(recup)  + "\n")
-                    # if count == 0 :
-                        # f.write("Unite Aveva : " +listData['value'][0]['Unit']  + "\n")
-                        # f.write("Unite CAP : " + product['Unit']  + "\n")
-                        # f.write(product['Name']  + "\n")
-                        # f.write("*******************************"  + "\n")
-
-             #ATTENTION => A automatiser
-            #Permet de faire *24 sur un compteur qui est un débit mètre ou autre et qui renvoi la moyenne
-            if(product["TAG"] == 'P_Active/MESURE.U' or product["TAG"] == '0MKA60CE100ET/MESURE.U' or product["TAG"] == '0MKA60CE108/MESURE.U' or product["TAG"] == '1LBA10CF901FT/MESURE.U' or product["TAG"] == '2LBA10CF901FT/MESURE.U' or product["TAG"] == '3LBA10CF001FT/MESURE.U'): 
-                recup = recup * 24
-            if(recup != 'NaN'):
-                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-                #print(req)
-                response = requests.put(req, headers = headers, verify=False)
+from _config import (
+    AVEVA_PASSWORD, AVEVA_USER, TAGS_MULTIPLY_24,
+    apply_conversion, create_session, cap_get, get_conversions, get_sites,
+    insert_measure, logger, parse_date_arg,
+)
 
 
-    ##########TAG POUR RECUPERATION DERNIERE VALEUR JOUR
-    #Récupération de la liste des produits avec un TAG dans chaque usine (UNIQUEMENT ceux pour lesquelles ont veut seulement la dernière valeur du jour)
-    req = "https://fr-couvinove301:3100/getProductsWithTagDerniere?idUsine=" + str(site['id'])
-    response = requests.get(req, headers = headers, verify=False)
-    listProducts = response.json()
-    listProducts = listProducts["data"]
+def fetch_aveva_data(session, url, auth):
+    """Récupère les données depuis l'API AVEVA."""
+    resp = session.get(url, auth=auth, verify=False)
+    resp.raise_for_status()
+    return resp.json()
 
-    for product in listProducts :
 
-        #Récupération de la dernière données du jour
-        req = str(site['ipAveva']) +"/Historian/v2/AnalogSummary?$filter=FQN+eq+'"+product["TAG"]+"'+and+StartDateTime+ge+"+dernierAvevaDebut+"+and+EndDateTime+le+"+dernierAvevaFin+"&RetrievalMode=Cyclic"
-        # print(req)
-        response = requests.get(req, auth=HttpNtlmAuth('capexploitation','X5p9UarUm56H8d'), verify=False)
-        # print("boucle2")
-        # print(response)
-        listData = response.json()
-        #print(listData)
-        #Si on l'api nous retourne une valeur, on créé une mesure
-        if len(listData['value']) != 0:
-            recup = listData['value'][0]['Average']
-            if(recup != 'NaN'):
-                req = "https://fr-couvinove301:3100/Measure?EntryDate="+ str(hier) + "&Value=" + str(recup) + " &ProductId= " + str(product['Id']) + "&ProducerId=0"
-                #print(req)
-                response = requests.put(req, headers = headers, verify=False)
+def compute_value(product, list_data, session, aveva_auth):
+    """Calcule la valeur à insérer selon le type de récupération."""
+    type_recup = product["typeRecupEMonitoring"]
 
-print("Fin du script !"  + "\n")
+    if not list_data["value"]:
+        return None
+
+    if type_recup == "cumul" and len(list_data["value"]) > 1:
+        # Cumul = somme des moyennes sur des résolutions de 10 minutes
+        total = sum(
+            res["Average"]
+            for res in list_data["value"]
+            if res["Average"] != "NaN"
+        )
+        return total
+
+    entry = list_data["value"][0]
+
+    if type_recup == "tafMin" and entry["Minimum"] != "NaN":
+        return entry["Minimum"]
+    elif type_recup == "tafMax" and entry["Maximum"] != "NaN":
+        return entry["Maximum"]
+    elif type_recup == "cumul" and entry["Maximum"] != "NaN" and entry["Minimum"] != "NaN":
+        return entry["Maximum"] - entry["Minimum"]
+    else:
+        return entry["Average"]
+
+
+def process_site(session, site, target_date, conversions, aveva_auth):
+    """Traite un site : récupère les données AVEVA et insère les mesures."""
+    site_id = site["id"]
+    ip_aveva = site["ipAveva"]
+    debut = f"{target_date}T00:00:00Z"
+    fin = f"{target_date}T23:59:59Z"
+    dernier_debut = f"{target_date}T22:59:50Z"
+    dernier_fin = f"{target_date}T22:59:59Z"
+
+    # --- TAG CLASSIQUE ---
+    products_classique = cap_get(session, "/getProductsWithTagClassique", idUsine=site_id)["data"]
+
+    for product in products_classique:
+        tag = product["TAG"]
+        type_recup = product["typeRecupEMonitoring"]
+
+        try:
+            if type_recup == "cumul":
+                url = f"{ip_aveva}/Historian/v2/AnalogSummary?$filter=FQN+eq+'{tag}'+and+StartDateTime+ge+{debut}+and+EndDateTime+le+{fin}&resolution=600000"
+            else:
+                url = f"{ip_aveva}/Historian/v2/AnalogSummary?$filter=FQN+eq+'{tag}'+and+StartDateTime+ge+{debut}+and+EndDateTime+le+{fin}&resolution=86400000"
+
+            list_data = fetch_aveva_data(session, url, aveva_auth)
+        except Exception as e:
+            logger.warning(f"Erreur récupération AVEVA tag={tag}, site={site_id}: {e}")
+            continue
+
+        recup = compute_value(product, list_data, session, aveva_auth)
+        if recup is None or recup == "NaN":
+            continue
+
+        # Conversion d'unité si nécessaire
+        if list_data["value"] and "Unit" in list_data["value"][0]:
+            source_unit = list_data["value"][0]["Unit"]
+            recup = apply_conversion(recup, product["Unit"], source_unit, conversions)
+
+        # Multiplicateur x24 pour certains TAGs (débit -> volume)
+        if tag in TAGS_MULTIPLY_24:
+            recup = recup * 24
+
+        insert_measure(session, target_date, recup, product["Id"])
+
+    # --- TAG DERNIÈRE VALEUR JOUR ---
+    products_derniere = cap_get(session, "/getProductsWithTagDerniere", idUsine=site_id)["data"]
+
+    for product in products_derniere:
+        tag = product["TAG"]
+        try:
+            url = f"{ip_aveva}/Historian/v2/AnalogSummary?$filter=FQN+eq+'{tag}'+and+StartDateTime+ge+{dernier_debut}+and+EndDateTime+le+{dernier_fin}&RetrievalMode=Cyclic"
+            list_data = fetch_aveva_data(session, url, aveva_auth)
+        except Exception as e:
+            logger.warning(f"Erreur récupération AVEVA (dernière) tag={tag}, site={site_id}: {e}")
+            continue
+
+        if list_data["value"] and list_data["value"][0]["Average"] != "NaN":
+            insert_measure(session, target_date, list_data["value"][0]["Average"], product["Id"])
+
+
+def main():
+    target_date = parse_date_arg("Script AVEVA")
+    logger.info(f"Début du script AVEVA - date cible: {target_date}")
+
+    if not AVEVA_PASSWORD:
+        logger.error("Variable d'environnement AVEVA_PASSWORD manquante.")
+        return
+
+    session = create_session()
+    aveva_auth = HttpNtlmAuth(AVEVA_USER, AVEVA_PASSWORD)
+    conversions = get_conversions(session)
+    sites = cap_get(session, "/sitesAveva")["data"]
+
+    for site in sites:
+        logger.info(f"Traitement site AVEVA: {site['id']}")
+        try:
+            process_site(session, site, target_date, conversions, aveva_auth)
+        except Exception as e:
+            logger.error(f"Erreur site {site['id']}: {e}")
+
+    logger.info("Fin du script AVEVA")
+
+
+if __name__ == "__main__":
+    main()
