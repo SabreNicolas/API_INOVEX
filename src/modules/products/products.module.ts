@@ -3,12 +3,15 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { LoggerService } from "../../common/services/logger.service";
 import {
+  CategorieNew,
   ImportTonnage,
   ImportTonnageReactif,
   ImportTonnageSortant,
   MeasureNew,
   MoralEntityNew,
+  ProductCategorieNew,
   ProductNew,
+  Site,
   TypeNew,
 } from "../../entities";
 import { AuthModule } from "../auth/auth.module";
@@ -26,6 +29,9 @@ import { ProductsService } from "./products.service";
       ImportTonnage,
       ImportTonnageSortant,
       ImportTonnageReactif,
+      CategorieNew,
+      ProductCategorieNew,
+      Site,
     ]),
   ],
   controllers: [ProductsController],

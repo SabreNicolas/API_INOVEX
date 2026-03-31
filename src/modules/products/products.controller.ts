@@ -36,6 +36,7 @@ import { MeasureNew, ProductCategorieNew, ProductNew } from "@/entities";
 import {
   CreateMeasureDto,
   CreateMeasuresBatchDto,
+  CreateProductAllSitesDto,
   CreateProductDto,
   UpdateMeasureDto,
   UpdateProductDto,
@@ -559,6 +560,116 @@ export class ProductsController {
     @Body() updateDto: UpdateMeasureDto
   ) {
     return this.productsService.updateMeasure(id, updateDto);
+  }
+
+  @Get("categories/compteurs")
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary: "Récupérer les catégories pour les compteurs",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findCategoriesCompteurs() {
+    return this.productsService.findCategoriesCompteurs();
+  }
+
+  @Get("categories/analyses")
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary: "Récupérer les catégories pour les analyses",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findCategoriesAnalyses() {
+    return this.productsService.findCategoriesAnalyses();
+  }
+
+  @Get("categories/sortants")
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary: "Récupérer les catégories pour les sortants",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findCategoriesSortants() {
+    return this.productsService.findCategoriesSortants();
+  }
+
+  @Get("last-code")
+  @RequireRole([UserRole.IS_ADMIN, UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary: "Récupérer le dernier code produit pour un préfixe donné",
+  })
+  @ApiQuery({
+    name: "codePrefix",
+    required: true,
+    type: String,
+    description: "Préfixe du code produit",
+  })
+  @ApiQuery({
+    name: "allSites",
+    required: false,
+    type: Boolean,
+    description: "Chercher sur tous les sites (défaut: false)",
+  })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async findLastProductCode(
+    @Query("codePrefix") codePrefix: string,
+    @Query("allSites") allSites: string,
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    if (allSites === "true") {
+      const code =
+        await this.productsService.findLastProductCodeAllSites(codePrefix);
+      return { data: code };
+    }
+    const code = await this.productsService.findLastProductCode(
+      codePrefix,
+      currentUser.idUsine
+    );
+    return { data: code };
+  }
+
+  @Post("create-all-sites")
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary:
+      "Créer un produit sur tous les sites (pour sortants, analyses, consommables)",
+  })
+  @ApiCreatedResponseWrapped(ProductNew)
+  @ApiResponse({ status: 400, description: "Données invalides" })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async createOnAllSites(@Body() createDto: CreateProductAllSitesDto) {
+    const { categoryId, ...productData } = createDto;
+    return this.productsService.createOnAllSites(
+      productData as CreateProductDto,
+      categoryId
+    );
+  }
+
+  @Post("create-on-site")
+  @RequireRole([UserRole.IS_SUPER_ADMIN])
+  @ApiOperation({
+    summary: "Créer un produit sur un site spécifique (pour compteurs)",
+  })
+  @ApiCreatedResponseWrapped(ProductNew)
+  @ApiResponse({ status: 400, description: "Données invalides" })
+  @ApiResponse({ status: 401, description: "Non autorisé" })
+  @ApiResponse({ status: 403, description: "Accès interdit" })
+  async createOnSite(
+    @Body() body: CreateProductAllSitesDto & { idUsine: number },
+    @CurrentUser() currentUser: RequestUser
+  ) {
+    const { categoryId, ...productData } = body;
+    return this.productsService.createOnSite(
+      {
+        ...productData,
+        idUsine: body.idUsine ?? currentUser.idUsine,
+      } as CreateProductDto,
+      categoryId
+    );
   }
 
   @Get("type/:typeId")

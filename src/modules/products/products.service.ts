@@ -11,12 +11,15 @@ import {
 
 import { LoggerService } from "../../common/services/logger.service";
 import {
+  CategorieNew,
   ImportTonnage,
   ImportTonnageReactif,
   ImportTonnageSortant,
   MeasureNew,
   MoralEntityNew,
+  ProductCategorieNew,
   ProductNew,
+  Site,
   TypeNew,
 } from "../../entities";
 import {
@@ -44,6 +47,12 @@ export class ProductsService {
     private readonly importTonnageSortantRepository: Repository<ImportTonnageSortant>,
     @InjectRepository(ImportTonnageReactif)
     private readonly importTonnageReactifRepository: Repository<ImportTonnageReactif>,
+    @InjectRepository(CategorieNew)
+    private readonly categorieNewRepository: Repository<CategorieNew>,
+    @InjectRepository(ProductCategorieNew)
+    private readonly productCategorieNewRepository: Repository<ProductCategorieNew>,
+    @InjectRepository(Site)
+    private readonly siteRepository: Repository<Site>,
     private readonly logger: LoggerService
   ) {}
 
@@ -1057,6 +1066,276 @@ export class ProductsService {
     } catch (error) {
       this.logger.error(
         "Erreur lors de la suppression des mesures réactifs",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  // ===================================================================
+  // CATEGORIES (pour la création de produits)
+  // ===================================================================
+
+  /**
+   * Récupérer les catégories pour les compteurs
+   */
+  async findCategoriesCompteurs(): Promise<CategorieNew[]> {
+    try {
+      return this.categorieNewRepository
+        .createQueryBuilder("cat")
+        .leftJoinAndSelect(CategorieNew, "cat2", "cat.ParentId = cat2.id")
+        .select([
+          "cat.id AS id",
+          "cat.CreateDate AS CreateDate",
+          "cat.LastModifiedDate AS LastModifiedDate",
+          "cat.Name AS Name",
+          "cat.Enabled AS Enabled",
+          "cat.Code AS Code",
+          "cat.ParentId AS ParentId",
+          "cat2.Name AS ParentName",
+        ])
+        .where("cat.Enabled = 1")
+        .andWhere("LEN(cat.Code) > 1")
+        .andWhere("cat.Name NOT LIKE :tonnage", { tonnage: "Tonnage%" })
+        .andWhere("cat.Name NOT LIKE :cendres", { cendres: "Cendres%" })
+        .andWhere("cat.Code NOT LIKE :code701", { code701: "701%" })
+        .andWhere("cat.Name NOT LIKE :machefers", { machefers: "Mâchefers%" })
+        .andWhere("cat.Name NOT LIKE :arrets", { arrets: "Arrêts%" })
+        .andWhere("cat.Name NOT LIKE :autresConso", {
+          autresConso: "Autres consommables%",
+        })
+        .andWhere("cat.Name NOT LIKE :dechets", {
+          dechets: "Déchets détournés%",
+        })
+        .andWhere("cat.Name NOT LIKE :ferraille", {
+          ferraille: "Ferraille et autres%",
+        })
+        .andWhere("cat.Name NOT LIKE :analyses", { analyses: "Analyses%" })
+        .orderBy("cat.Name", "ASC")
+        .getRawMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des catégories compteurs",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les catégories pour les analyses
+   */
+  async findCategoriesAnalyses(): Promise<CategorieNew[]> {
+    try {
+      return this.categorieNewRepository
+        .createQueryBuilder("cat")
+        .leftJoinAndSelect(CategorieNew, "cat2", "cat.ParentId = cat2.id")
+        .select([
+          "cat.id AS id",
+          "cat.CreateDate AS CreateDate",
+          "cat.LastModifiedDate AS LastModifiedDate",
+          "cat.Name AS Name",
+          "cat.Enabled AS Enabled",
+          "cat.Code AS Code",
+          "cat.ParentId AS ParentId",
+          "cat2.Name AS ParentName",
+        ])
+        .where("cat.Enabled = 1")
+        .andWhere("LEN(cat.Code) > 1")
+        .andWhere("cat.Name LIKE :analyses", { analyses: "Analyses%" })
+        .orderBy("cat.Name", "ASC")
+        .getRawMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des catégories analyses",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer les catégories pour les sortants
+   */
+  async findCategoriesSortants(): Promise<CategorieNew[]> {
+    try {
+      return this.categorieNewRepository
+        .createQueryBuilder("cat")
+        .leftJoinAndSelect(CategorieNew, "cat2", "cat.ParentId = cat2.id")
+        .select([
+          "cat.id AS id",
+          "cat.CreateDate AS CreateDate",
+          "cat.LastModifiedDate AS LastModifiedDate",
+          "cat.Name AS Name",
+          "cat.Enabled AS Enabled",
+          "cat.Code AS Code",
+          "cat.ParentId AS ParentId",
+          "cat2.Name AS ParentName",
+        ])
+        .where("cat.Code LIKE :code", { code: "50%" })
+        .andWhere("cat.Name NOT LIKE :residus", {
+          residus: "Résidus de Traitement",
+        })
+        .orderBy("cat.Name", "ASC")
+        .getRawMany();
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération des catégories sortants",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer le dernier code produit pour un préfixe donné
+   */
+  async findLastProductCode(
+    codePrefix: string,
+    idUsine?: number
+  ): Promise<string | null> {
+    try {
+      const qb = this.productsRepository
+        .createQueryBuilder("p")
+        .select("p.Code", "Code")
+        .where("p.Code LIKE :codePattern", {
+          codePattern: `${codePrefix}%`,
+        })
+        .orderBy("p.Code", "DESC")
+        .limit(1);
+
+      if (idUsine) {
+        qb.andWhere("p.idUsine = :idUsine", { idUsine });
+      }
+
+      const result = await qb.getRawOne();
+      return result?.Code ?? null;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération du dernier code produit",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Récupérer le dernier code produit parmi TOUS les sites
+   */
+  async findLastProductCodeAllSites(
+    codePrefix: string
+  ): Promise<string | null> {
+    try {
+      const result = await this.productsRepository
+        .createQueryBuilder("p")
+        .select("p.Code", "Code")
+        .where("p.Code LIKE :codePattern", {
+          codePattern: `${codePrefix}%`,
+        })
+        .orderBy("p.Code", "DESC")
+        .limit(1)
+        .getRawOne();
+
+      return result?.Code ?? null;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la récupération du dernier code produit (tous sites)",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Créer un produit sur tous les sites
+   * Pour les sortants, analyses et consommables
+   */
+  async createOnAllSites(
+    createDto: CreateProductDto,
+    categoryId: number
+  ): Promise<ProductNew[]> {
+    try {
+      const sites = await this.siteRepository.find();
+      const now = new Date();
+      const createdProducts: ProductNew[] = [];
+
+      for (const site of sites) {
+        const product = this.productsRepository.create({
+          ...createDto,
+          idUsine: site.id,
+          CreateDate: now,
+          LastModifiedDate: now,
+          Enabled: 1,
+        });
+
+        const savedProduct = await this.productsRepository.save(product);
+
+        // Créer l'association produit-catégorie
+        const productCategorie = this.productCategorieNewRepository.create({
+          ProductId: savedProduct.id,
+          CategoryId: categoryId,
+        });
+        await this.productCategorieNewRepository.save(productCategorie);
+
+        createdProducts.push(savedProduct);
+      }
+
+      this.logger.log(
+        `Produit créé sur ${createdProducts.length} sites`,
+        "ProductsService"
+      );
+
+      return createdProducts;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création du produit sur tous les sites",
+        error instanceof Error ? error.stack : String(error),
+        "ProductsService"
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Créer un produit sur un site spécifique (pour compteurs)
+   */
+  async createOnSite(
+    createDto: CreateProductDto,
+    categoryId: number
+  ): Promise<ProductNew> {
+    try {
+      const now = new Date();
+      const product = this.productsRepository.create({
+        ...createDto,
+        CreateDate: now,
+        LastModifiedDate: now,
+        Enabled: 1,
+      });
+
+      const savedProduct = await this.productsRepository.save(product);
+
+      // Créer l'association produit-catégorie
+      const productCategorie = this.productCategorieNewRepository.create({
+        ProductId: savedProduct.id,
+        CategoryId: categoryId,
+      });
+      await this.productCategorieNewRepository.save(productCategorie);
+
+      this.logger.log(
+        `Produit créé avec succès sur le site ${createDto.idUsine}: ${savedProduct.id}`,
+        "ProductsService"
+      );
+
+      return savedProduct;
+    } catch (error) {
+      this.logger.error(
+        "Erreur lors de la création du produit sur un site",
         error instanceof Error ? error.stack : String(error),
         "ProductsService"
       );
