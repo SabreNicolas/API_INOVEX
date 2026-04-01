@@ -25,6 +25,14 @@ export class UsersService {
     private readonly logger: LoggerService
   ) {}
 
+  async loginExists(login: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: { login },
+      select: ["id"],
+    });
+    return !!user;
+  }
+
   async findAll(
     pagination?: PaginationDto,
     idUsine?: number

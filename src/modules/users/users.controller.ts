@@ -43,6 +43,18 @@ import { UsersService } from "./users.service";
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @Get("check-login")
+  @RequireRole([UserRole.IS_ADMIN])
+  @ApiOperation({
+    summary: "Vérifier si un login est déjà utilisé",
+  })
+  @ApiQuery({ name: "login", type: String, description: "Login à vérifier" })
+  @ApiResponse({ status: 200, description: "Résultat de la vérification" })
+  async checkLogin(@Query("login") login: string) {
+    const exists = await this.usersService.loginExists(login);
+    return { exists };
+  }
+
   @Get("rondier")
   @RequireRole([UserRole.IS_ADMIN, UserRole.IS_CHEF_QUART])
   @ApiOperation({
