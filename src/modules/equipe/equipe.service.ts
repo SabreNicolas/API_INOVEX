@@ -138,9 +138,9 @@ export class EquipeService {
             idRondier: aff.idRondier,
             idZone: aff.idZone,
             poste: aff.poste || "",
-            heure_deb: aff.heure_deb || "",
-            heure_fin: aff.heure_fin || "",
-            heure_tp: aff.heure_tp || "00:00",
+            heure_deb: this.normalizeTime(aff.heure_deb),
+            heure_fin: this.normalizeTime(aff.heure_fin),
+            heure_tp: this.normalizeTime(aff.heure_tp) || "00:00:00",
             comm_tp: aff.comm_tp || "",
           })
         );
@@ -243,11 +243,11 @@ export class EquipeService {
             if (aff.idZone !== undefined) updateAffData.idZone = aff.idZone;
             if (aff.poste !== undefined) updateAffData.poste = aff.poste;
             if (aff.heure_deb !== undefined)
-              updateAffData.heure_deb = aff.heure_deb;
+              updateAffData.heure_deb = this.normalizeTime(aff.heure_deb);
             if (aff.heure_fin !== undefined)
-              updateAffData.heure_fin = aff.heure_fin;
+              updateAffData.heure_fin = this.normalizeTime(aff.heure_fin);
             if (aff.heure_tp !== undefined)
-              updateAffData.heure_tp = aff.heure_tp;
+              updateAffData.heure_tp = this.normalizeTime(aff.heure_tp);
             if (aff.comm_tp !== undefined) updateAffData.comm_tp = aff.comm_tp;
 
             if (Object.keys(updateAffData).length > 0) {
@@ -263,9 +263,9 @@ export class EquipeService {
               idRondier: aff.idRondier!,
               idZone: aff.idZone!,
               poste: aff.poste || "",
-              heure_deb: aff.heure_deb || "",
-              heure_fin: aff.heure_fin || "",
-              heure_tp: aff.heure_tp || "00:00",
+              heure_deb: this.normalizeTime(aff.heure_deb),
+              heure_fin: this.normalizeTime(aff.heure_fin),
+              heure_tp: this.normalizeTime(aff.heure_tp) || "00:00:00",
               comm_tp: aff.comm_tp || "",
             });
             await this.affectationEquipeRepository.save(newAff);
@@ -322,5 +322,15 @@ export class EquipeService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Normalise une heure en HH:mm:00 (force les secondes à zéro).
+   */
+  private normalizeTime(time?: string): string {
+    if (!time) return "";
+    const match = /^(\d{1,2}):(\d{2})/.exec(time);
+    if (!match) return "";
+    return `${match[1].padStart(2, "0")}:${match[2]}:00`;
   }
 }
