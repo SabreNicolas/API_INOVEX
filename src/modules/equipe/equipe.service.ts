@@ -94,11 +94,15 @@ export class EquipeService {
     quart: number
   ): Promise<Record<string, unknown> | null> {
     try {
+      console.log(
+        `Recherche de l'équipe pour l'usine ${idUsine}, date ${date}, quart ${quart}`
+      );
       const equipe = await this.equipeRepository
         .createQueryBuilder("e")
         .innerJoin("users", "chef", "chef.Id = e.idChefQuart")
         .where("e.date = :date", { date })
         .andWhere("e.quart = :quart", { quart })
+        .andWhere("chef.idUsine = :idUsine", { idUsine })
         .getOne();
       if (!equipe) {
         return null;
