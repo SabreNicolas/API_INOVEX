@@ -6,6 +6,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { LoggerService } from "../../common/services/logger.service";
 import { UsersController } from "./users.controller";
 import { UsersService } from "./users.service";
+import { AuthGuard } from "../../common/guards/auth.guard";
 
 describe("UsersController", () => {
   let controller: UsersController;
@@ -80,7 +81,13 @@ describe("UsersController", () => {
           useValue: mockLoggerService,
         },
       ],
-    }).compile();
+    })
+
+      .overrideGuard(AuthGuard)
+
+      .useValue({ canActivate: () => true })
+
+      .compile();
 
     controller = module.get<UsersController>(UsersController);
     usersService = module.get<UsersService>(UsersService);
@@ -99,8 +106,9 @@ describe("UsersController", () => {
     isAdmin: true,
     isChefQuart: false,
     isSuperAdmin: false,
+    isKerlan: false,
     idUsine: 1,
-    role: 5,
+    roles: [5],
     roleName: "Admin" as const,
   };
 

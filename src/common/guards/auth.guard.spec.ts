@@ -61,6 +61,7 @@ describe("AuthGuard", () => {
     isRapport: false,
     isChefQuart: false,
     isSuperAdmin: false,
+    isKerlan: false,
     idUsine: 1,
     ...overrides,
   });
@@ -109,7 +110,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException when token is missing", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_RONDIER]);
       const context = createMockExecutionContext();
 
       await expect(guard.canActivate(context)).rejects.toThrow(
@@ -118,7 +119,7 @@ describe("AuthGuard", () => {
     });
 
     it("should allow access for valid token with sufficient role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_RONDIER]);
       const mockPayload = createPayload({ isRondier: true });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
@@ -135,7 +136,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw ForbiddenException when role is insufficient", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_ADMIN);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_ADMIN]);
       const mockPayload = createPayload({ isRondier: true });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
@@ -149,7 +150,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException for expired token", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_RONDIER]);
       const tokenExpiredError = new Error("Token expired");
       tokenExpiredError.name = "TokenExpiredError";
       mockJwtService.verify.mockImplementation(() => {
@@ -166,7 +167,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException for invalid token", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_RONDIER]);
       const tokenInvalidError = new Error("Invalid token");
       tokenInvalidError.name = "JsonWebTokenError";
       mockJwtService.verify.mockImplementation(() => {
@@ -183,7 +184,7 @@ describe("AuthGuard", () => {
     });
 
     it("should throw UnauthorizedException when token has no id", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_RONDIER);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_RONDIER]);
       const mockPayload = {
         login: "testuser",
         nom: "Doe",
@@ -201,7 +202,7 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify admin role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_ADMIN);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_ADMIN]);
       const mockPayload = createPayload({
         login: "admin",
         nom: "Admin",
@@ -219,17 +220,19 @@ describe("AuthGuard", () => {
       expect(result).toBe(true);
     });
 
-    it("should correctly identify QSE role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_QSE);
+    it("should correctly identify kerlan role", async () => {
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_KERLAN]);
       const mockPayload = createPayload({
-        login: "qse",
-        nom: "QSE",
+        login: "kerlan",
+        nom: "Kerlan",
         prenom: "User",
-        isQSE: true,
+        isKerlan: true,
       });
       mockJwtService.verify.mockReturnValue(mockPayload);
 
-      const context = createMockExecutionContext({ accessToken: "qse-token" });
+      const context = createMockExecutionContext({
+        accessToken: "kerlan-token",
+      });
 
       const result = await guard.canActivate(context);
 
@@ -237,7 +240,7 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify saisie role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_SAISIE);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_SAISIE]);
       const mockPayload = createPayload({
         login: "saisie",
         nom: "Saisie",
@@ -256,7 +259,7 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify chef de quart role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_CHEF_QUART);
+      mockReflector.getAllAndOverride.mockReturnValue([UserRole.IS_CHEF_QUART]);
       const mockPayload = createPayload({
         login: "chefquart",
         nom: "Chef",
@@ -275,7 +278,9 @@ describe("AuthGuard", () => {
     });
 
     it("should correctly identify super admin role", async () => {
-      mockReflector.getAllAndOverride.mockReturnValue(UserRole.IS_SUPER_ADMIN);
+      mockReflector.getAllAndOverride.mockReturnValue([
+        UserRole.IS_SUPER_ADMIN,
+      ]);
       const mockPayload = createPayload({
         login: "superadmin",
         nom: "Super",

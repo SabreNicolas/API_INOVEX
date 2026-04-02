@@ -1,3 +1,4 @@
+import { ServiceUnavailableException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
@@ -113,9 +114,9 @@ describe("HealthController", () => {
     it("should return not_ready status when database is disconnected", async () => {
       mockDataSource.query.mockRejectedValue(new Error("Database error"));
 
-      const result = await controller.ready();
-
-      expect(result).toEqual({ status: "not_ready", database: "disconnected" });
+      await expect(controller.ready()).rejects.toThrow(
+        ServiceUnavailableException
+      );
     });
   });
 });

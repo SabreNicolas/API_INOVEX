@@ -19,9 +19,15 @@ describe("AuthService", () => {
     nom: "Doe",
     prenom: "John",
     isAdmin: true,
-    isVeto: false,
-    isEditeur: false,
-    isLecteur: true,
+    isRondier: false,
+    isSaisie: false,
+    isQSE: false,
+    isRapport: false,
+    isChefQuart: false,
+    isSuperAdmin: false,
+    isKerlan: false,
+    idUsine: 1,
+    isActif: true,
   };
 
   const mockUserRepository = {
@@ -96,7 +102,10 @@ describe("AuthService", () => {
 
     it("should return tokens and user on successful login", async () => {
       mockUserRepository.findOne.mockResolvedValue(mockUser);
-      jest.spyOn(argon2, "verify").mockResolvedValue(true);
+      jest
+        .spyOn(argon2, "verify")
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true);
       jest.spyOn(argon2, "hash").mockResolvedValue("hashedRefreshToken");
       mockJwtService.sign
         .mockReturnValueOnce("accessToken123")
@@ -111,7 +120,7 @@ describe("AuthService", () => {
       expect(result).toHaveProperty("accessToken", "accessToken123");
       expect(result).toHaveProperty("refreshToken", "refreshToken123");
       expect(result).toHaveProperty("user");
-      expect(result.user).not.toHaveProperty("pwd");
+      expect((result as any).user).not.toHaveProperty("pwd");
       expect(mockTokenRepository.save).toHaveBeenCalled();
     });
   });

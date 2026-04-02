@@ -75,6 +75,7 @@ describe("LoggingInterceptor", () => {
         "/api/users",
         200,
         expect.any(Number),
+        undefined,
         undefined
       );
       done();
@@ -91,7 +92,8 @@ describe("LoggingInterceptor", () => {
         "/api/me",
         200,
         expect.any(Number),
-        123
+        123,
+        undefined
       );
       done();
     });
@@ -128,6 +130,7 @@ describe("LoggingInterceptor", () => {
         "/api/slow",
         200,
         expect.any(Number),
+        undefined,
         undefined
       );
 

@@ -28,7 +28,7 @@ describe("FormulaireService", () => {
   };
 
   const mockProduct = {
-    Id: 10,
+    id: 10,
     Name: "Product Test",
     Enabled: true,
     elementRondier: null,
@@ -144,7 +144,7 @@ describe("FormulaireService", () => {
       const result = await service.findAll({ page: 1, limit: 20 }, 1);
 
       expect(result).toHaveProperty("data");
-      expect(result).toHaveProperty("total", 1);
+      expect(result).toHaveProperty("meta.total", 1);
     });
   });
 

@@ -8,6 +8,7 @@ import { Request, Response } from "express";
 import { LoggerService } from "../../common/services/logger.service";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
+import { AuthGuard } from "../../common/guards/auth.guard";
 
 describe("AuthController", () => {
   let controller: AuthController;
@@ -92,7 +93,13 @@ describe("AuthController", () => {
           useValue: mockLoggerService,
         },
       ],
-    }).compile();
+    })
+
+      .overrideGuard(AuthGuard)
+
+      .useValue({ canActivate: () => true })
+
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get<AuthService>(AuthService);
@@ -119,8 +126,8 @@ describe("AuthController", () => {
 
       expect(result.success).toBe(true);
       expect(result.message).toBe("Connexion réussie");
-      expect(result.data.user.id).toBe(1);
-      expect(result.data.user.login).toBe("testuser");
+      expect(result.data!.user.id).toBe(1);
+      expect(result.data!.user.login).toBe("testuser");
       expect(mockAuthService.login).toHaveBeenCalledWith(loginDto);
       expect(mockRes.cookie).toHaveBeenCalled();
     });
