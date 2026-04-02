@@ -145,8 +145,8 @@ async function bootstrap() {
     new ClassSerializerInterceptor(app.get(Reflector)) // Pour class-transformer
   );
 
-  // Swagger documentation
-  {
+  // Swagger documentation (préprod uniquement)
+  if (nodeEnv !== "prod") {
     const swaggerDescription = [
       "API pour l'outil de gestion INOVEX",
       "",
@@ -209,10 +209,12 @@ async function bootstrap() {
     `✅ API Inovex NestJS opérationnelle sur le port ${port} (${protocol.toUpperCase()})`,
     "Bootstrap"
   );
-  logger.log(
-    `📚 Documentation Swagger: ${protocol}://localhost:${port}/api-docs`,
-    "Bootstrap"
-  );
+  if (nodeEnv !== "prod") {
+    logger.log(
+      `📚 Documentation Swagger: ${protocol}://localhost:${port}/api-docs`,
+      "Bootstrap"
+    );
+  }
 }
 
 bootstrap();
