@@ -33,6 +33,7 @@ import { QuartCalendrierModule } from "./modules/quart-calendrier/quart-calendri
 import { QuartEvenementModule } from "./modules/quart-evenement/quart-evenement.module";
 import { QuartLiensExternesModule } from "./modules/quart-liens-externes/quart-liens-externes.module";
 import { RegistreQuartModule } from "./modules/registre-quart/registre-quart.module";
+import { RapportsModule } from "./modules/rapports/rapports.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UploadsModule } from "./modules/upload/uploads.module";
@@ -103,6 +104,7 @@ import { ZoneControleModule } from "./modules/zone-controle/zone-controle.module
     AnomalieModule,
     UploadsModule,
     AdminKerlanModule,
+    RapportsModule,
     ExportModule,
     ValidationDonneesModule,
   ],
