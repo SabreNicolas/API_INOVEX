@@ -16,8 +16,8 @@ import {
 
 import { AuthModule } from "../auth/auth.module";
 import { RegistreQuartController } from "./registre-quart.controller";
-import { RegistreQuartPdfService } from "./registre-quart-pdf.service";
 import { RegistreQuartService } from "./registre-quart.service";
+import { RegistreQuartPdfService } from "./registre-quart-pdf.service";
 
 @Module({
   imports: [

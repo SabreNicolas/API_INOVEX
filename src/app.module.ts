@@ -32,8 +32,8 @@ import { QuartActualiteModule } from "./modules/quart-actualite/quart-actualite.
 import { QuartCalendrierModule } from "./modules/quart-calendrier/quart-calendrier.module";
 import { QuartEvenementModule } from "./modules/quart-evenement/quart-evenement.module";
 import { QuartLiensExternesModule } from "./modules/quart-liens-externes/quart-liens-externes.module";
-import { RegistreQuartModule } from "./modules/registre-quart/registre-quart.module";
 import { RapportsModule } from "./modules/rapports/rapports.module";
+import { RegistreQuartModule } from "./modules/registre-quart/registre-quart.module";
 import { RondierModule } from "./modules/rondier/rondier.module";
 import { SiteModule } from "./modules/site/site.module";
 import { UploadsModule } from "./modules/upload/uploads.module";

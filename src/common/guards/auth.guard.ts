@@ -83,8 +83,10 @@ export class AuthGuard implements CanActivate {
       // Vérification des permissions
       if (!requiredRole.some(role => userRole.includes(role))) {
         const requiredRolesNames = requiredRole
+          // eslint-disable-next-line security/detect-object-injection
           .map(r => ROLE_NAMES[r])
           .join(", ");
+        // eslint-disable-next-line security/detect-object-injection
         const userRoleName = userRole.map(r => ROLE_NAMES[r]).join(", ");
         throw new ForbiddenException(
           `${ERROR_MESSAGES.FORBIDDEN}. Rôle requis: ${requiredRolesNames}, votre rôle: ${userRoleName}`

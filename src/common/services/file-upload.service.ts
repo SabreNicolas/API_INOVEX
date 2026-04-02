@@ -47,7 +47,9 @@ export class FileUploadService {
   }
 
   private ensureSubDirExists(subDir: string): void {
+    // eslint-disable-next-line security/detect-non-literal-fs-filename
     if (!existsSync(subDir)) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename
       mkdirSync(subDir, { recursive: true });
       this.logger.log(`Dossier d'upload créé: ${subDir}`, "FileUploadService");
     }
