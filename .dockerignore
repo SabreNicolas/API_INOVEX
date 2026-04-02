@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+
+# Logs
+logs/
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+README.md
+CHANGELOG.md
+docs/
+
+# Development files
+*.spec.ts
+*.e2e-spec.ts
+test/
+jest.config.js
+tsconfig.spec.json
+.prettierrc
+.eslintrc.js
+eslint.config.mjs
+commitlint.config.js
