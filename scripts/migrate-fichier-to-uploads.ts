@@ -84,7 +84,7 @@ const dataSource = new DataSource({
   synchronize: false,
   options: {
     encrypt: nodeEnv === "prod" || nodeEnv === "preprod",
-    trustServerCertificate: nodeEnv !== "prod" && nodeEnv !== "preprod",
+    trustServerCertificate: nodeEnv !== "prod",
   },
 });
 
@@ -337,7 +337,7 @@ async function migrateModeOperatoire(
     await dataSource.query(
       `SELECT m.id, m.fichier, z.idUsine
        FROM modeoperatoire m
-       LEFT JOIN zone_controle z ON m.zoneId = z.Id
+       LEFT JOIN zonecontrole z ON m.zoneId = z.Id
        WHERE m.fichier IS NOT NULL AND m.fichier != '' AND m.fichier NOT LIKE '/uploads/%'`
     );
 
@@ -408,7 +408,7 @@ async function migrateAnomalies(
               COALESCE(r.idUsine, z.idUsine) AS idUsine
        FROM anomalie a
        LEFT JOIN ronde r ON a.rondeId = r.Id
-       LEFT JOIN zone_controle z ON a.zoneId = z.Id
+       LEFT JOIN zonecontrole z ON a.zoneId = z.Id
        WHERE a.photo IS NOT NULL AND a.photo != '' AND a.photo NOT LIKE '/uploads/%'`
     );
 

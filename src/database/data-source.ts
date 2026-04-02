@@ -50,6 +50,6 @@ export default new DataSource({
   synchronize: false,
   options: {
     encrypt: nodeEnv === "prod" || nodeEnv === "preprod",
-    trustServerCertificate: nodeEnv !== "prod" && nodeEnv !== "preprod",
+    trustServerCertificate: nodeEnv !== "prod",
   },
 });

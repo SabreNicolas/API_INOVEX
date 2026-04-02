@@ -185,7 +185,7 @@ const entities = [
           logging: nodeEnv === "dev",
           options: {
             encrypt: nodeEnv === "prod" || nodeEnv === "preprod",
-            trustServerCertificate: nodeEnv !== "prod" && nodeEnv !== "preprod",
+            trustServerCertificate: nodeEnv !== "prod",
           },
           extra: {
             connectionLimit: 10,

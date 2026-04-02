@@ -142,6 +142,7 @@ dist
 .env
 .env.dev
 .env.prod
+.env.preprod
 .env.docker
 .env.dev
 .env.prod
@@ -149,3 +150,5 @@ dist
 
 #uploaded files
 uploads/
+
+fichiers/
